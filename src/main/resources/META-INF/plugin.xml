@@ -1,0 +1,42 @@
+<idea-plugin>
+    <id>commit-message-helper-idea-plugin</id>
+    <name>Git Commit Message Helper</name>
+    <vendor email="13103779727@163.com" url="https://github.com/AutismSuperman">FuLinLin</vendor>
+    <description>
+        <![CDATA[
+        <h1>提交信息生成插件</h1>
+        <p>Plugin GitHub address:<a href="https://github.com/RmondJone/Commit-Message-Plugin">https://github.com/RmondJone/Commit-Message-Plugin</a></p>
+        ]]>
+    </description>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.vcs</depends>
+
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationConfigurable instance="com.fulinlin.MyComponent"/>
+    </extensions>
+
+    <application-components>
+        <!-- Add your application components here -->
+        <component>
+            <implementation-class>com.fulinlin.MyComponent</implementation-class>
+        </component>
+    </application-components>
+
+    <actions>
+        <action id="Commit.Button" class="com.fulinlin.action.CreateCommitAction"
+                text="Create Commit Message"
+                description="Create commit message"
+                icon="PluginIcons.ICON">
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
+        </action>
+        <action id="SayHello" class="com.fulinlin.action.SettingAction" text="Say Hello!">
+            <add-to-group group-id="WindowMenu" anchor="first"/>
+        </action>
+    </actions>
+
+
+</idea-plugin>

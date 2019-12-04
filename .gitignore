@@ -1,0 +1,11 @@
+*.iml
+.idea
+*.zip
+out
+.DS_Store
+.gradle/
+build/
+gradle/
+gradlew
+gradlew.bat
+.kotlintest
