@@ -1,0 +1,3 @@
+#set($directoryRoot = "www" )
+#set($templateName = "index.vm" )
+#set($template = "$directoryRoot/$templateName" )

@@ -16,13 +16,15 @@
 
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationConfigurable instance="com.fulinlin.MyComponent"/>
+        <!-- Add your extensions here -->
+        <applicationService serviceImplementation="com.fulinlin.storage.GitCommitMessageHelperSettings"/>
+        <applicationConfigurable instance="com.fulinlin.setting.ui.TemplateEditPaneConfigurable"/>
     </extensions>
 
     <application-components>
         <!-- Add your application components here -->
         <component>
-            <implementation-class>com.fulinlin.MyComponent</implementation-class>
+            <implementation-class>com.fulinlin.setting.ui.TemplateEditPaneConfigurable</implementation-class>
         </component>
     </application-components>
 
@@ -32,9 +34,6 @@
                 description="Create commit message"
                 icon="PluginIcons.ICON">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
-        </action>
-        <action id="SayHello" class="com.fulinlin.action.SettingAction" text="Say Hello!">
-            <add-to-group group-id="WindowMenu" anchor="first"/>
         </action>
     </actions>
 
