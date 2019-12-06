@@ -42,11 +42,6 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
         return templateEditPane.getMainPenel();
     }
 
-    @Override
-    public boolean isModified() {
-        return false;
-    }
-
 
     @Nullable
     @Override
@@ -61,8 +56,20 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
     }
 
 
-    @Override
-    public void apply() throws ConfigurationException {
+    public void reset() {
+        if (templateEditPane != null) {
+            templateEditPane.importFrom(settings);
+        }
+    }
 
+    @Override
+    public boolean isModified() {
+        return templateEditPane != null && templateEditPane.isSettingsModified(settings);
+    }
+
+
+    @Override
+    public void apply() {
+        settings.setDateSettings(templateEditPane.getSettings().getDateSettings());
     }
 }

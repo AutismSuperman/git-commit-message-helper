@@ -57,15 +57,15 @@ public class AliasTable extends JBTable {
 
 
     public void addAlias() {
-        final AliasEditor macroEditor = new AliasEditor("Add alias", "", "", new EditValidator());
-//        if (macroEditor.showAndGet()) {
-//            final String name = macroEditor.getFrom();
-//            myAliases.add(Alias.of(name, macroEditor.getTo()));
-//            final int index = indexOfAliasWithName(name);
-//            LOG.assertTrue(index >= 0);
-//            myTableModel.fireTableDataChanged();
-//            setRowSelectionInterval(index, index);
-//        }
+        final AliasEditor macroEditor = new AliasEditor("Add Type", "", "");
+        if (macroEditor.showAndGet()) {
+            final String name = macroEditor.getTitle();
+            typeAliases.add(new TypeAlias(macroEditor.getTitle(), macroEditor.getDescription()));
+            final int index = indexOfAliasWithName(name);
+            log.assertTrue(index >= 0);
+            myTableModel.fireTableDataChanged();
+            setRowSelectionInterval(index, index);
+        }
     }
 
     private boolean isValidRow(int selectedRow) {
@@ -114,7 +114,7 @@ public class AliasTable extends JBTable {
 
 
     public void commit(GitCommitMessageHelperSettings settings) {
-        settings.getDateSettings().setTypeAliases(new ArrayList<>(typeAliases));
+        settings.getDateSettings().setTypeAliases(new LinkedList<>(typeAliases));
     }
 
     public void resetDefaultAliases() {
@@ -147,18 +147,18 @@ public class AliasTable extends JBTable {
             return false;
         }
         final int selectedRow = getSelectedRow();
-        final TypeAlias alias = typeAliases.get(selectedRow);
-        final AliasEditor editor = new AliasEditor("Edit Alias", alias.getTitle(), alias.getDescription(), new EditValidator());
-        /*if (editor.showAndGet()) {
-            alias.setFrom(editor.getFrom());
-            alias.setTo(editor.getTo());
+        final TypeAlias typeAlias = typeAliases.get(selectedRow);
+        final AliasEditor editor = new AliasEditor("Edit Type", typeAlias.getTitle(), typeAlias.getDescription());
+        if (editor.showAndGet()) {
+            typeAlias.setTitle(editor.getTitle());
+            typeAlias.setDescription(editor.getDescription());
             myTableModel.fireTableDataChanged();
-        }*/
+        }
         return true;
     }
 
     public boolean isModified(GitCommitMessageHelperSettings settings) {
-        final ArrayList<TypeAlias> aliases = new ArrayList<>();
+        final List<TypeAlias> aliases = new LinkedList<>();
         obtainAliases(aliases, settings);
         return !aliases.equals(typeAliases);
     }

@@ -8,6 +8,7 @@ import com.intellij.openapi.components.Storage;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.util.xmlb.XmlSerializerUtil;
+import com.rits.cloning.Cloner;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -75,11 +76,9 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         if (dataSettings == null) {
             loadDefaultSettings();
         }
-        DataSettings newDateSettings = new DataSettings();
-        newDateSettings.setTemplate(dataSettings.getTemplate());
-        newDateSettings.setTypeAliases(dataSettings.getTypeAliases());
-        return newDateSettings;
+        return dataSettings;
     }
+
 
     public void setDateSettings(DataSettings dateSettings) {
         this.dataSettings = dateSettings;
@@ -93,4 +92,13 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     public void updateTypeMap(List<TypeAlias> typeAliases) {
         dataSettings.setTypeAliases(typeAliases);
     }
+
+
+    @Override
+    public GitCommitMessageHelperSettings clone() {
+        Cloner cloner = new Cloner();
+        cloner.nullInsteadOfClone();
+        return cloner.deepClone(this);
+    }
+
 }

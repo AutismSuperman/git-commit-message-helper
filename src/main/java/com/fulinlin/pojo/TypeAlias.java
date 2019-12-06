@@ -5,7 +5,7 @@ package com.fulinlin.pojo;
  * @author: fulin
  * @create: 2019-12-06 21:11
  **/
-public class TypeAlias {
+public class TypeAlias extends DomainObject {
     public String title;
     public String description;
 

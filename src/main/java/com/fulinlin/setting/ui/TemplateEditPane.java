@@ -1,13 +1,11 @@
 package com.fulinlin.setting.ui;
 
 import com.fulinlin.pojo.TemplateLanguage;
-import com.fulinlin.pojo.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.AnActionButton;
-import com.intellij.ui.AnActionButtonRunnable;
 import com.intellij.ui.DoubleClickListener;
 import com.intellij.ui.ToolbarDecorator;
 import org.jetbrains.annotations.NotNull;
@@ -15,8 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Optional;
 
 
 public class TemplateEditPane {
@@ -26,19 +23,17 @@ public class TemplateEditPane {
     private JPanel typeEditPenel;
 
     //my  attribute
-    private String template;
-    private List<TypeAlias> typeAliases;
+    protected GitCommitMessageHelperSettings settings;
     private TemplateEdit templateEdit;
     private AliasTable aliasTable;
 
 
     public TemplateEditPane(GitCommitMessageHelperSettings settings) {
-        this.typeAliases = new LinkedList<>(settings.getDateSettings().getTypeAliases());
-        this.template = StringUtil.isEmpty(settings.getDateSettings().getTemplate()) ? "" : settings.getDateSettings().getTemplate();
-
+        settings = settings.clone();
+        String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
         templateEdit = new TemplateEdit(
                 templateEditPenel,
-                this.template,
+                template,
                 this::getTemplateLanguage,
                 150);
         aliasTable = new AliasTable();
@@ -62,9 +57,34 @@ public class TemplateEditPane {
                 return aliasTable.editAlias();
             }
         }.installOn(aliasTable);
-
-
+        //init
     }
+
+    public GitCommitMessageHelperSettings getSettings() {
+        aliasTable.commit(settings);
+        return settings;
+    }
+
+    public void importFrom(GitCommitMessageHelperSettings settings) {
+        this.settings = settings.clone();
+        aliasTable.reset(settings);
+    }
+
+    public boolean isSettingsModified(GitCommitMessageHelperSettings settings) {
+        if (aliasTable.isModified(settings)) return true;
+        return !this.settings.equals(settings) || isModified(settings);
+    }
+
+    public boolean isModified(GitCommitMessageHelperSettings data) {
+        if (!StringUtil.equals(settings.getDateSettings().getTemplate(), data.getDateSettings().getTemplate())) {
+            return true;
+        }
+        if (settings.getDateSettings().getTypeAliases() != data.getDateSettings().getTypeAliases()) {
+            return true;
+        }
+        return false;
+    }
+
 
     public JPanel getMainPenel() {
         return mainPenel;
