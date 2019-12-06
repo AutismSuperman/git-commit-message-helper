@@ -1,6 +1,7 @@
 package com.fulinlin.storage;
 
 import com.fulinlin.pojo.DataSettings;
+import com.fulinlin.pojo.TypeAlias;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
@@ -12,6 +13,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,8 +44,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
 
 
     @Override
-    public void loadState(@NotNull GitCommitMessageHelperSettings state) {
-        XmlSerializerUtil.copyBean(dataSettings, this);
+    public void loadState(@NotNull GitCommitMessageHelperSettings gitCommitMessageHelperSettings) {
+        XmlSerializerUtil.copyBean(gitCommitMessageHelperSettings, this);
     }
 
     /**
@@ -53,10 +56,11 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         try {
             String velocityTemplate = FileUtil.loadTextAndClose(GitCommitMessageHelperSettings.class.getResourceAsStream("/template/" + "defaultTemplate.vm"));
             dataSettings.setTemplate(velocityTemplate);
-            Map<String, String> codeTemplates = new LinkedHashMap<>();
-            codeTemplates.put("feature", "A new feature");
-            codeTemplates.put("fix", "A bug fix");
-            dataSettings.setTypeMap(codeTemplates);
+            List<TypeAlias> typeAliases = new LinkedList<>();
+            //TODO init  typeAliases
+            typeAliases.add(new TypeAlias("feature", "A new feature"));
+            typeAliases.add(new TypeAlias("fix", "A bug fix"));
+            dataSettings.setTypeAliases(typeAliases);
         } catch (IOException e) {
             log.error("loadDefaultSettings failed", e);
         }
@@ -73,7 +77,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         }
         DataSettings newDateSettings = new DataSettings();
         newDateSettings.setTemplate(dataSettings.getTemplate());
-        newDateSettings.setTypeMap(dataSettings.getTypeMap());
+        newDateSettings.setTypeAliases(dataSettings.getTypeAliases());
         return newDateSettings;
     }
 
@@ -86,7 +90,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         dataSettings.setTemplate(template);
     }
 
-    public void updateTypeMap(LinkedHashMap<String, String> linkedHashMap) {
-        dataSettings.setTypeMap(linkedHashMap);
+    public void updateTypeMap(List<TypeAlias> typeAliases) {
+        dataSettings.setTypeAliases(typeAliases);
     }
 }

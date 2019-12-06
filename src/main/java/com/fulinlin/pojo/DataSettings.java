@@ -1,5 +1,6 @@
 package com.fulinlin.pojo;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -9,7 +10,7 @@ import java.util.Map;
  **/
 public class DataSettings {
     private String template;
-    private Map<String, String> typeMap;
+    private List<TypeAlias> typeAliases;
 
     public String getTemplate() {
         return template;
@@ -19,11 +20,11 @@ public class DataSettings {
         this.template = template;
     }
 
-    public Map<String, String> getTypeMap() {
-        return typeMap;
+    public List<TypeAlias> getTypeAliases() {
+        return typeAliases;
     }
 
-    public void setTypeMap(Map<String, String> typeMap) {
-        this.typeMap = typeMap;
+    public void setTypeAliases(List<TypeAlias> typeAliases) {
+        this.typeAliases = typeAliases;
     }
 }
