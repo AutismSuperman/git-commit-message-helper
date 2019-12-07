@@ -2,12 +2,19 @@ package com.fulinlin.setting.ui;
 
 import com.fulinlin.model.TemplateLanguage;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.fulinlin.util.PropertiesUtils;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.EditorFactory;
+import com.intellij.openapi.editor.EditorSettings;
+import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.DoubleClickListener;
 import com.intellij.ui.ToolbarDecorator;
+import com.intellij.ui.components.JBScrollPane;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -25,17 +32,29 @@ public class TemplateEditPane {
     protected GitCommitMessageHelperSettings settings;
     private TemplateEdit templateEdit;
     private AliasTable aliasTable;
+    private Editor templateEditor = null;
 
 
     public TemplateEditPane(GitCommitMessageHelperSettings settings) {
         this.settings = settings;
-        String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
-        templateEdit = new TemplateEdit(
-                templateEditPenel,
-                template,
-                this::getTemplateLanguage,
-                150);
         aliasTable = new AliasTable();
+        String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
+//        templateEdit = new TemplateEdit(
+//                templateEditPenel,
+//                template,
+//                this::getTemplateLanguage,
+//                150);
+
+        templateEditor = EditorFactory.getInstance().createEditor(EditorFactory.getInstance().createDocument(""), null, FileTypeManager.getInstance().getFileTypeByExtension("vm"), false);
+        EditorSettings templateEditorSettings = templateEditor.getSettings();
+        templateEditorSettings.setAdditionalLinesCount(0);
+        templateEditorSettings.setAdditionalColumnsCount(0);
+        templateEditorSettings.setLineMarkerAreaShown(false);
+        templateEditorSettings.setVirtualSpace(false);
+        JBScrollPane jbScrollPane = new JBScrollPane(templateEditor.getComponent());
+        jbScrollPane.setMaximumSize(new Dimension(150, 50));
+        templateEditPenel.add(jbScrollPane);
+        ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(template));
         typeEditPenel.add(
                 ToolbarDecorator.createDecorator(aliasTable)
                         .setAddAction(button -> aliasTable.addAlias())
@@ -58,6 +77,7 @@ public class TemplateEditPane {
         }.installOn(aliasTable);
         //init
     }
+
 
     public GitCommitMessageHelperSettings getSettings() {
         aliasTable.commit(settings);
