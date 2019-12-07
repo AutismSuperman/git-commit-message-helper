@@ -18,7 +18,6 @@ import java.util.Optional;
 
 public class TemplateEditPane {
     private JPanel mainPenel;
-    private JTabbedPane tabbedPane;
     private JPanel templateEditPenel;
     private JPanel typeEditPenel;
 
