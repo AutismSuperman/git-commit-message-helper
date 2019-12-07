@@ -29,7 +29,7 @@ public class TemplateEditPane {
 
 
     public TemplateEditPane(GitCommitMessageHelperSettings settings) {
-        settings = settings.clone();
+        this.settings = settings;
         String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
         templateEdit = new TemplateEdit(
                 templateEditPenel,
@@ -66,7 +66,7 @@ public class TemplateEditPane {
     }
 
     public void importFrom(GitCommitMessageHelperSettings settings) {
-        this.settings = settings.clone();
+        this.settings = settings;
         aliasTable.reset(settings);
     }
 
