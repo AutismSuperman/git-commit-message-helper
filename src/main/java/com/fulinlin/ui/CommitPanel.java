@@ -1,6 +1,6 @@
 package com.fulinlin.ui;
 
-import com.fulinlin.pojo.ChangeType;
+import com.fulinlin.model.ChangeType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VfsUtil;
 

@@ -1,6 +1,6 @@
 package com.fulinlin.ui;
 
-import com.fulinlin.pojo.ChangeType;
+import com.fulinlin.model.ChangeType;
 import org.apache.commons.lang.WordUtils;
 
 import static org.apache.commons.lang.StringUtils.isNotBlank;

@@ -1,4 +1,4 @@
-package com.fulinlin.pojo;
+package com.fulinlin.model;
 
 public enum ChangeType {
 

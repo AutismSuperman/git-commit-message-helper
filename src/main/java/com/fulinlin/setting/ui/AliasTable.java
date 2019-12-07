@@ -1,6 +1,6 @@
 package com.fulinlin.setting.ui;
 
-import com.fulinlin.pojo.TypeAlias;
+import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.ui.JBColor;

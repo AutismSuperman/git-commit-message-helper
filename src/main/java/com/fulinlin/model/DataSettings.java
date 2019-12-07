@@ -1,7 +1,6 @@
-package com.fulinlin.pojo;
+package com.fulinlin.model;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @program: git-commit-message-helper

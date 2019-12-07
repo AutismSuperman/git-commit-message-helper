@@ -1,9 +1,8 @@
 package com.fulinlin.setting.ui
 
-import com.fulinlin.pojo.TemplateLanguage
+import com.fulinlin.model.TemplateLanguage
 import com.intellij.openapi.editor.Editor
 import java.awt.BorderLayout
-import java.awt.GridBagConstraints
 import javax.swing.JPanel
 
 class TemplateEdit(private val splitPane: JPanel,

@@ -1,6 +1,6 @@
 package com.fulinlin.setting.ui;
 
-import com.fulinlin.pojo.TemplateLanguage;
+import com.fulinlin.model.TemplateLanguage;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;

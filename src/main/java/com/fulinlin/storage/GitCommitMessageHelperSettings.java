@@ -1,7 +1,7 @@
 package com.fulinlin.storage;
 
-import com.fulinlin.pojo.DataSettings;
-import com.fulinlin.pojo.TypeAlias;
+import com.fulinlin.model.DataSettings;
+import com.fulinlin.model.TypeAlias;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
@@ -13,10 +13,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @program: git-commit-message-helper
