@@ -53,14 +53,14 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     private void loadDefaultSettings() {
         dataSettings = new DataSettings();
         try {
-            String velocityTemplate = FileUtil.loadTextAndClose(GitCommitMessageHelperSettings.class.getResourceAsStream("/template/" + "defaultTemplate.vm"));
+            String velocityTemplate = "${question.content}\n\n${question.code}";
             dataSettings.setTemplate(velocityTemplate);
             List<TypeAlias> typeAliases = new LinkedList<>();
             //TODO init  typeAliases
             typeAliases.add(new TypeAlias("feature", "A new feature"));
             typeAliases.add(new TypeAlias("fix", "A bug fix"));
             dataSettings.setTypeAliases(typeAliases);
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("loadDefaultSettings failed", e);
         }
     }

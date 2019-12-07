@@ -24,6 +24,7 @@ import java.util.Optional;
 
 public class TemplateEditPane {
     private JPanel mainPenel;
+    private JTabbedPane tabbedPane;
     private JPanel templateEditPenel;
     private JPanel typeEditPenel;
 
@@ -35,15 +36,12 @@ public class TemplateEditPane {
 
 
     public TemplateEditPane(GitCommitMessageHelperSettings settings) {
+        //get setting
         this.settings = settings;
         aliasTable = new AliasTable();
         String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
-//        templateEdit = new TemplateEdit(
-//                templateEditPenel,
-//                template,
-//                this::getTemplateLanguage,
-//                150);
 
+        //init  templateEditor
         templateEditor = EditorFactory.getInstance().createEditor(EditorFactory.getInstance().createDocument(""), null, FileTypeManager.getInstance().getFileTypeByExtension("vm"), false);
         EditorSettings templateEditorSettings = templateEditor.getSettings();
         templateEditorSettings.setAdditionalLinesCount(0);
@@ -54,6 +52,8 @@ public class TemplateEditPane {
         jbScrollPane.setMaximumSize(new Dimension(150, 50));
         templateEditPenel.add(jbScrollPane);
         ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(template));
+
+        //init   typeEditPenel
         typeEditPenel.add(
                 ToolbarDecorator.createDecorator(aliasTable)
                         .setAddAction(button -> aliasTable.addAlias())
