@@ -8,6 +8,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.EditorSettings;
+import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.AnActionButton;
@@ -30,9 +31,8 @@ public class TemplateEditPane {
 
     //my  attribute
     protected GitCommitMessageHelperSettings settings;
-    private TemplateEdit templateEdit;
     private AliasTable aliasTable;
-    private Editor templateEditor = null;
+    private Editor templateEditor;
 
 
     public TemplateEditPane(GitCommitMessageHelperSettings settings) {
@@ -40,9 +40,12 @@ public class TemplateEditPane {
         this.settings = settings;
         aliasTable = new AliasTable();
         String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
-
         //init  templateEditor
-        templateEditor = EditorFactory.getInstance().createEditor(EditorFactory.getInstance().createDocument(""), null, FileTypeManager.getInstance().getFileTypeByExtension("vm"), false);
+        templateEditor = EditorFactory.getInstance().createEditor(
+                EditorFactory.getInstance().createDocument(""),
+                null,
+                FileTypeManager.getInstance().getFileTypeByExtension("vm"),
+                false);
         EditorSettings templateEditorSettings = templateEditor.getSettings();
         templateEditorSettings.setAdditionalLinesCount(0);
         templateEditorSettings.setAdditionalColumnsCount(0);
@@ -80,6 +83,7 @@ public class TemplateEditPane {
 
     public GitCommitMessageHelperSettings getSettings() {
         aliasTable.commit(settings);
+        settings.getDateSettings().setTemplate(templateEditor.getDocument().getText());
         return settings;
     }
 
@@ -94,13 +98,13 @@ public class TemplateEditPane {
     }
 
     public boolean isModified(GitCommitMessageHelperSettings data) {
-        if (!StringUtil.equals(settings.getDateSettings().getTemplate(), data.getDateSettings().getTemplate())) {
+       /* if (!StringUtil.equals(settings.getDateSettings().getTemplate(), data.getDateSettings().getTemplate())) {
             return true;
         }
         if (settings.getDateSettings().getTypeAliases() != data.getDateSettings().getTypeAliases()) {
             return true;
-        }
-        return false;
+        }*/
+        return true;
     }
 
 
