@@ -53,12 +53,26 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     private void loadDefaultSettings() {
         dataSettings = new DataSettings();
         try {
-            String velocityTemplate = "${question.content}\n\n${question.code}";
+            String velocityTemplate = "${type}(${scopr}): ${subject}\n" +
+                    "\n" +
+                    "${body}\n" +
+                    "\n" +
+                    "BREAKING CHANGE: ${changes}\n" +
+                    "\n" +
+                    "Closes ${closes}\n";
             dataSettings.setTemplate(velocityTemplate);
             List<TypeAlias> typeAliases = new LinkedList<>();
-            //TODO init  typeAliases
             typeAliases.add(new TypeAlias("feature", "A new feature"));
             typeAliases.add(new TypeAlias("fix", "A bug fix"));
+            typeAliases.add(new TypeAlias("docs", "Documentation only changes"));
+            typeAliases.add(new TypeAlias("style", "Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)"));
+            typeAliases.add(new TypeAlias("refactor", "A code change that neither fixes a bug nor adds a feature"));
+            typeAliases.add(new TypeAlias("perf", "A code change that improves performance"));
+            typeAliases.add(new TypeAlias("test", "Adding missing tests or correcting existing tests"));
+            typeAliases.add(new TypeAlias("build", "Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)"));
+            typeAliases.add(new TypeAlias("ci", "Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs)"));
+            typeAliases.add(new TypeAlias("chore", "Other changes that don't modify src or test files"));
+            typeAliases.add(new TypeAlias("revert", "Reverts a previous commit"));
             dataSettings.setTypeAliases(typeAliases);
         } catch (Exception e) {
             log.error("loadDefaultSettings failed", e);

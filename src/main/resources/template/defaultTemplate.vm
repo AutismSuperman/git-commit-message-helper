@@ -1,3 +1,22 @@
 #set($directoryRoot = "www" )
 #set($templateName = "index.vm" )
 #set($template = "$directoryRoot/$templateName" )
+
+feat(scope): dep
+
+xzcxz
+
+BREAKING CHANGE: ccccc
+
+Closes #22
+
+
+${type}(${scopr}): ${subject}
+
+${body}
+
+BREAKING CHANGE: ${changes}
+
+Closes ${closes}
+
+
