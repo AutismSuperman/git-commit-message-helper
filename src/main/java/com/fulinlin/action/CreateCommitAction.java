@@ -32,7 +32,7 @@ public class CreateCommitAction extends AnAction implements DumbAware {
         CommitDialog dialog = new CommitDialog(actionEvent.getProject(),settings);
         dialog.show();
         if (dialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
-            commitPanel.setCommitMessage(dialog.getCommitMessage().toString());
+            commitPanel.setCommitMessage(dialog.getCommitMessage(settings).toString());
         }
     }
 

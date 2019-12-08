@@ -33,7 +33,7 @@ public class VelocityUtils {
     public static String convert(String template, CommitTemplate commitTemplate) {
         StringWriter writer = new StringWriter();
         VelocityContext velocityContext = new VelocityContext();
-        velocityContext.put("type", commitTemplate.getBody());
+        velocityContext.put("type", commitTemplate.getType());
         velocityContext.put("scope", commitTemplate.getScope());
         velocityContext.put("subject", commitTemplate.getSubject());
         velocityContext.put("body", commitTemplate.getBody());

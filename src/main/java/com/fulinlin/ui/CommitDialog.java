@@ -25,8 +25,8 @@ public class CommitDialog extends DialogWrapper {
         return panel.getMainPanel();
     }
 
-    public CommitMessage getCommitMessage() {
-        return panel.getCommitMessage();
+    public CommitMessage getCommitMessage(GitCommitMessageHelperSettings settings) {
+        return panel.getCommitMessage(settings);
     }
 
 }

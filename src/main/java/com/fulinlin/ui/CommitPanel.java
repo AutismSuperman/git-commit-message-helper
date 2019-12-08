@@ -37,9 +37,10 @@ public class CommitPanel {
         return mainPanel;
     }
 
-    CommitMessage getCommitMessage() {
+    CommitMessage getCommitMessage(GitCommitMessageHelperSettings settings) {
         return new CommitMessage(
-                (ChangeType) changeType.getSelectedItem(),
+                settings,
+                (TypeAlias) changeType.getSelectedItem(),
                 (String) changeScope.getSelectedItem(),
                 shortDescription.getText().trim(),
                 longDescription.getText().trim(),
