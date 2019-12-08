@@ -4,8 +4,8 @@
     <vendor email="13103779727@163.com" url="https://github.com/AutismSuperman">FuLinLin</vendor>
     <description>
         <![CDATA[
-        <h1>提交信息生成插件</h1>
-        <p>Plugin GitHub address:<a href="https://github.com/RmondJone/Commit-Message-Plugin">https://github.com/RmondJone/Commit-Message-Plugin</a></p>
+        <h1>Help you git commit specification in idea </h1>
+        <p>Plugin GitHub address:<a href="https://github.com/AutismSuperman/git-commit-message-helper">https://github.com/AutismSuperman/git-commit-message-helper</a></p>
         ]]>
     </description>
 

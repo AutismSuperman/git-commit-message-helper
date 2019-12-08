@@ -89,7 +89,6 @@ public class TemplateEditPane {
         this.settings = settings;
         aliasTable.reset(settings);
         ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(settings.getDateSettings().getTemplate()));
-
     }
 
 
