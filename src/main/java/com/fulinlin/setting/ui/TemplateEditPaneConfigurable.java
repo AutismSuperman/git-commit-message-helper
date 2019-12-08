@@ -55,7 +55,7 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
 
     public void reset() {
         if (templateEditPane != null) {
-            templateEditPane.importFrom(settings);
+            templateEditPane.reset();
         }
     }
 

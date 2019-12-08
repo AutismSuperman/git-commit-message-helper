@@ -84,9 +84,8 @@ public class TemplateEditPane {
         return settings;
     }
 
-    public void importFrom(GitCommitMessageHelperSettings settings) {
-        this.settings = settings;
-        aliasTable.reset(settings);
+    public void reset() {
+
     }
 
     public boolean isSettingsModified(GitCommitMessageHelperSettings settings) {
