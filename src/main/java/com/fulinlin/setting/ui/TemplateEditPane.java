@@ -88,12 +88,12 @@ public class TemplateEditPane {
 
     }
 
-    public boolean isSettingsModified(GitCommitMessageHelperSettings settings) {
-        if (aliasTable.isModified(settings)) return true;
-        return !this.settings.equals(settings) || isModified(settings);
-    }
+//    public boolean isSettingsModified(GitCommitMessageHelperSettings settings) {
+//        if (aliasTable.isModified(settings)) return true;
+//        return !this.settings.equals(settings) || isModified(settings);
+//    }
 
-    public boolean isModified(GitCommitMessageHelperSettings data) {
+    public boolean isModified() {
        /* if (!StringUtil.equals(settings.getDateSettings().getTemplate(), data.getDateSettings().getTemplate())) {
             return true;
         }

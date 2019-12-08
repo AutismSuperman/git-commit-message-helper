@@ -61,7 +61,7 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
 
     @Override
     public boolean isModified() {
-        return templateEditPane != null && templateEditPane.isSettingsModified(settings);
+        return templateEditPane != null && templateEditPane.isModified();
     }
 
 
