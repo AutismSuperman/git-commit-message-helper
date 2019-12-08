@@ -1,15 +1,10 @@
 package com.fulinlin.ui;
 
-import com.fulinlin.model.ChangeType;
 import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.utils.VelocityUtils;
-import com.intellij.openapi.util.text.StringUtil;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.WordUtils;
-
-import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 /**
  * @author fulin

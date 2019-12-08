@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.EditorSettings;
 import com.intellij.openapi.fileTypes.FileTypeManager;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.DoubleClickListener;
 import com.intellij.ui.ToolbarDecorator;
@@ -34,7 +35,7 @@ public class TemplateEditPane {
 
     public TemplateEditPane(GitCommitMessageHelperSettings settings) {
         //get setting
-        this.settings = settings;
+        this.settings = settings.clone();
         aliasTable = new AliasTable();
         String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
         //init  templateEditor
@@ -84,23 +85,27 @@ public class TemplateEditPane {
         return settings;
     }
 
-    public void reset() {
+    public void reset(GitCommitMessageHelperSettings settings) {
+        this.settings = settings;
+        aliasTable.reset(settings);
+        ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(settings.getDateSettings().getTemplate()));
 
     }
 
-//    public boolean isSettingsModified(GitCommitMessageHelperSettings settings) {
-//        if (aliasTable.isModified(settings)) return true;
-//        return !this.settings.equals(settings) || isModified(settings);
-//    }
 
-    public boolean isModified() {
-       /* if (!StringUtil.equals(settings.getDateSettings().getTemplate(), data.getDateSettings().getTemplate())) {
+    public boolean isSettingsModified(GitCommitMessageHelperSettings settings) {
+        if (aliasTable.isModified(settings)) return true;
+        return !this.settings.equals(settings) || isModified(settings);
+    }
+
+    public boolean isModified(GitCommitMessageHelperSettings data) {
+        if (!StringUtil.equals(settings.getDateSettings().getTemplate(), templateEditor.getDocument().getText())) {
             return true;
         }
         if (settings.getDateSettings().getTypeAliases() != data.getDateSettings().getTypeAliases()) {
             return true;
-        }*/
-        return true;
+        }
+        return false;
     }
 
 

@@ -11,7 +11,8 @@ import javax.swing.*;
 
 /**
  * 这个类Settings 中的属性被创建的时候
- * User: fulin
+ *
+ * @author: fulin
  */
 public class TemplateEditPaneConfigurable implements SearchableConfigurable {
 
@@ -55,18 +56,18 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
 
     public void reset() {
         if (templateEditPane != null) {
-            templateEditPane.reset();
+            templateEditPane.reset(settings);
         }
     }
 
     @Override
     public boolean isModified() {
-        return templateEditPane != null && templateEditPane.isModified();
+        return templateEditPane != null && templateEditPane.isSettingsModified(settings);
     }
 
 
     @Override
     public void apply() {
-        settings.setDateSettings(templateEditPane.getSettings().getDateSettings());
+        this.settings = templateEditPane.getSettings().clone();
     }
 }

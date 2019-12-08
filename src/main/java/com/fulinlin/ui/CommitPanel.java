@@ -1,6 +1,5 @@
 package com.fulinlin.ui;
 
-import com.fulinlin.model.ChangeType;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.project.Project;
