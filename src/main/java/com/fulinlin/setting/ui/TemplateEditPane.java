@@ -1,6 +1,5 @@
 package com.fulinlin.setting.ui;
 
-import com.fulinlin.model.TemplateLanguage;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -8,9 +7,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.EditorSettings;
-import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.fileTypes.FileTypeManager;
-import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.DoubleClickListener;
 import com.intellij.ui.ToolbarDecorator;
@@ -110,10 +107,6 @@ public class TemplateEditPane {
 
     public JPanel getMainPenel() {
         return mainPenel;
-    }
-
-    public TemplateLanguage getTemplateLanguage() {
-        return TemplateLanguage.valueOf(String.valueOf(TemplateLanguage.vm.fileType));
     }
 
 

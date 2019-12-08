@@ -1,5 +1,6 @@
 package com.fulinlin.ui;
 
+import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import org.jetbrains.annotations.Nullable;
@@ -10,9 +11,9 @@ public class CommitDialog extends DialogWrapper {
 
     private final CommitPanel panel;
 
-    public CommitDialog(@Nullable Project project) {
+    public CommitDialog(@Nullable Project project, GitCommitMessageHelperSettings settings) {
         super(project);
-        panel = new CommitPanel(project);
+        panel = new CommitPanel(project,settings);
         setTitle("Commit");
         setOKButtonText("OK");
         init();

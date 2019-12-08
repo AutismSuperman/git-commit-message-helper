@@ -1,11 +1,14 @@
 package com.fulinlin.ui;
 
 import com.fulinlin.model.ChangeType;
+import com.fulinlin.model.TypeAlias;
+import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VfsUtil;
 
 import javax.swing.*;
 import java.io.File;
+import java.util.List;
 
 
 public class CommitPanel {
@@ -17,8 +20,10 @@ public class CommitPanel {
     private JTextField closedIssues;
     private JTextArea breakingChanges;
 
-    public CommitPanel(Project project) {
-        for (ChangeType type : ChangeType.values()) {
+    public CommitPanel(Project project, GitCommitMessageHelperSettings settings) {
+        //parameter
+        List<TypeAlias> typeAliases = settings.getDateSettings().getTypeAliases();
+        for (TypeAlias type : typeAliases) {
             changeType.addItem(type);
         }
         File workingDirectory = VfsUtil.virtualToIoFile(project.getBaseDir());

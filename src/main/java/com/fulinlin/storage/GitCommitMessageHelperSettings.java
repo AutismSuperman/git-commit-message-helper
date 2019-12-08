@@ -1,5 +1,6 @@
 package com.fulinlin.storage;
 
+import com.fulinlin.constant.GitCommitConstants;
 import com.fulinlin.model.DataSettings;
 import com.fulinlin.model.TypeAlias;
 import com.intellij.openapi.components.PersistentStateComponent;
@@ -53,14 +54,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     private void loadDefaultSettings() {
         dataSettings = new DataSettings();
         try {
-            String velocityTemplate = "${type}(${scopr}): ${subject}\n" +
-                    "\n" +
-                    "${body}\n" +
-                    "\n" +
-                    "BREAKING CHANGE: ${changes}\n" +
-                    "\n" +
-                    "Closes ${closes}\n";
-            dataSettings.setTemplate(velocityTemplate);
+            dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
             List<TypeAlias> typeAliases = new LinkedList<>();
             typeAliases.add(new TypeAlias("feature", "A new feature"));
             typeAliases.add(new TypeAlias("fix", "A bug fix"));
