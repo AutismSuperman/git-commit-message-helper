@@ -5,6 +5,8 @@ import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.utils.VelocityUtils;
+import com.intellij.openapi.util.text.StringUtil;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.WordUtils;
 
 import static org.apache.commons.lang.StringUtils.isNotBlank;
@@ -38,12 +40,26 @@ public class CommitMessage {
     ) {
 
         CommitTemplate commitTemplate = new CommitTemplate();
-        commitTemplate.setType(typeAlias.toString());
-        commitTemplate.setScope(changeScope);
-        commitTemplate.setSubject(shortDescription);
-        commitTemplate.setBody(longDescription);
-        commitTemplate.setChanges(breakingChanges);
-        commitTemplate.setCloses(closedIssues);
+        if (typeAlias != null) {
+            if (StringUtils.isNotBlank(typeAlias.getTitle())) {
+                commitTemplate.setType(typeAlias.getTitle());
+            }
+        }
+        if (StringUtils.isNotBlank(changeScope)) {
+            commitTemplate.setScope(changeScope);
+        }
+        if (StringUtils.isNotBlank(shortDescription)) {
+            commitTemplate.setSubject(shortDescription);
+        }
+        if (StringUtils.isNotBlank(longDescription)) {
+            commitTemplate.setBody(longDescription);
+        }
+        if (StringUtils.isNotBlank(breakingChanges)) {
+            commitTemplate.setChanges(breakingChanges);
+        }
+        if (StringUtils.isNotBlank(closedIssues)) {
+            commitTemplate.setCloses(closedIssues);
+        }
         String template = settings.getDateSettings().getTemplate();
         return VelocityUtils.convert(template, commitTemplate);
     }

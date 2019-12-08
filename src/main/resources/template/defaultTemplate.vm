@@ -1,22 +1,7 @@
-#set($directoryRoot = "www" )
-#set($templateName = "index.vm" )
-#set($template = "$directoryRoot/$templateName" )
+#if($type)${type}#end#if(${scope})(${scope})#end: #if(${subject})${subject}#end
 
-feat(scope): dep
+#if(${body})${body}#end
 
-xzcxz
+#if(${changes})BREAKING CHANGE: ${changes}#end
 
-BREAKING CHANGE: ccccc
-
-Closes #22
-
-
-${type}(${scopr}): ${subject}
-
-${body}
-
-BREAKING CHANGE: ${changes}
-
-Closes ${closes}
-
-
+#if(${closes})Closes ${closes}#end
