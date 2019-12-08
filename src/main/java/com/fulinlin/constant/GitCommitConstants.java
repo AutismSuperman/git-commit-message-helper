@@ -7,11 +7,11 @@ package com.fulinlin.constant;
  **/
 public class GitCommitConstants {
     public static final String DEFAULT_TEMPLATE = "#if($type)${type}#end#if(${scope})(${scope})#end: #if(${subject})${subject}#end\n" +
-            "\n" +
+            "${newline}\n" +
             "#if(${body})${body}#end\n" +
-            "\n" +
+            "${newline}\n" +
             "#if(${changes})BREAKING CHANGE: ${changes}#end\n" +
-            "\n" +
+            "${newline}\n" +
             "#if(${closes})Closes ${closes}#end\n";
 
 }

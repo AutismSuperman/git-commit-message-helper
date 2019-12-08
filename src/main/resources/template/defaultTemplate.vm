@@ -1,7 +1,7 @@
 #if($type)${type}#end#if(${scope})(${scope})#end: #if(${subject})${subject}#end
-
+${newline}
 #if(${body})${body}#end
-
+${newline}
 #if(${changes})BREAKING CHANGE: ${changes}#end
-
+${newline}
 #if(${closes})Closes ${closes}#end
