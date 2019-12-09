@@ -11,11 +11,11 @@ Install directly from the IDE plugin manager (File > Settings > Plugins > Browse
 
 If you want to change the type of submission, you can change it in settings
 
-![](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/settings-1.png)
+![](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/settings-2.png)
 
 If you want to personalize your submission template can be set in the settings, the template engine here uses velocity
 
-![](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/settings-2.png)
+![](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/settings-1.png)
 
 # License
 Licensed under the  [Apache License](http://www.apache.org/licenses/LICENSE-2.0), Version 2.0 (the "License"); you may not use this file except in compliance with the License. 
