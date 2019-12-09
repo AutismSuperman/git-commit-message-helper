@@ -13,7 +13,7 @@ import java.util.List;
 public class CommitPanel {
     private JPanel mainPanel;
     private JComboBox changeType;
-    private JComboBox changeScope;
+    private JTextField changeScope;
     private JTextField shortDescription;
     private JTextArea longDescription;
     private JTextField closedIssues;
@@ -25,11 +25,11 @@ public class CommitPanel {
         for (TypeAlias type : typeAliases) {
             changeType.addItem(type);
         }
-        File workingDirectory = VfsUtil.virtualToIoFile(project.getBaseDir());
+       /* fix fulin  File workingDirectory = VfsUtil.virtualToIoFile(project.getBaseDir());
         Command.Result result = new Command(workingDirectory, "git log --all --format=%s | grep -Eo '^[a-z]+(\\(.*\\)):.*$' | sed 's/^.*(\\(.*\\)):.*$/\\1/' | sort -n | uniq").execute();
         if (result.isSuccess()) {
             result.getOutput().forEach(changeScope::addItem);
-        }
+        }*/
     }
 
     JPanel getMainPanel() {
@@ -40,7 +40,7 @@ public class CommitPanel {
         return new CommitMessage(
                 settings,
                 (TypeAlias) changeType.getSelectedItem(),
-                (String) changeScope.getSelectedItem(),
+                (String) changeScope.getText().trim(),
                 shortDescription.getText().trim(),
                 longDescription.getText().trim(),
                 closedIssues.getText().trim(),
