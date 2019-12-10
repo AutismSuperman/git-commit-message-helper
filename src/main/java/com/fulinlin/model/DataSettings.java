@@ -26,4 +26,6 @@ public class DataSettings {
     public void setTypeAliases(List<TypeAlias> typeAliases) {
         this.typeAliases = typeAliases;
     }
+
+
 }

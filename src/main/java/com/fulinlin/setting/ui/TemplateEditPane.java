@@ -1,5 +1,6 @@
 package com.fulinlin.setting.ui;
 
+import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -18,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -94,14 +96,14 @@ public class TemplateEditPane {
 
     public boolean isSettingsModified(GitCommitMessageHelperSettings settings) {
         if (aliasTable.isModified(settings)) return true;
-        return !this.settings.equals(settings) || isModified(settings);
+        return isModified(settings);
     }
 
     public boolean isModified(GitCommitMessageHelperSettings data) {
         if (!StringUtil.equals(settings.getDateSettings().getTemplate(), templateEditor.getDocument().getText())) {
             return true;
         }
-        if (settings.getDateSettings().getTypeAliases() != data.getDateSettings().getTypeAliases()) {
+        if (settings.getDateSettings().getTypeAliases() == data.getDateSettings().getTypeAliases()) {
             return true;
         }
         return false;

@@ -1,6 +1,8 @@
 package com.fulinlin.setting.ui;
 
+import com.fulinlin.GitCommitMessageHelper;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.intellij.openapi.components.ApplicationComponent;
 import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.options.SearchableConfigurable;
 import org.jetbrains.annotations.Nls;
@@ -19,6 +21,8 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
     private TemplateEditPane templateEditPane;
 
     private GitCommitMessageHelperSettings settings;
+
+
 
     public TemplateEditPaneConfigurable() {
         settings = ServiceManager.getService(GitCommitMessageHelperSettings.class);
