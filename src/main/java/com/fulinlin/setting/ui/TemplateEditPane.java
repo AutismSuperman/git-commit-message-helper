@@ -88,7 +88,7 @@ public class TemplateEditPane {
     }
 
     public void reset(GitCommitMessageHelperSettings settings) {
-        this.settings = settings;
+        this.settings = settings.clone();
         aliasTable.reset(settings);
         ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(settings.getDateSettings().getTemplate()));
     }
