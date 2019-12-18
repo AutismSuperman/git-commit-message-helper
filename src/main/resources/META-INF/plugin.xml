@@ -2,23 +2,64 @@
     <id>commit-message-helper-idea-plugin</id>
     <name>Git Commit Message Helper</name>
     <vendor email="13103779727@163.com" url="https://github.com/AutismSuperman">FuLinLin</vendor>
+    <version>1.0.0</version>
     <description>
         <![CDATA[
-        <h1>A plugin that helps you standardize submissions</h1>
-        <p>This plugin is an upgraded version of the source idea plugin git-commit-template</p>
-        <p>adding a series of personalized configurations.</p>
-        <h1>Usage</h1>
-        <p><img src="https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/operation.gif" alt="" style="width: 100%;height: 100%;objec-fit: cover;"></p>
-        <p>If you want to change the type of submission, you can change it in settings</p>
-        <p><img src="https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/settings-2.png" alt="" style="width: 100%;height: 100%;objec-fit: cover;"></p>
-        <p>If you want to personalize your submission template can be set in the settings</p>
-        <p>the template engine here uses velocity</p>
-        <p><img src="https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/settings-1.png" alt="" style="width: 100%;height: 100%;objec-fit: cover;"></p>
-        <p>Plugin GitHub address:<a href="https://github.com/AutismSuperman/git-commit-message-helper">git-commit-message-helper</a></p>
+             <div>
+                <h2>Introduction</h2>
+                <br>
+                <ul>
+                    <li>A plugin that helps you standardize submissions</li>
+                    <li>This plugin is an upgraded version of the source idea plugin git-commit-template,adding a series of
+                        personalized configurations.
+                    </li>
+                </ul>
+                <ul>
+                    <li>一个可帮助您标准化提交内容的插件</li>
+                    <li>该插件是源自git-commit-template的加强版,添加一系列个性化的配置</li>
+                </ul>
+            </div>
+            <div>
+                <h2>How to use</h2>
+                <br>
+                <p><img src="https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/operation.gif"
+                        alt="operation">
+                </p>
+            </div>
+            <br>
+            <div>
+                <h2>Configuration</h2>
+                <p>
+                    If you want to change the type of submission.You can open the following location: </p>
+                <p> Configuration path: File -> settings->Other Settings-> CitCommitMessageHelper->type</p>
+
+                <p>
+                    <img src="https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/settings-2.png"
+                         alt="settings-2">
+                </p>
+                <p>If you want to personalize your submission template.You can open the following location: </p>
+                <p> Configuration path: File -> settings->Other Settings-> CitCommitMessageHelper->template </p>
+
+                <p><img src="https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/settings-1.png"
+                        alt="settings-1">
+                </p>
+            </div>
+
         ]]>
     </description>
 
-     <idea-version since-build="171"/>
+    <change-notes><![CDATA[
+            <ul>
+              <li>version 1.0.0<br>
+                 personalized submission type<br>
+                 personalized submission template<br>
+              </li>
+           </ul>
+    ]]>
+    </change-notes>
+
+
+    <idea-version since-build="171"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->

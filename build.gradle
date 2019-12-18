@@ -26,10 +26,14 @@ dependencies {
 intellij {
     version 'IU-2017.1'
 //    version 'IU-2019.3'
+    pluginName 'Git Commit Message Helper'
     updateSinceUntilBuild false
 }
 patchPluginXml {
     changeNotes """
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>"""
+         <ul>
+              <li>personalized submission type<br></li>
+              <li>personalized submission template</li>
+         </ul>
+     """
 }
