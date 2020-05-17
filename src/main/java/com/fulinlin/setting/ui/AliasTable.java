@@ -36,6 +36,7 @@ public class AliasTable extends JBTable {
     public AliasTable() {
         setModel(myTableModel);
         TableColumn column = getColumnModel().getColumn(NAME_COLUMN);
+        TableColumn valueColumn = getColumnModel().getColumn(VALUE_COLUMN);
         column.setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -47,7 +48,19 @@ public class AliasTable extends JBTable {
                 return component;
             }
         });
+        setColumnSize(column, 150,250,150);
+        setColumnSize(valueColumn, 550,750,550);
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    }
+
+
+    /**
+     * Set  Something  ColumnSize
+     */
+    public static void setColumnSize(TableColumn column, int preferedWidth, int maxWidth, int minWidth) {
+        column.setPreferredWidth(preferedWidth);
+        column.setMaxWidth(maxWidth);
+        column.setMinWidth(minWidth);
     }
 
 
@@ -174,6 +187,7 @@ public class AliasTable extends JBTable {
             return !name.isEmpty() && !value.isEmpty();
         }
     }
+
 
     /**
      * MyTableModel
