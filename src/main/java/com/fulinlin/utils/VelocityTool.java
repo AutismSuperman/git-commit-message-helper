@@ -7,7 +7,7 @@ import org.apache.commons.lang.StringUtils;
  */
 public class VelocityTool extends StringUtils {
 
-    private static String[] numsAry = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
+    private static final String[] numsAry = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
 
     public static String camelCaseName(String underscoreName) {
 
@@ -15,7 +15,7 @@ public class VelocityTool extends StringUtils {
             underscoreName = underscoreName.replace(" ", "");
             StringBuilder result = new StringBuilder();
             if (isNumeric(underscoreName.substring(0, 1))) {
-                underscoreName = numsAry[Integer.valueOf(underscoreName.substring(0, 1))] + "-" + underscoreName.substring(1);
+                underscoreName = numsAry[Integer.parseInt(underscoreName.substring(0, 1))] + "-" + underscoreName.substring(1);
             }
             boolean first = true;
             boolean flag = false;
