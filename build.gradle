@@ -24,8 +24,8 @@ dependencies {
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-    version 'IU-2017.1'
-//    version 'IU-2019.3'
+//    version 'IU-2017.1'
+    version 'IU-2020.1'
     pluginName 'Git Commit Message Helper'
     updateSinceUntilBuild false
 }
