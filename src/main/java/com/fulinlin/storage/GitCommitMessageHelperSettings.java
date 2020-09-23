@@ -54,7 +54,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         try {
             dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
             List<TypeAlias> typeAliases = new LinkedList<>();
-            typeAliases.add(new TypeAlias("feature", "A new feature"));
+            typeAliases.add(new TypeAlias("feat", "A new feature"));
             typeAliases.add(new TypeAlias("fix", "A bug fix"));
             typeAliases.add(new TypeAlias("docs", "Documentation only changes"));
             typeAliases.add(new TypeAlias("style", "Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)"));
