@@ -1,7 +1,7 @@
-package com.fulinlin.action;
+package com.chivenh.action;
 
-import com.fulinlin.storage.GitCommitMessageHelperSettings;
-import com.fulinlin.ui.CommitDialog;
+import com.chivenh.storage.GitCommitMessageHelperSettings;
+import com.chivenh.ui.CommitDialog;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.components.ServiceManager;

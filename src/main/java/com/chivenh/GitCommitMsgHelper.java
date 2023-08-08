@@ -1,4 +1,4 @@
-package com.fulinlin;
+package com.chivenh;
 
 import com.intellij.openapi.components.ApplicationComponent;
 import org.jetbrains.annotations.NotNull;
@@ -8,9 +8,9 @@ import org.jetbrains.annotations.NotNull;
  * @author: fulin
  * @create: 2019-12-03 16:33
  **/
-public class GitCommitMessageHelper implements ApplicationComponent {
+public class GitCommitMsgHelper implements ApplicationComponent {
 
-    public GitCommitMessageHelper() {
+    public GitCommitMsgHelper() {
     }
 
     @Override
@@ -24,7 +24,7 @@ public class GitCommitMessageHelper implements ApplicationComponent {
     @Override
     @NotNull
     public String getComponentName() {
-        return "GitCommitMessageHelper";
+        return "GitCommitMsgHelper";
     }
 
 }

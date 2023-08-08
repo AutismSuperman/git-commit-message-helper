@@ -1,4 +1,4 @@
-package com.fulinlin.setting.ui;
+package com.chivenh.setting.ui;
 
 import com.intellij.openapi.ui.DialogWrapper;
 import org.jetbrains.annotations.Nullable;

@@ -1,4 +1,4 @@
-package com.fulinlin.model;
+package com.chivenh.model;
 
 import java.util.List;
 

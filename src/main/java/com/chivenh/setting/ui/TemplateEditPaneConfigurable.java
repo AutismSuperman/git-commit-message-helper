@@ -1,6 +1,6 @@
-package com.fulinlin.setting.ui;
+package com.chivenh.setting.ui;
 
-import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.chivenh.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.options.SearchableConfigurable;
 import org.jetbrains.annotations.Nls;

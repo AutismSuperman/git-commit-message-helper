@@ -1,4 +1,4 @@
-package com.fulinlin.utils;
+package com.chivenh.utils;
 
 import org.apache.commons.lang.StringUtils;
 

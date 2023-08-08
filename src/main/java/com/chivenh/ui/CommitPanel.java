@@ -1,12 +1,10 @@
-package com.fulinlin.ui;
+package com.chivenh.ui;
 
-import com.fulinlin.model.TypeAlias;
-import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.chivenh.model.TypeAlias;
+import com.chivenh.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VfsUtil;
 
 import javax.swing.*;
-import java.io.File;
 import java.util.List;
 
 

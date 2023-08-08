@@ -1,7 +1,6 @@
-package com.fulinlin.setting.ui;
+package com.chivenh.setting.ui;
 
-import com.fulinlin.model.TypeAlias;
-import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.chivenh.storage.GitCommitMessageHelperSettings;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -19,7 +18,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.util.List;
 import java.util.Optional;
 
 

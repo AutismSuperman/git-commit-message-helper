@@ -1,9 +1,9 @@
-package com.fulinlin.ui;
+package com.chivenh.ui;
 
-import com.fulinlin.model.CommitTemplate;
-import com.fulinlin.model.TypeAlias;
-import com.fulinlin.storage.GitCommitMessageHelperSettings;
-import com.fulinlin.utils.VelocityUtils;
+import com.chivenh.model.CommitTemplate;
+import com.chivenh.model.TypeAlias;
+import com.chivenh.storage.GitCommitMessageHelperSettings;
+import com.chivenh.utils.VelocityUtils;
 import org.apache.commons.lang.StringUtils;
 
 /**

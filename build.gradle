@@ -7,12 +7,14 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
-group 'com.fulinlin'
+group 'com.chivenh'
 version '1.0.0'
 
 sourceCompatibility = 1.8
 
 repositories {
+    maven { url "https://www.jetbrains.com/intellij-repository/releases" }
+    maven { url "https://cache-redirector.jetbrains.com/intellij-dependencies" }
     mavenCentral()
 }
 
@@ -26,7 +28,7 @@ dependencies {
 intellij {
 //    version 'IU-2017.1'
     version 'IU-2020.1'
-    pluginName 'Git Commit Message Helper'
+    pluginName 'Git Commit Msg Helper'
     updateSinceUntilBuild false
 }
 patchPluginXml {

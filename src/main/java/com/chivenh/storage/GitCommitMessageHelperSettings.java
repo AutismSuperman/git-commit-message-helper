@@ -1,8 +1,8 @@
-package com.fulinlin.storage;
+package com.chivenh.storage;
 
-import com.fulinlin.constant.GitCommitConstants;
-import com.fulinlin.model.DataSettings;
-import com.fulinlin.model.TypeAlias;
+import com.chivenh.constant.GitCommitConstants;
+import com.chivenh.model.DataSettings;
+import com.chivenh.model.TypeAlias;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;

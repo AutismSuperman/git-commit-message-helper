@@ -1,4 +1,4 @@
-package com.fulinlin.model;
+package com.chivenh.model;
 
 /**
  * @program: git-commit-message-helper

@@ -1,7 +1,7 @@
-package com.fulinlin.setting.ui;
+package com.chivenh.setting.ui;
 
-import com.fulinlin.model.TypeAlias;
-import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.chivenh.model.TypeAlias;
+import com.chivenh.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.table.JBTable;

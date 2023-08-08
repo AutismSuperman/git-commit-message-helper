@@ -1,4 +1,4 @@
-package com.fulinlin.model;
+package com.chivenh.model;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;

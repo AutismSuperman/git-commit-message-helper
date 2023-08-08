@@ -1,6 +1,6 @@
-package com.fulinlin.ui;
+package com.chivenh.ui;
 
-import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.chivenh.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import org.jetbrains.annotations.Nullable;

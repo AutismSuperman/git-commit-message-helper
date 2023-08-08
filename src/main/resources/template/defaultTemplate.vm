@@ -1,4 +1,4 @@
 #if($type)${type}#end#if($scope)(${scope})#end: #if($subject)${subject}#end
 #if($body)${newline}${newline}${body}#end
-#if($changes)${newline}${newline}BREAKING CHANGE: ${changes}#end
-#if($closes)${newline}${newline}Closes ${closes}#end
+#if($changes)${newline}${newline}不兼容变更: ${changes}#end
+#if($closes)${newline}${newline}解决工单: ${closes}#end

@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>commit-message-helper-idea-plugin</id>
     <name>Git Commit Message Helper</name>
-    <vendor email="13103779727@163.com" url="https://github.com/AutismSuperman">FuLinLin</vendor>
+    <vendor url="https://github.com/Chivenh/git-commit-msg-helper.git">Chivenh</vendor>
     <version>1.0.0</version>
     <description>
         <![CDATA[
@@ -10,19 +10,19 @@
                 <br>
                 <ul>
                     <li>A plugin that helps you standardize submissions</li>
-                    <li>This plugin is an upgraded version of the source idea plugin git-commit-template,adding a series of
+                    <li>This plugin is an upgraded version of the source idea plugin git-commit-message-helper,adding a series of
                         personalized configurations.
                     </li>
                 </ul>
                 <ul>
                     <li>一个可帮助您标准化提交内容的插件</li>
-                    <li>该插件是源自git-commit-template的加强版,添加一系列个性化的配置</li>
+                    <li>该插件是源自git-commit-message-helper的加强版,添加一系列个性化的配置</li>
                 </ul>
             </div>
             <div>
                 <h2>How to use</h2>
                 <br>
-                <p><img src="https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/operation.gif"
+                <p><img src="https://raw.githubusercontent.com/Chivenh/git-commit-msg-helper/57bef35008d113e949ebad9659fbc403e24ab18d/image/operation.gif"
                         alt="operation">
                 </p>
             </div>
@@ -34,13 +34,13 @@
                 <p> Configuration path: File -> settings->Other Settings-> CitCommitMessageHelper->type</p>
 
                 <p>
-                    <img src="https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/settings-2.png"
+                    <img src="https://raw.githubusercontent.com/Chivenh/git-commit-msg-helper/57bef35008d113e949ebad9659fbc403e24ab18d/image/settings-2.png"
                          alt="settings-2">
                 </p>
                 <p>If you want to personalize your submission template.You can open the following location: </p>
                 <p> Configuration path: File -> settings->Other Settings-> CitCommitMessageHelper->template </p>
 
-                <p><img src="https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/image/settings-1.png"
+                <p><img src="https://raw.githubusercontent.com/Chivenh/git-commit-msg-helper/57bef35008d113e949ebad9659fbc403e24ab18d/image/settings-1.png"
                         alt="settings-1">
                 </p>
             </div>
@@ -59,7 +59,7 @@
     </change-notes>
 
 
-    <idea-version since-build="171"/>
+    <idea-version since-build="173.0"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -69,21 +69,21 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
-        <applicationService serviceImplementation="com.fulinlin.storage.GitCommitMessageHelperSettings"/>
-        <applicationConfigurable instance="com.fulinlin.setting.ui.TemplateEditPaneConfigurable"/>
+        <applicationService serviceImplementation="com.chivenh.storage.GitCommitMessageHelperSettings"/>
+        <applicationConfigurable instance="com.chivenh.setting.ui.TemplateEditPaneConfigurable"/>
     </extensions>
 
     <application-components>
         <!-- Add your application components here -->
         <component>
-            <implementation-class>com.fulinlin.setting.ui.TemplateEditPaneConfigurable</implementation-class>
+            <implementation-class>com.chivenh.setting.ui.TemplateEditPaneConfigurable</implementation-class>
         </component>
     </application-components>
 
     <actions>
-        <action id="Commit.Button" class="com.fulinlin.action.CreateCommitAction"
-                text="Create Commit Message"
-                description="Create commit message"
+        <action id="Commit.Button" class="com.chivenh.action.CreateCommitAction"
+                text="Create Commit Msg"
+                description="Create commit Msg"
                 icon="PluginIcons.ICON">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
         </action>
