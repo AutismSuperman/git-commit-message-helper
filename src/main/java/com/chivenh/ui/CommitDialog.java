@@ -1,6 +1,6 @@
 package com.chivenh.ui;
 
-import com.chivenh.storage.GitCommitMessageHelperSettings;
+import com.chivenh.storage.GitCommitMsgHelperSettings;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import org.jetbrains.annotations.Nullable;
@@ -11,7 +11,7 @@ public class CommitDialog extends DialogWrapper {
 
     private final CommitPanel panel;
 
-    public CommitDialog(@Nullable Project project, GitCommitMessageHelperSettings settings) {
+    public CommitDialog(@Nullable Project project, GitCommitMsgHelperSettings settings) {
         super(project);
         panel = new CommitPanel(project,settings);
         setTitle("Commit");
@@ -25,7 +25,7 @@ public class CommitDialog extends DialogWrapper {
         return panel.getMainPanel();
     }
 
-    public CommitMessage getCommitMessage(GitCommitMessageHelperSettings settings) {
+    public CommitMessage getCommitMessage(GitCommitMsgHelperSettings settings) {
         return panel.getCommitMessage(settings);
     }
 

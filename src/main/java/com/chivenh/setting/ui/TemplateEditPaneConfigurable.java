@@ -1,6 +1,6 @@
 package com.chivenh.setting.ui;
 
-import com.chivenh.storage.GitCommitMessageHelperSettings;
+import com.chivenh.storage.GitCommitMsgHelperSettings;
 import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.options.SearchableConfigurable;
 import org.jetbrains.annotations.Nls;
@@ -12,23 +12,23 @@ import javax.swing.*;
 /**
  * 这个类Settings 中的属性被创建的时候
  *
- * @author: fulin
+ * @author Chivenh
  */
 public class TemplateEditPaneConfigurable implements SearchableConfigurable {
 
     private TemplateEditPane templateEditPane;
 
-    private GitCommitMessageHelperSettings settings;
+    private GitCommitMsgHelperSettings settings;
 
 
     public TemplateEditPaneConfigurable() {
-        settings = ServiceManager.getService(GitCommitMessageHelperSettings.class);
+        settings = ServiceManager.getService(GitCommitMsgHelperSettings.class);
     }
 
     @NotNull
     @Override
     public String getId() {
-        return "plugins.gitcommitmessagehelper";
+        return "plugins.gitcommitmsghelper";
     }
 
 
@@ -45,7 +45,7 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
     @Nullable
     @Override
     public String getHelpTopic() {
-        return "help.gitcommitmessagehelper.configuration";
+        return "help.gitcommitmsghelper.configuration";
     }
 
     @Nls(capitalization = Nls.Capitalization.Title)
@@ -55,6 +55,7 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
     }
 
 
+    @Override
     public void reset() {
         if (templateEditPane != null) {
             templateEditPane.reset(settings);

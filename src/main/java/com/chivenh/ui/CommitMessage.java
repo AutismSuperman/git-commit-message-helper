@@ -2,7 +2,7 @@ package com.chivenh.ui;
 
 import com.chivenh.model.CommitTemplate;
 import com.chivenh.model.TypeAlias;
-import com.chivenh.storage.GitCommitMessageHelperSettings;
+import com.chivenh.storage.GitCommitMsgHelperSettings;
 import com.chivenh.utils.VelocityUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -13,7 +13,7 @@ public class CommitMessage {
     private static final int MAX_LINE_LENGTH = 72; // https://stackoverflow.com/a/2120040/5138796
     private final String content;
 
-    public CommitMessage(GitCommitMessageHelperSettings settings, TypeAlias typeAlias, String changeScope, String shortDescription, String longDescription, String closedIssues, String breakingChanges) {
+    public CommitMessage(GitCommitMsgHelperSettings settings, TypeAlias typeAlias, String changeScope, String shortDescription, String longDescription, String closedIssues, String breakingChanges) {
         this.content = buildContent(
                 settings,
                 typeAlias,
@@ -25,7 +25,7 @@ public class CommitMessage {
         );
     }
 
-    private String buildContent(GitCommitMessageHelperSettings settings,
+    private String buildContent(GitCommitMsgHelperSettings settings,
                                 TypeAlias typeAlias,
                                 String changeScope,
                                 String shortDescription,

@@ -22,7 +22,7 @@
             <div>
                 <h2>How to use</h2>
                 <br>
-                <p><img src="https://raw.githubusercontent.com/Chivenh/git-commit-msg-helper/57bef35008d113e949ebad9659fbc403e24ab18d/image/operation.gif"
+                <p><img src="https://raw.githubusercontent.com/Chivenh/git-commit-msg-helper/main/image/operation.gif"
                         alt="operation">
                 </p>
             </div>
@@ -34,13 +34,13 @@
                 <p> Configuration path: File -> settings->Other Settings-> GitCommitMessageHelper->type</p>
 
                 <p>
-                    <img src="https://raw.githubusercontent.com/Chivenh/git-commit-msg-helper/57bef35008d113e949ebad9659fbc403e24ab18d/image/settings-2.png"
+                    <img src="https://raw.githubusercontent.com/Chivenh/git-commit-msg-helper/main/image/settings-2.png"
                          alt="settings-2">
                 </p>
                 <p>If you want to personalize your submission template.You can open the following location: </p>
                 <p> Configuration path: File -> settings->Other Settings-> CitCommitMessageHelper->template </p>
 
-                <p><img src="https://raw.githubusercontent.com/Chivenh/git-commit-msg-helper/57bef35008d113e949ebad9659fbc403e24ab18d/image/settings-1.png"
+                <p><img src="https://raw.githubusercontent.com/Chivenh/git-commit-msg-helper/main/image/settings-1.png"
                         alt="settings-1">
                 </p>
             </div>
@@ -58,7 +58,7 @@
     </change-notes>
 
 
-    <idea-version since-build="173.0"/>
+    <idea-version since-build="202.0"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -68,7 +68,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
-        <applicationService serviceImplementation="com.chivenh.storage.GitCommitMessageHelperSettings"/>
+        <applicationService serviceImplementation="com.chivenh.storage.GitCommitMsgHelperSettings"/>
         <applicationConfigurable instance="com.chivenh.setting.ui.TemplateEditPaneConfigurable"/>
     </extensions>
 

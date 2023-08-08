@@ -1,7 +1,7 @@
 package com.chivenh.setting.ui;
 
 import com.chivenh.model.TypeAlias;
-import com.chivenh.storage.GitCommitMessageHelperSettings;
+import com.chivenh.storage.GitCommitMsgHelperSettings;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.table.JBTable;
@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * @program: git-commit-message-helper
- * @author: fulin
+ * @author Chivenh
  * @create: 2019-12-06 21:21
  **/
 public class AliasTable extends JBTable {
@@ -128,7 +128,7 @@ public class AliasTable extends JBTable {
     }
 
 
-    public void commit(GitCommitMessageHelperSettings settings) {
+    public void commit(GitCommitMsgHelperSettings settings) {
         settings.getDateSettings().setTypeAliases(new LinkedList<>(typeAliases));
     }
 
@@ -136,7 +136,7 @@ public class AliasTable extends JBTable {
         myTableModel.fireTableDataChanged();
     }
 
-    public void reset(GitCommitMessageHelperSettings settings) {
+    public void reset(GitCommitMsgHelperSettings settings) {
         obtainAliases(typeAliases, settings);
         myTableModel.fireTableDataChanged();
     }
@@ -152,7 +152,7 @@ public class AliasTable extends JBTable {
         return -1;
     }
 
-    private void obtainAliases(@NotNull List<TypeAlias> aliases, GitCommitMessageHelperSettings settings) {
+    private void obtainAliases(@NotNull List<TypeAlias> aliases, GitCommitMsgHelperSettings settings) {
         aliases.clear();
         aliases.addAll(settings.getDateSettings().getTypeAliases());
     }
@@ -172,7 +172,7 @@ public class AliasTable extends JBTable {
         return true;
     }
 
-    public boolean isModified(GitCommitMessageHelperSettings settings) {
+    public boolean isModified(GitCommitMsgHelperSettings settings) {
         final List<TypeAlias> aliases = new LinkedList<>();
         obtainAliases(aliases, settings);
         return !aliases.equals(typeAliases);

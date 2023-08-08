@@ -1,6 +1,6 @@
 package com.chivenh.action;
 
-import com.chivenh.storage.GitCommitMessageHelperSettings;
+import com.chivenh.storage.GitCommitMsgHelperSettings;
 import com.chivenh.ui.CommitDialog;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -17,10 +17,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CreateCommitAction extends AnAction implements DumbAware {
 
-    private GitCommitMessageHelperSettings settings;
+    private GitCommitMsgHelperSettings settings;
 
     public CreateCommitAction() {
-        this.settings = ServiceManager.getService(GitCommitMessageHelperSettings.class);
+        this.settings = ServiceManager.getService(GitCommitMsgHelperSettings.class);
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.chivenh.model;
 
 /**
  * @program: git-commit-message-helper
- * @author: fulin
+ * @author Chivenh
  * @create: 2019-12-08 11:36
  **/
 public class CommitTemplate {

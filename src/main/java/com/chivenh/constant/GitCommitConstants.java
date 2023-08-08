@@ -2,7 +2,7 @@ package com.chivenh.constant;
 
 /**
  * @program: git-commit-message-helper
- * @author: fulin
+ * @author Chivenh
  * @create: 2019-12-08 11:37
  **/
 public class GitCommitConstants {

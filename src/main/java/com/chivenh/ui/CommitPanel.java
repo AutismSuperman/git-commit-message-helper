@@ -1,7 +1,7 @@
 package com.chivenh.ui;
 
 import com.chivenh.model.TypeAlias;
-import com.chivenh.storage.GitCommitMessageHelperSettings;
+import com.chivenh.storage.GitCommitMsgHelperSettings;
 import com.intellij.openapi.project.Project;
 
 import javax.swing.*;
@@ -17,7 +17,7 @@ public class CommitPanel {
     private JTextField closedIssues;
     private JTextArea breakingChanges;
 
-    public CommitPanel(Project project, GitCommitMessageHelperSettings settings) {
+    public CommitPanel(Project project, GitCommitMsgHelperSettings settings) {
         //parameter
         List<TypeAlias> typeAliases = settings.getDateSettings().getTypeAliases();
         for (TypeAlias type : typeAliases) {
@@ -34,7 +34,7 @@ public class CommitPanel {
         return mainPanel;
     }
 
-    CommitMessage getCommitMessage(GitCommitMessageHelperSettings settings) {
+    CommitMessage getCommitMessage(GitCommitMsgHelperSettings settings) {
         return new CommitMessage(
                 settings,
                 (TypeAlias) changeType.getSelectedItem(),

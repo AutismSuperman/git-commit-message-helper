@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * @program: git-commit-message-helper
- * @author: fulin
+ * @author Chivenh
  * @create: 2019-12-05 21:22
  **/
 public class DataSettings {

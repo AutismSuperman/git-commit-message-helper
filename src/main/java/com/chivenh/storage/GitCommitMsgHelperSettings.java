@@ -17,14 +17,14 @@ import java.util.List;
 
 /**
  * @program: git-commit-message-helper
- * @author: fulin
+ * @author Chivenh
  * @create: 2019-12-05 21:13
  **/
 @State(name = "GitCommitMsgHelperSettings", storages = {@Storage("$APP_CONFIG$/GitCommitMsgHelperSettings-settings.xml")})
-public class GitCommitMessageHelperSettings implements PersistentStateComponent<GitCommitMessageHelperSettings> {
-    private static final Logger log = Logger.getInstance(GitCommitMessageHelperSettings.class);
+public class GitCommitMsgHelperSettings implements PersistentStateComponent<GitCommitMsgHelperSettings> {
+    private static final Logger log = Logger.getInstance(GitCommitMsgHelperSettings.class);
 
-    public GitCommitMessageHelperSettings() {
+    public GitCommitMsgHelperSettings() {
     }
 
 
@@ -33,7 +33,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
 
     @Nullable
     @Override
-    public GitCommitMessageHelperSettings getState() {
+    public GitCommitMsgHelperSettings getState() {
         if (this.dataSettings == null) {
             loadDefaultSettings();
         }
@@ -42,7 +42,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
 
 
     @Override
-    public void loadState(@NotNull GitCommitMessageHelperSettings gitCommitMessageHelperSettings) {
+    public void loadState(@NotNull GitCommitMsgHelperSettings gitCommitMessageHelperSettings) {
         XmlSerializerUtil.copyBean(gitCommitMessageHelperSettings, this);
     }
 
@@ -99,7 +99,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
 
 
     @Override
-    public GitCommitMessageHelperSettings clone() {
+    public GitCommitMsgHelperSettings clone() {
         Cloner cloner = new Cloner();
         cloner.nullInsteadOfClone();
         return cloner.deepClone(this);

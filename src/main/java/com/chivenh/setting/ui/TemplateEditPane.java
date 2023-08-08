@@ -1,6 +1,6 @@
 package com.chivenh.setting.ui;
 
-import com.chivenh.storage.GitCommitMessageHelperSettings;
+import com.chivenh.storage.GitCommitMsgHelperSettings;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -28,12 +28,12 @@ public class TemplateEditPane {
     private JPanel typeEditPenel;
 
     //my  attribute
-    protected GitCommitMessageHelperSettings settings;
+    protected GitCommitMsgHelperSettings settings;
     private AliasTable aliasTable;
     private Editor templateEditor;
 
 
-    public TemplateEditPane(GitCommitMessageHelperSettings settings) {
+    public TemplateEditPane(GitCommitMsgHelperSettings settings) {
         //get setting
         this.settings = settings.clone();
         aliasTable = new AliasTable();
@@ -79,27 +79,27 @@ public class TemplateEditPane {
     }
 
 
-    public GitCommitMessageHelperSettings getSettings() {
+    public GitCommitMsgHelperSettings getSettings() {
         aliasTable.commit(settings);
         settings.getDateSettings().setTemplate(templateEditor.getDocument().getText());
         return settings;
     }
 
-    public void reset(GitCommitMessageHelperSettings settings ) {
+    public void reset(GitCommitMsgHelperSettings settings ) {
         this.settings = settings.clone();
         aliasTable.reset(settings);
         ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(settings.getDateSettings().getTemplate()));
     }
 
 
-    public boolean isSettingsModified(GitCommitMessageHelperSettings settings) {
+    public boolean isSettingsModified(GitCommitMsgHelperSettings settings) {
         if (aliasTable.isModified(settings)) {
 			return true;
 		}
         return isModified(settings);
     }
 
-    public boolean isModified(GitCommitMessageHelperSettings data) {
+    public boolean isModified(GitCommitMsgHelperSettings data) {
         if (!StringUtil.equals(settings.getDateSettings().getTemplate(), templateEditor.getDocument().getText())) {
             return true;
         }
