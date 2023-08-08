@@ -26,7 +26,7 @@
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="Personalize your git commit types and templates ."/>
+              <text value="自定义提交类型和模板 ."/>
               <verticalAlignment value="1"/>
             </properties>
           </component>
@@ -91,7 +91,7 @@
                           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="  ${type} corresponds to the submission menu 'Type of chang'&#10;"/>
+                          <text value="  ${type} 对应提交对话框 '类型' "/>
                         </properties>
                       </component>
                       <component id="257b0" class="javax.swing.JLabel">
@@ -99,7 +99,7 @@
                           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="  ${scope}corresponds to the submission menu 'Scope of this change'"/>
+                          <text value="  ${scope} 对应提交对话框 '影响范围'"/>
                         </properties>
                       </component>
                       <component id="fd83a" class="javax.swing.JLabel">
@@ -107,7 +107,7 @@
                           <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="  ${subject} corresponds to the submission menu 'Short description'"/>
+                          <text value="  ${subject} 对应提交对话框 '标题'"/>
                         </properties>
                       </component>
                       <component id="8ea9d" class="javax.swing.JLabel">
@@ -115,7 +115,7 @@
                           <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="  ${body} corresponds to the submission menu 'Long description'"/>
+                          <text value="  ${body} 对应提交对话框 '详述'"/>
                         </properties>
                       </component>
                       <component id="87cbe" class="javax.swing.JLabel">
@@ -123,7 +123,7 @@
                           <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="  ${changes} corresponds to the submission menu 'Breaking changes'"/>
+                          <text value="  ${changes} 对应提交对话框 '不兼容更改描述'"/>
                         </properties>
                       </component>
                       <component id="433d9" class="javax.swing.JLabel">
@@ -131,7 +131,7 @@
                           <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="  ${closes} corresponds to the submission menu 'Closed issues'"/>
+                          <text value="  ${closes} 对应提交对话框 '完成的工单'"/>
                         </properties>
                       </component>
                       <component id="23ec7" class="javax.swing.JLabel">
@@ -139,7 +139,7 @@
                           <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="  ${newLine} is '\n'"/>
+                          <text value="  ${section} 对应 '\n\n------'"/>
                         </properties>
                       </component>
                     </children>

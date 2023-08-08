@@ -1,6 +1,6 @@
 <idea-plugin>
-    <id>commit-message-helper-idea-plugin</id>
-    <name>Git Commit Message Helper</name>
+    <id>commit-msg-helper-idea-plugin</id>
+    <name>Git Commit Msg Helper</name>
     <vendor url="https://github.com/Chivenh/git-commit-msg-helper.git">Chivenh</vendor>
     <version>1.0.0</version>
     <description>
@@ -31,7 +31,7 @@
                 <h2>Configuration</h2>
                 <p>
                     If you want to change the type of submission.You can open the following location: </p>
-                <p> Configuration path: File -> settings->Other Settings-> CitCommitMessageHelper->type</p>
+                <p> Configuration path: File -> settings->Other Settings-> GitCommitMessageHelper->type</p>
 
                 <p>
                     <img src="https://raw.githubusercontent.com/Chivenh/git-commit-msg-helper/57bef35008d113e949ebad9659fbc403e24ab18d/image/settings-2.png"
@@ -51,8 +51,7 @@
     <change-notes><![CDATA[
             <ul>
               <li>version 1.0.0<br>
-                 personalized submission type<br>
-                 personalized submission template<br>
+                 自定义适配版本发布
               </li>
            </ul>
     ]]>

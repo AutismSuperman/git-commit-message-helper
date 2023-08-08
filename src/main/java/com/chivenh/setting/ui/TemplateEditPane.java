@@ -93,7 +93,9 @@ public class TemplateEditPane {
 
 
     public boolean isSettingsModified(GitCommitMessageHelperSettings settings) {
-        if (aliasTable.isModified(settings)) return true;
+        if (aliasTable.isModified(settings)) {
+			return true;
+		}
         return isModified(settings);
     }
 

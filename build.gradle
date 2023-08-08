@@ -27,15 +27,9 @@ dependencies {
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
 //    version 'IU-2017.1'
-    version 'IU-2020.1'
+    version 'IU-2020.3'
     pluginName 'Git Commit Msg Helper'
     updateSinceUntilBuild false
 }
 patchPluginXml {
-    changeNotes """
-         <ul>
-              <li>personalized submission type<br></li>
-              <li>personalized submission template</li>
-         </ul>
-     """
 }

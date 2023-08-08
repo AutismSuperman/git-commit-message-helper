@@ -39,7 +39,7 @@ public class VelocityUtils {
         velocityContext.put("body", commitTemplate.getBody());
         velocityContext.put("changes", commitTemplate.getChanges());
         velocityContext.put("closes", commitTemplate.getCloses());
-        velocityContext.put("newline", "\n");
+        velocityContext.put("section", "\n\n------");
         velocityContext.put("velocityTool", new VelocityTool());
         String VM_LOG_TAG = "Leetcode VelocityUtils";
         boolean isSuccess = engine.evaluate(velocityContext, writer, VM_LOG_TAG, template);

@@ -107,7 +107,9 @@ public class AliasTable extends JBTable {
 
     public void removeSelectedAliases() {
         final int[] selectedRows = getSelectedRows();
-        if (selectedRows.length == 0) return;
+        if (selectedRows.length == 0) {
+			return;
+		}
         Arrays.sort(selectedRows);
         final int originalRow = selectedRows[0];
         for (int i = selectedRows.length - 1; i >= 0; i--) {
