@@ -10,23 +10,23 @@ import java.util.List;
 
 public class CommitPanel {
     private JPanel mainPanel;
-    private JComboBox changeType;
-    private JTextField changeScope;
-    private JTextField shortDescription;
-    private JTextArea longDescription;
-    private JTextField closedIssues;
-    private JTextArea breakingChanges;
+    private JComboBox<TypeAlias> msgChangeType;
+    private JTextField msgChangeScope;
+    private JTextField msgShortDescription;
+    private JTextArea msgLongDescription;
+    private JTextField msgClosedIssues;
+    private JTextArea msgBreakingChanges;
 
     public CommitPanel(Project project, GitCommitMsgHelperSettings settings) {
         //parameter
         List<TypeAlias> typeAliases = settings.getDateSettings().getTypeAliases();
         for (TypeAlias type : typeAliases) {
-            changeType.addItem(type);
+            msgChangeType.addItem(type);
         }
        /* fix fulin  File workingDirectory = VfsUtil.virtualToIoFile(project.getBaseDir());
         Command.Result result = new Command(workingDirectory, "git log --all --format=%s | grep -Eo '^[a-z]+(\\(.*\\)):.*$' | sed 's/^.*(\\(.*\\)):.*$/\\1/' | sort -n | uniq").execute();
         if (result.isSuccess()) {
-            result.getOutput().forEach(changeScope::addItem);
+            result.getOutput().forEach(msgChangeScope::addItem);
         }*/
     }
 
@@ -37,12 +37,12 @@ public class CommitPanel {
     CommitMessage getCommitMessage(GitCommitMsgHelperSettings settings) {
         return new CommitMessage(
                 settings,
-                (TypeAlias) changeType.getSelectedItem(),
-                (String) changeScope.getText().trim(),
-                shortDescription.getText().trim(),
-                longDescription.getText().trim(),
-                closedIssues.getText().trim(),
-                breakingChanges.getText().trim()
+                (TypeAlias) msgChangeType.getSelectedItem(),
+                msgChangeScope.getText().trim(),
+                msgShortDescription.getText().trim(),
+                msgLongDescription.getText().trim(),
+                msgClosedIssues.getText().trim(),
+                msgBreakingChanges.getText().trim()
         );
     }
 

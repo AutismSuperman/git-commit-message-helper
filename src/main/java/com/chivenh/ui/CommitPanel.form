@@ -1,46 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="com.chivenh.ui.CommitPanel">
-  <grid id="27dc6" binding="mainPanel" layout-manager="GridLayoutManager" row-count="7" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+  <grid id="27dc6" binding="mainPanel" layout-manager="GridLayoutManager" row-count="9" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="0" left="0" bottom="0" right="0"/>
     <constraints>
-      <xy x="20" y="20" width="982" height="629"/>
+      <xy x="20" y="20" width="1088" height="629"/>
     </constraints>
     <properties/>
-    <border type="none"/>
+    <border type="none">
+      <color color="-1"/>
+    </border>
     <children>
       <vspacer id="80732">
         <constraints>
-          <grid row="6" column="1" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+          <grid row="8" column="1" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
         </constraints>
       </vspacer>
       <component id="8bb2e" class="javax.swing.JLabel">
         <constraints>
-          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="4" anchor="8" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="52" height="17"/>
+          </grid>
         </constraints>
         <properties>
+          <horizontalAlignment value="4"/>
           <text value="类型"/>
         </properties>
       </component>
       <component id="b0ac4" class="javax.swing.JLabel">
         <constraints>
-          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="52" height="17"/>
+          </grid>
         </constraints>
         <properties>
+          <horizontalAlignment value="4"/>
           <text value="影响范围"/>
         </properties>
       </component>
       <component id="19a59" class="javax.swing.JLabel">
         <constraints>
-          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="52" height="17"/>
+          </grid>
         </constraints>
         <properties>
+          <horizontalAlignment value="4"/>
           <horizontalTextPosition value="2"/>
           <text value="标题"/>
         </properties>
       </component>
-      <component id="92216" class="javax.swing.JTextField" binding="shortDescription">
+      <component id="92216" class="javax.swing.JTextField" binding="msgShortDescription">
         <constraints>
-          <grid row="2" column="1" row-span="1" col-span="2" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+          <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="150" height="-1"/>
           </grid>
         </constraints>
@@ -48,42 +59,69 @@
       </component>
       <component id="a5d3c" class="javax.swing.JLabel">
         <constraints>
-          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="52" height="17"/>
+          </grid>
         </constraints>
         <properties>
+          <horizontalAlignment value="4"/>
           <text value="详述"/>
         </properties>
       </component>
-      <component id="32600" class="javax.swing.JTextArea" binding="longDescription">
+      <component id="32600" class="javax.swing.JTextArea" binding="msgLongDescription">
         <constraints>
-          <grid row="3" column="1" row-span="1" col-span="2" vsize-policy="6" hsize-policy="6" anchor="0" fill="3" indent="0" use-parent-layout="false">
+          <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="6" hsize-policy="6" anchor="0" fill="3" indent="0" use-parent-layout="false">
             <preferred-size width="150" height="50"/>
           </grid>
         </constraints>
         <properties>
           <lineWrap value="true"/>
+          <margin top="2" left="6" bottom="2" right="6"/>
           <text value=""/>
         </properties>
       </component>
       <component id="83b17" class="javax.swing.JLabel">
         <constraints>
-          <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="2" indent="0" use-parent-layout="false">
+            <preferred-size width="52" height="25"/>
+          </grid>
         </constraints>
         <properties>
-          <text value="完成的工单"/>
+          <horizontalAlignment value="4"/>
+          <horizontalTextPosition value="11"/>
+          <text value="完成的"/>
         </properties>
       </component>
-      <component id="424ce" class="javax.swing.JComboBox" binding="changeType">
+      <component id="424ce" class="javax.swing.JComboBox" binding="msgChangeType">
         <constraints>
-          <grid row="0" column="1" row-span="1" col-span="2" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
           <model/>
         </properties>
       </component>
-      <component id="73448" class="javax.swing.JTextField" binding="closedIssues">
+      <component id="73448" class="javax.swing.JTextField" binding="msgClosedIssues">
         <constraints>
-          <grid row="5" column="1" row-span="1" col-span="2" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+          <grid row="6" column="1" row-span="2" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+            <preferred-size width="150" height="-1"/>
+          </grid>
+        </constraints>
+        <properties/>
+      </component>
+      <component id="15a33" class="javax.swing.JTextArea" binding="msgBreakingChanges">
+        <constraints>
+          <grid row="4" column="1" row-span="2" col-span="1" vsize-policy="6" hsize-policy="6" anchor="8" fill="3" indent="0" use-parent-layout="false">
+            <preferred-size width="150" height="50"/>
+          </grid>
+        </constraints>
+        <properties>
+          <lineWrap value="true"/>
+          <margin top="2" left="6" bottom="2" right="6"/>
+        </properties>
+      </component>
+      <component id="a244b" class="javax.swing.JTextField" binding="msgChangeScope">
+        <constraints>
+          <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
             <preferred-size width="150" height="-1"/>
           </grid>
         </constraints>
@@ -91,29 +129,36 @@
       </component>
       <component id="c313a" class="javax.swing.JLabel">
         <constraints>
-          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-        </constraints>
-        <properties>
-          <text value="不兼容更改说明"/>
-        </properties>
-      </component>
-      <component id="15a33" class="javax.swing.JTextArea" binding="breakingChanges">
-        <constraints>
-          <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
-            <preferred-size width="150" height="-1"/>
+          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="32" height="17"/>
           </grid>
         </constraints>
         <properties>
-          <lineWrap value="true"/>
+          <horizontalAlignment value="4"/>
+          <text value="不兼容的"/>
         </properties>
       </component>
-      <component id="a244b" class="javax.swing.JTextField" binding="changeScope">
+      <component id="d8c63" class="javax.swing.JLabel">
         <constraints>
-          <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
-            <preferred-size width="150" height="-1"/>
+          <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+            <preferred-size width="32" height="17"/>
           </grid>
         </constraints>
-        <properties/>
+        <properties>
+          <horizontalAlignment value="4"/>
+          <text value="更改内容"/>
+        </properties>
+      </component>
+      <component id="b2566" class="javax.swing.JLabel">
+        <constraints>
+          <grid row="7" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="2" indent="0" use-parent-layout="false">
+            <preferred-size width="52" height="25"/>
+          </grid>
+        </constraints>
+        <properties>
+          <horizontalTextPosition value="4"/>
+          <text value="工单列表"/>
+        </properties>
       </component>
     </children>
   </grid>

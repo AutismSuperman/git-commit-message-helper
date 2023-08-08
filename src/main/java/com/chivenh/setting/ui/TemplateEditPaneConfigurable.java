@@ -51,7 +51,7 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
     @Nls(capitalization = Nls.Capitalization.Title)
     @Override
     public String getDisplayName() {
-        return "GitCommitMessageHelper";
+        return "GitCommitMsgHelper";
     }
 
 
