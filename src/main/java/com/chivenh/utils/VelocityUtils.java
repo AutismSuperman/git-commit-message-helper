@@ -30,7 +30,7 @@ public class VelocityUtils {
         engine.init(props);
     }
 
-    public static String convert(String template, CommitTemplate commitTemplate) {
+    public static String convert(String template, CommitTemplate commitTemplate,boolean hasFooter) {
         StringWriter writer = new StringWriter();
         VelocityContext velocityContext = new VelocityContext();
         velocityContext.put("type", commitTemplate.getType());
@@ -38,8 +38,11 @@ public class VelocityUtils {
         velocityContext.put("subject", commitTemplate.getSubject());
         velocityContext.put("body", commitTemplate.getBody());
         velocityContext.put("changes", commitTemplate.getChanges());
+        velocityContext.put("deprecated", commitTemplate.getDeprecated());
         velocityContext.put("closes", commitTemplate.getCloses());
-        velocityContext.put("section", "\n\n------");
+        velocityContext.put("section", CommitTemplate.SECTION);
+        velocityContext.put("breakLine", CommitTemplate.BREAK_LINE);
+        velocityContext.put("hasFooter", hasFooter);
         velocityContext.put("velocityTool", new VelocityTool());
         String VM_LOG_TAG = "Leetcode VelocityUtils";
         boolean isSuccess = engine.evaluate(velocityContext, writer, VM_LOG_TAG, template);

@@ -7,11 +7,15 @@ package com.chivenh.model;
  **/
 public class CommitTemplate {
 
+	public static final String SECTION="\n------\n";
+	public static final String BREAK_LINE="\n";
+
     private String type;
     private String scope;
     private String subject;
     private String body;
     private String changes;
+    private String deprecated;
     private String closes;
 
     public String getType() {
@@ -61,4 +65,12 @@ public class CommitTemplate {
     public void setCloses(String closes) {
         this.closes = closes;
     }
+
+	public String getDeprecated() {
+		return deprecated;
+	}
+
+	public void setDeprecated(String deprecated) {
+		this.deprecated = deprecated;
+	}
 }

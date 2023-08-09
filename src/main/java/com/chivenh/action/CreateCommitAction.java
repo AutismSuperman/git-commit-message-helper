@@ -4,11 +4,13 @@ import com.chivenh.storage.GitCommitMsgHelperSettings;
 import com.chivenh.ui.CommitDialog;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DataKey;
 import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.vcs.CommitMessageI;
 import com.intellij.openapi.vcs.VcsDataKeys;
+import com.intellij.openapi.vcs.ui.CommitMessage;
 import com.intellij.openapi.vcs.ui.Refreshable;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +31,12 @@ public class CreateCommitAction extends AnAction implements DumbAware {
         if (commitPanel == null) {
             return;
         }
-        CommitDialog dialog = new CommitDialog(actionEvent.getProject(),settings);
+        String currentMsg=null;
+        Object context= actionEvent.getData(DataKey.create("contextComponent"));
+        if(context instanceof CommitMessage){
+        	currentMsg=((CommitMessage) context).getComment();
+		}
+		CommitDialog dialog = new CommitDialog(currentMsg,actionEvent.getProject(),settings);
         dialog.show();
         if (dialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
             commitPanel.setCommitMessage(dialog.getCommitMessage(settings).toString());

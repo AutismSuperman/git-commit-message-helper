@@ -2,7 +2,7 @@
     <id>commit-msg-helper-idea-plugin</id>
     <name>Git Commit Msg Helper</name>
     <vendor url="https://github.com/Chivenh/git-commit-msg-helper.git">Chivenh</vendor>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <description>
         <![CDATA[
              <div>
@@ -50,8 +50,8 @@
 
     <change-notes><![CDATA[
             <ul>
-              <li>version 1.0.0<br>
-                 自定义适配版本发布
+              <li>version 1.0.1<br>
+                 完善模板编辑提示，完善提交消息输入提示和校验，预填消息自动回填支持。
               </li>
            </ul>
     ]]>
@@ -81,8 +81,8 @@
 
     <actions>
         <action id="Commit.Button" class="com.chivenh.action.CreateCommitAction"
-                text="Create Commit Msg"
-                description="Create commit Msg"
+                text="编辑提交信息"
+                description="编辑提交信息"
                 icon="PluginIcons.ICON">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
         </action>

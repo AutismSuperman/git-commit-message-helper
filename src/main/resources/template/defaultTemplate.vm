@@ -1,4 +1,6 @@
 #if($type)${type}#end#if($scope)(${scope})#end: #if($subject)${subject}#end
-#if($body)${section}${body}#end
-#if($changes)${section}不兼容变更: ${changes}#end
-#if($closes)${section}}解决工单: ${closes}#end
+#if($body)${breakLine}${section}${body}#end
+#if($hasFooter)${section}#end
+#if($changes)${breakLine}BREAKING CHANGE: ${changes}#end
+#if($deprecated)${breakLine}DEPRECATED: ${deprecated}#end
+#if($closes)${breakLine}ISSUES: ${closes}#end
