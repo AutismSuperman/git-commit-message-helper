@@ -6,19 +6,21 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataKey;
 import com.intellij.openapi.components.ServiceManager;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.vcs.CommitMessageI;
 import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.ui.CommitMessage;
 import com.intellij.openapi.vcs.ui.Refreshable;
+import com.intellij.vcs.commit.ChangesViewCommitPanel;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * @author fulin
  */
 public class CreateCommitAction extends AnAction implements DumbAware {
-
+	private static final Logger LOG = Logger.getInstance(CreateCommitAction.class);
     private GitCommitMsgHelperSettings settings;
 
     public CreateCommitAction() {
@@ -35,6 +37,10 @@ public class CreateCommitAction extends AnAction implements DumbAware {
         Object context= actionEvent.getData(DataKey.create("contextComponent"));
         if(context instanceof CommitMessage){
         	currentMsg=((CommitMessage) context).getComment();
+		}else if(context instanceof ChangesViewCommitPanel){
+        	currentMsg=((ChangesViewCommitPanel) context).getCommitMessageUi().getText();
+		} else{
+			LOG.warn(context.toString()+"\n------can't get msg!");
 		}
 		CommitDialog dialog = new CommitDialog(currentMsg,actionEvent.getProject(),settings);
         dialog.show();
