@@ -56,7 +56,6 @@
     <actions>
         <action id="Commit.Button" class="com.chivenh.action.CreateCommitAction"
                 text="编辑提交信息"
-                description="'编辑提交信息'"
                 icon="PluginIcons.ICON">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
         </action>
