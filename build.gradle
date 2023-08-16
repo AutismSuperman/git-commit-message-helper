@@ -6,9 +6,9 @@ plugins {
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
-
+buildSearchableOptions.enabled = false
 group 'com.chivenh'
-version '1.0.1'
+version '1.0.2'
 
 sourceCompatibility = 1.8
 
@@ -31,5 +31,11 @@ intellij {
     pluginName 'Git Commit Msg Helper'
     updateSinceUntilBuild false
 }
+
 patchPluginXml {
+    changeNotes '<ul>\n' +
+            '              <li>version '+version+'<br>\n' +
+            '                 提交信息对话框UI优化。\n' +
+            '              </li>\n' +
+            '           </ul>'
 }
