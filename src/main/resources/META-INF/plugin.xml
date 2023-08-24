@@ -31,7 +31,7 @@
     ]]>
     </change-notes>
 
-
+    <resource-bundle>messages.git-msg</resource-bundle>
     <idea-version since-build="202.0"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
@@ -55,7 +55,6 @@
 
     <actions>
         <action id="Commit.Button" class="com.chivenh.action.CreateCommitAction"
-                text="编辑提交信息"
                 icon="PluginIcons.ICON">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
         </action>

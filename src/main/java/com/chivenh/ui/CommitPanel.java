@@ -3,6 +3,7 @@ package com.chivenh.ui;
 import com.chivenh.model.CommitTemplate;
 import com.chivenh.model.TypeAlias;
 import com.chivenh.storage.GitCommitMsgHelperSettings;
+import com.chivenh.utils.BundleHelper;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ValidationInfo;
 import org.apache.commons.lang.StringUtils;
@@ -59,11 +60,11 @@ public class CommitPanel {
     ValidationInfo doValidate(){
 		String scope = msgChangeScope.getText().trim();
 		if(StringUtils.isBlank(scope)){
-			return new ValidationInfo(msgChangeScope.getName()+ "不能为空!",msgChangeScope);
+			return new ValidationInfo(msgChangeScope.getName()+ BundleHelper.message("commitPanel.required.error"),msgChangeScope);
 		}
 		String subject = msgShortDescription.getText().trim();
 		if(StringUtils.isBlank(subject)){
-			return new ValidationInfo(msgShortDescription.getName()+ "不能为空!",msgShortDescription);
+			return new ValidationInfo(msgShortDescription.getName()+ BundleHelper.message("commitPanel.required.error"),msgShortDescription);
 		}
 		return null;
 	}

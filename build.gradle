@@ -8,7 +8,7 @@ tasks.withType(JavaCompile) {
 }
 buildSearchableOptions.enabled = false
 group 'com.chivenh'
-version '1.0.2'
+version '1.0.3'
 
 sourceCompatibility = 1.8
 
@@ -35,7 +35,7 @@ intellij {
 patchPluginXml {
     changeNotes '<ul>\n' +
             '              <li>version '+version+'<br>\n' +
-            '                 提交信息对话框UI优化。\n' +
+            "                 提交信息对话框UI国际化。<br>Internationalization of The Commit Msg Dialog's UI.\n" +
             '              </li>\n' +
             '           </ul>'
 }

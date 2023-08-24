@@ -231,9 +231,9 @@ public class AliasTable extends JBTable {
         public String getColumnName(int columnIndex) {
             switch (columnIndex) {
                 case NAME_COLUMN:
-                    return "title";
+                    return "Title";
                 case VALUE_COLUMN:
-                    return "description";
+                    return "Description";
             }
             return null;
         }

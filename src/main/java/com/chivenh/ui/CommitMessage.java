@@ -3,6 +3,7 @@ package com.chivenh.ui;
 import com.chivenh.model.CommitTemplate;
 import com.chivenh.model.TypeAlias;
 import com.chivenh.storage.GitCommitMsgHelperSettings;
+import com.chivenh.utils.BundleHelper;
 import com.chivenh.utils.VelocityUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -63,7 +64,7 @@ public class CommitMessage {
 			}
 		}
 		boolean hasFooter = false;
-		breakingChanges= breakingChanges.replace("<不兼容概述>","");
+		breakingChanges= breakingChanges.replace(BundleHelper.message("commitPanel.msgBreakingChanges.defaultText"),"");
 		if (StringUtils.isNotBlank(breakingChanges)) {
 			String[] splitStr = breakingChanges.split("\n+");
 			StringBuilder longDesc = new StringBuilder();
@@ -83,7 +84,7 @@ public class CommitMessage {
 			commitTemplate.setChanges(longDesc.toString());
 			hasFooter = true;
 		}
-		deprecated=deprecated.replace("<弃用概述>","");
+		deprecated=deprecated.replace(BundleHelper.message("commitPanel.msgDeprecated.defaultText"),"");
 		if (StringUtils.isNotBlank(deprecated)) {
 			String[] splitStr = deprecated.split("\n+");
 			StringBuilder longDesc = new StringBuilder();
