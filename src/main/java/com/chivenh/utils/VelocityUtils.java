@@ -13,7 +13,7 @@ import java.util.Properties;
  */
 public class VelocityUtils {
 
-    private static VelocityEngine engine;
+    private static final VelocityEngine engine;
 
 
     static {

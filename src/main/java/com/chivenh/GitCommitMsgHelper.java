@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @program: git-commit-message-helper
  * @author Chivenh
- * @create: 2019-12-03 16:33
+ * @since 2023-08-20 18:40
  **/
 public class GitCommitMsgHelper implements ApplicationComponent {
 

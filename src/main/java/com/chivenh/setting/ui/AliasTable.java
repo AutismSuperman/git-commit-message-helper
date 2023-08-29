@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * @program: git-commit-message-helper
  * @author Chivenh
- * @create: 2019-12-06 21:21
+ * @since 2023-08-20 18:31
  **/
 public class AliasTable extends JBTable {
 
@@ -27,8 +27,7 @@ public class AliasTable extends JBTable {
     private static final int VALUE_COLUMN = 1;
     private final MyTableModel myTableModel = new MyTableModel();
 
-
-    private List<TypeAlias> typeAliases = new LinkedList<>();
+    private final List<TypeAlias> typeAliases = new LinkedList<>();
 
     /**
      * instantiation AliasTable

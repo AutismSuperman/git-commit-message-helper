@@ -18,13 +18,14 @@ import java.util.List;
 /**
  * @program: git-commit-message-helper
  * @author Chivenh
- * @create: 2019-12-05 21:13
+ * @since 2023-08-20 18:34
  **/
 @State(name = "GitCommitMsgHelperSettings", storages = {@Storage("$APP_CONFIG$/GitCommitMsgHelperSettings-settings.xml")})
 public class GitCommitMsgHelperSettings implements PersistentStateComponent<GitCommitMsgHelperSettings> {
     private static final Logger log = Logger.getInstance(GitCommitMsgHelperSettings.class);
 
     public GitCommitMsgHelperSettings() {
+    	/**/
     }
 
 

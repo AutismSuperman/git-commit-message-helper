@@ -55,6 +55,8 @@ public class CommitPanel {
 
 	/**
 	 * 类型，影响范围，标题必填
+	 * @author Chivenh
+	 * @since 2023-08-20 18:36
 	 * @return -
 	 */
     ValidationInfo doValidate(){

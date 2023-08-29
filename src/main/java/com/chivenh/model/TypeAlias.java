@@ -3,7 +3,7 @@ package com.chivenh.model;
 /**
  * @program: git-commit-message-helper
  * @author Chivenh
- * @create: 2019-12-06 21:11
+ * @since 2023-08-20 18:30
  **/
 public class TypeAlias extends DomainObject {
     public String title;

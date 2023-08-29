@@ -21,12 +21,17 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CreateCommitAction extends AnAction implements DumbAware {
 	private static final Logger LOG = Logger.getInstance(CreateCommitAction.class);
-    private GitCommitMsgHelperSettings settings;
+    private final GitCommitMsgHelperSettings settings;
 
     public CreateCommitAction() {
         this.settings = ServiceManager.getService(GitCommitMsgHelperSettings.class);
     }
 
+	/**
+	 * @author Chivenh
+	 * @since 2023-08-20 18:28
+	 * @param actionEvent -
+	 */
     @Override
     public void actionPerformed(AnActionEvent actionEvent) {
         final CommitMessageI commitPanel = getCommitPanel(actionEvent);
@@ -40,7 +45,7 @@ public class CreateCommitAction extends AnAction implements DumbAware {
 		}else if(context instanceof ChangesViewCommitPanel){
         	currentMsg=((ChangesViewCommitPanel) context).getCommitMessageUi().getText();
 		} else{
-			LOG.warn(context.toString()+"\n------can't get msg!");
+			LOG.warn((context!=null? context.toString() : "NULL")+"\n------\ncan't get msg!");
 		}
 		CommitDialog dialog = new CommitDialog(currentMsg,actionEvent.getProject(),settings);
         dialog.show();

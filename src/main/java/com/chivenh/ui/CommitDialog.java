@@ -21,7 +21,7 @@ public class CommitDialog extends DialogWrapper {
     }
 
 	/**
-	 * 开启OK时进行数据项验证
+	 * 开启:OK时进行数据项验证
 	 * @return -
 	 */
 	@Override

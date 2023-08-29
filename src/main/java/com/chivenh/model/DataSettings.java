@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * @program: git-commit-message-helper
  * @author Chivenh
- * @create: 2019-12-05 21:22
+ * @since 2023-08-20 18:30
  **/
 public class DataSettings {
     private String template;
