@@ -1,4 +1,4 @@
-package com.fulinlin.setting.ui;
+package com.fulinlin.ui.setting;
 
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.components.ServiceManager;
@@ -16,7 +16,7 @@ import javax.swing.*;
  */
 public class TemplateEditPaneConfigurable implements SearchableConfigurable {
 
-    private TemplateEditPane templateEditPane;
+    private TemplateEditPanel templateEditPanel;
 
     private GitCommitMessageHelperSettings settings;
 
@@ -35,10 +35,10 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
     @Nullable
     @Override
     public JComponent createComponent() {
-        if (templateEditPane == null) {
-            templateEditPane = new TemplateEditPane(settings);
+        if (templateEditPanel == null) {
+            templateEditPanel = new TemplateEditPanel(settings);
         }
-        return templateEditPane.getMainPenel();
+        return templateEditPanel.getMainPanel();
     }
 
 
@@ -56,20 +56,20 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
 
 
     public void reset() {
-        if (templateEditPane != null) {
-            templateEditPane.reset(settings);
+        if (templateEditPanel != null) {
+            templateEditPanel.reset(settings);
         }
     }
 
     @Override
     public boolean isModified() {
-        return templateEditPane != null && templateEditPane.isSettingsModified(settings);
+        return templateEditPanel != null && templateEditPanel.isSettingsModified(settings);
     }
 
 
     @Override
     public void apply() {
-        settings.setDateSettings(templateEditPane.getSettings().getDateSettings());
-        settings = templateEditPane.getSettings().clone();
+        settings.setDateSettings(templateEditPanel.getSettings().getDateSettings());
+        settings = templateEditPanel.getSettings().clone();
     }
 }

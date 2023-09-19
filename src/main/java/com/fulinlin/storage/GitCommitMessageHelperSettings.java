@@ -3,7 +3,9 @@ package com.fulinlin.storage;
 import com.fulinlin.constant.GitCommitConstants;
 import com.fulinlin.model.DataSettings;
 import com.fulinlin.model.TypeAlias;
+import com.fulinlin.utils.PropertiesUtils;
 import com.intellij.openapi.components.PersistentStateComponent;
+import com.intellij.openapi.components.RoamingType;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import com.intellij.openapi.diagnostic.Logger;
@@ -20,7 +22,8 @@ import java.util.List;
  * @author: fulin
  * @create: 2019-12-05 21:13
  **/
-@State(name = "GitCommitMessageHelperSettings", storages = {@Storage("$APP_CONFIG$/GitCommitMessageHelperSettings-settings.xml")})
+@State(name = "GitCommitMessageHelperSettings" + GitCommitConstants.ACTION_SUFFIX,
+        storages = {@Storage(value = GitCommitConstants.ACTION_PREFIX + "-settings.xml", roamingType = RoamingType.DISABLED)})
 public class GitCommitMessageHelperSettings implements PersistentStateComponent<GitCommitMessageHelperSettings> {
     private static final Logger log = Logger.getInstance(GitCommitMessageHelperSettings.class);
 
@@ -34,10 +37,19 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     @Nullable
     @Override
     public GitCommitMessageHelperSettings getState() {
+        PropertiesUtils.getInfo("feature.description");
         if (this.dataSettings == null) {
             loadDefaultSettings();
         }
         return this;
+    }
+
+    public DataSettings getDateSettings() {
+        PropertiesUtils.getInfo("feature.description");
+        if (dataSettings == null) {
+            loadDefaultSettings();
+        }
+        return dataSettings;
     }
 
 
@@ -54,40 +66,26 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         try {
             dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
             List<TypeAlias> typeAliases = new LinkedList<>();
-            typeAliases.add(new TypeAlias("feature", "A new feature"));
-            typeAliases.add(new TypeAlias("fix", "A bug fix"));
-            typeAliases.add(new TypeAlias("docs", "Documentation only changes"));
-            typeAliases.add(new TypeAlias("style", "Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)"));
-            typeAliases.add(new TypeAlias("refactor", "A code change that neither fixes a bug nor adds a feature"));
-            typeAliases.add(new TypeAlias("perf", "A code change that improves performance"));
-            typeAliases.add(new TypeAlias("test", "Adding missing tests or correcting existing tests"));
-            typeAliases.add(new TypeAlias("build", "Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)"));
-            typeAliases.add(new TypeAlias("ci", "Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs)"));
-            typeAliases.add(new TypeAlias("chore", "Other changes that don't modify src or test files"));
-            typeAliases.add(new TypeAlias("revert", "Reverts a previous commit"));
+            typeAliases.add(new TypeAlias("feature", PropertiesUtils.getInfo("feature.description")));
+            typeAliases.add(new TypeAlias("fix", PropertiesUtils.getInfo("fix.description")));
+            typeAliases.add(new TypeAlias("docs", PropertiesUtils.getInfo("docs.description")));
+            typeAliases.add(new TypeAlias("style", PropertiesUtils.getInfo("style.description")));
+            typeAliases.add(new TypeAlias("refactor", PropertiesUtils.getInfo("refactor.description")));
+            typeAliases.add(new TypeAlias("perf", PropertiesUtils.getInfo("perf.description")));
+            typeAliases.add(new TypeAlias("test", PropertiesUtils.getInfo("test.description")));
+            typeAliases.add(new TypeAlias("build", PropertiesUtils.getInfo("build.description")));
+            typeAliases.add(new TypeAlias("ci", PropertiesUtils.getInfo("ci.description")));
+            typeAliases.add(new TypeAlias("chore", PropertiesUtils.getInfo("chore.description")));
+            typeAliases.add(new TypeAlias("revert", PropertiesUtils.getInfo("revert.description")));
             dataSettings.setTypeAliases(typeAliases);
         } catch (Exception e) {
             log.error("loadDefaultSettings failed", e);
         }
     }
 
-    /**
-     * Getter method for property <tt>codeTemplates</tt>.
-     *
-     * @return property value of codeTemplates
-     */
-    public DataSettings getDateSettings() {
-        if (dataSettings == null) {
-            loadDefaultSettings();
-        }
-        return dataSettings;
-    }
-
-
     public void setDateSettings(DataSettings dateSettings) {
         this.dataSettings = dateSettings;
     }
-
 
     public void updateTemplate(String template) {
         dataSettings.setTemplate(template);
@@ -97,8 +95,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         dataSettings.setTypeAliases(typeAliases);
     }
 
-
     @Override
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
     public GitCommitMessageHelperSettings clone() {
         Cloner cloner = new Cloner();
         cloner.nullInsteadOfClone();

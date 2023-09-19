@@ -1,4 +1,4 @@
-package com.fulinlin.ui;
+package com.fulinlin.ui.commit;
 
 import java.io.BufferedReader;
 import java.io.File;

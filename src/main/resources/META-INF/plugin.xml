@@ -48,15 +48,9 @@
         ]]>
     </description>
 
-    <change-notes><![CDATA[
-            <ul>
-              <li>version 1.0.0<br>
-                 personalized submission type<br>
-                 personalized submission template<br>
-              </li>
-           </ul>
-    ]]>
+    <change-notes>
     </change-notes>
+
 
 
     <idea-version since-build="171"/>
@@ -67,18 +61,19 @@
     <depends>com.intellij.modules.vcs</depends>
 
 
+    <application-components>
+    </application-components>
+
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
-        <applicationService serviceImplementation="com.fulinlin.storage.GitCommitMessageHelperSettings"/>
-        <applicationConfigurable instance="com.fulinlin.setting.ui.TemplateEditPaneConfigurable"/>
+        <applicationService
+                serviceImplementation="com.fulinlin.storage.GitCommitMessageHelperSettings"/>
+        <applicationConfigurable
+                instance="com.fulinlin.ui.setting.TemplateEditPaneConfigurable"/>
     </extensions>
 
-    <application-components>
-        <!-- Add your application components here -->
-        <component>
-            <implementation-class>com.fulinlin.setting.ui.TemplateEditPaneConfigurable</implementation-class>
-        </component>
-    </application-components>
+
+    <resource-bundle>i18n.info</resource-bundle>
 
     <actions>
         <action id="Commit.Button" class="com.fulinlin.action.CreateCommitAction"

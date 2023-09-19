@@ -1,6 +1,5 @@
-package com.fulinlin.setting.ui;
+package com.fulinlin.ui.setting;
 
-import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -19,23 +18,21 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.util.List;
 import java.util.Optional;
 
 
-public class TemplateEditPane {
-    private JPanel mainPenel;
+public class TemplateEditPanel {
+    private JPanel mainPanel;
+    private JPanel templateEditPanel;
+    private JPanel typeEditPanel;
     private JTabbedPane tabbedPane;
-    private JPanel templateEditPenel;
-    private JPanel typeEditPenel;
-
     //my  attribute
     protected GitCommitMessageHelperSettings settings;
-    private AliasTable aliasTable;
-    private Editor templateEditor;
+    private final AliasTable aliasTable;
+    private final Editor templateEditor;
 
 
-    public TemplateEditPane(GitCommitMessageHelperSettings settings) {
+    public TemplateEditPanel(GitCommitMessageHelperSettings settings) {
         //get setting
         this.settings = settings.clone();
         aliasTable = new AliasTable();
@@ -53,11 +50,11 @@ public class TemplateEditPane {
         templateEditorSettings.setVirtualSpace(false);
         JBScrollPane jbScrollPane = new JBScrollPane(templateEditor.getComponent());
         jbScrollPane.setMaximumSize(new Dimension(150, 50));
-        templateEditPenel.add(jbScrollPane);
+        templateEditPanel.add(jbScrollPane);
         ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(template));
 
-        //init   typeEditPenel
-        typeEditPenel.add(
+        //init   typeEditPanel
+        typeEditPanel.add(
                 ToolbarDecorator.createDecorator(aliasTable)
                         .setAddAction(button -> aliasTable.addAlias())
                         .setRemoveAction(button -> aliasTable.removeSelectedAliases())
@@ -87,7 +84,7 @@ public class TemplateEditPane {
         return settings;
     }
 
-    public void reset(GitCommitMessageHelperSettings settings ) {
+    public void reset(GitCommitMessageHelperSettings settings) {
         this.settings = settings.clone();
         aliasTable.reset(settings);
         ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(settings.getDateSettings().getTemplate()));
@@ -110,8 +107,8 @@ public class TemplateEditPane {
     }
 
 
-    public JPanel getMainPenel() {
-        return mainPenel;
+    public JPanel getMainPanel() {
+        return mainPanel;
     }
 
 

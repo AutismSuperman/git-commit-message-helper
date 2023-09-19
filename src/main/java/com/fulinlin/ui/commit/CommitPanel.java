@@ -1,18 +1,16 @@
-package com.fulinlin.ui;
+package com.fulinlin.ui.commit;
 
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VfsUtil;
 
 import javax.swing.*;
-import java.io.File;
 import java.util.List;
 
 
 public class CommitPanel {
     private JPanel mainPanel;
-    private JComboBox changeType;
+    private JComboBox<TypeAlias> changeType;
     private JTextField changeScope;
     private JTextField shortDescription;
     private JTextArea longDescription;
@@ -36,16 +34,18 @@ public class CommitPanel {
         return mainPanel;
     }
 
+
     CommitMessage getCommitMessage(GitCommitMessageHelperSettings settings) {
         return new CommitMessage(
                 settings,
                 (TypeAlias) changeType.getSelectedItem(),
-                (String) changeScope.getText().trim(),
+                changeScope.getText().trim(),
                 shortDescription.getText().trim(),
                 longDescription.getText().trim(),
                 closedIssues.getText().trim(),
                 breakingChanges.getText().trim()
         );
     }
+
 
 }

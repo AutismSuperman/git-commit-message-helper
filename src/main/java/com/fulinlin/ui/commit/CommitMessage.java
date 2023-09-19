@@ -1,4 +1,4 @@
-package com.fulinlin.ui;
+package com.fulinlin.ui.commit;
 
 import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.TypeAlias;

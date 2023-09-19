@@ -9,9 +9,6 @@ public class TypeAlias extends DomainObject {
     public String title;
     public String description;
 
-    public TypeAlias() {
-    }
-
     public TypeAlias(String title, String description) {
         this.title = title;
         this.description = description;

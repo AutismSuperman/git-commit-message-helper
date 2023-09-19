@@ -1,4 +1,4 @@
-package com.fulinlin.ui;
+package com.fulinlin.ui.commit;
 
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.project.Project;
@@ -28,5 +28,7 @@ public class CommitDialog extends DialogWrapper {
     public CommitMessage getCommitMessage(GitCommitMessageHelperSettings settings) {
         return panel.getCommitMessage(settings);
     }
+
+
 
 }

@@ -1,4 +1,4 @@
-package com.fulinlin.setting.ui;
+package com.fulinlin.ui.setting;
 
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
@@ -28,7 +28,7 @@ public class AliasTable extends JBTable {
     private final MyTableModel myTableModel = new MyTableModel();
 
 
-    private List<TypeAlias> typeAliases = new LinkedList<>();
+    private final List<TypeAlias> typeAliases = new LinkedList<>();
 
     /**
      * instantiation AliasTable
@@ -42,14 +42,14 @@ public class AliasTable extends JBTable {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 final Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 final String macroValue = getAliasValueAt(row);
-                component.setForeground(macroValue.length() == 0
+                component.setForeground(macroValue.isEmpty()
                         ? JBColor.RED
                         : isSelected ? table.getSelectionForeground() : table.getForeground());
                 return component;
             }
         });
-        setColumnSize(column, 150,250,150);
-        setColumnSize(valueColumn, 550,750,550);
+        setColumnSize(column, 150, 250, 150);
+        setColumnSize(valueColumn, 550, 750, 550);
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     }
 
@@ -57,8 +57,8 @@ public class AliasTable extends JBTable {
     /**
      * Set  Something  ColumnSize
      */
-    public static void setColumnSize(TableColumn column, int preferedWidth, int maxWidth, int minWidth) {
-        column.setPreferredWidth(preferedWidth);
+    public static void setColumnSize(TableColumn column, int preferredWidth, int maxWidth, int minWidth) {
+        column.setPreferredWidth(preferredWidth);
         column.setMaxWidth(maxWidth);
         column.setMinWidth(minWidth);
     }
@@ -179,17 +179,6 @@ public class AliasTable extends JBTable {
     //==========================================================================//
 
     /**
-     * EditValidator
-     */
-    private static class EditValidator implements AliasEditor.Validator {
-        @Override
-        public boolean isOK(String name, String value) {
-            return !name.isEmpty() && !value.isEmpty();
-        }
-    }
-
-
-    /**
      * MyTableModel
      */
     private class MyTableModel extends AbstractTableModel {
@@ -204,7 +193,7 @@ public class AliasTable extends JBTable {
         }
 
         @Override
-        public Class getColumnClass(int columnIndex) {
+        public Class<?> getColumnClass(int columnIndex) {
             return String.class;
         }
 
@@ -219,10 +208,6 @@ public class AliasTable extends JBTable {
             }
             log.error("Wrong indices");
             return null;
-        }
-
-        @Override
-        public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
         }
 
         @Override
