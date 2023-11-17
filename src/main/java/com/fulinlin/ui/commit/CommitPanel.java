@@ -17,7 +17,12 @@ public class CommitPanel {
     private JTextArea longDescription;
     private JTextField closedIssues;
     private JTextArea breakingChanges;
-    private JLabel typeFieldName;
+    private JLabel typeDescriptionLabel;
+    private JLabel scopeDescriptionLabel;
+    private JLabel subjectDescriptionLabel;
+    private JLabel bodyDescriptionLabel;
+    private JLabel closedDescriptionLabel;
+    private JLabel changeDescriptionLabel;
 
     public CommitPanel(Project project, GitCommitMessageHelperSettings settings) {
         //parameter
@@ -33,7 +38,12 @@ public class CommitPanel {
     }
 
     JPanel getMainPanel() {
-        typeFieldName.setText(PropertiesUtils.getInfo("type.field"));
+        typeDescriptionLabel.setText(PropertiesUtils.getInfo("commit.type.field"));
+        scopeDescriptionLabel.setText(PropertiesUtils.getInfo("commit.scope.field"));
+        subjectDescriptionLabel.setText(PropertiesUtils.getInfo("commit.subject.field"));
+        bodyDescriptionLabel.setText(PropertiesUtils.getInfo("commit.body.field"));
+        closedDescriptionLabel.setText(PropertiesUtils.getInfo("commit.closes.field"));
+        changeDescriptionLabel.setText(PropertiesUtils.getInfo("commit.changes.field"));
         return mainPanel;
     }
 
@@ -51,4 +61,7 @@ public class CommitPanel {
     }
 
 
+    private void createUIComponents() {
+        // TODO: place custom component creation code here
+    }
 }

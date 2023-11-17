@@ -40,6 +40,7 @@ public class TemplateEditPanel {
     private JLabel closesExplainDescriptionLabel;
     private JLabel newLineExplainDescriptionLabel;
     private JLabel settingTemplateDescriptionLabel;
+    private JLabel scopeExplainDescriptionLabel;
 
 
     public TemplateEditPanel(GitCommitMessageHelperSettings settings) {
@@ -49,14 +50,13 @@ public class TemplateEditPanel {
         description.setText(PropertiesUtils.getInfo("setting.description"));
         explainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.explainDescription"));
         typeExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.typeExplainDescription"));
+        scopeExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.scopeExplainDescription"));
         subjectExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.subjectExplainDescription"));
         bodyExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.bodyExplainDescription"));
         changesExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.changesExplainDescription"));
         closesExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.closesExplainDescription"));
         newLineExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.newLineExplainDescription"));
         settingTemplateDescriptionLabel.setText(PropertiesUtils.getInfo("setting.settingTemplateDescription"));
-
-
         //init  typeEditPanel
         aliasTable = new AliasTable();
         typeEditPanel.add(

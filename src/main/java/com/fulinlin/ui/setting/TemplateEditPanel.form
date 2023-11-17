@@ -94,12 +94,12 @@
                           <text value="  ${type} corresponds to the submission menu 'Type of chang'&#10;"/>
                         </properties>
                       </component>
-                      <component id="257b0" class="javax.swing.JLabel">
+                      <component id="257b0" class="javax.swing.JLabel" binding="scopeExplainDescriptionLabel">
                         <constraints>
                           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="  ${scope}corresponds to the submission menu 'Scope of this change'"/>
+                          <text value="  ${scope} corresponds to the submission menu 'Scope of this change'"/>
                         </properties>
                       </component>
                       <component id="fd83a" class="javax.swing.JLabel" binding="subjectExplainDescriptionLabel">
