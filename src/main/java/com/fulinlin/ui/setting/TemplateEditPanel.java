@@ -57,22 +57,6 @@ public class TemplateEditPanel {
         closesExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.closesExplainDescription"));
         newLineExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.newLineExplainDescription"));
         settingTemplateDescriptionLabel.setText(PropertiesUtils.getInfo("setting.settingTemplateDescription"));
-        //init  typeEditPanel
-        aliasTable = new AliasTable();
-        typeEditPanel.add(
-                ToolbarDecorator.createDecorator(aliasTable)
-                        .setAddAction(button -> aliasTable.addAlias())
-                        .setRemoveAction(button -> aliasTable.removeSelectedAliases())
-                        .setEditAction(button -> aliasTable.editAlias())
-                        .setMoveUpAction(anActionButton -> aliasTable.moveUp())
-                        .setMoveDownAction(anActionButton -> aliasTable.moveDown())
-                        .addExtraAction
-                                (new AnActionButton("Reset Default Aliases", AllIcons.Actions.Rollback) {
-                                    @Override
-                                    public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
-                                        aliasTable.resetDefaultAliases();
-                                    }
-                                }).createPanel(), BorderLayout.CENTER);
 
         //init  templateEditor
         String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
@@ -90,6 +74,25 @@ public class TemplateEditPanel {
         jbScrollPane.setMaximumSize(new Dimension(150, 50));
         templateEditPanel.add(jbScrollPane);
         ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(template));
+        
+
+        //init  typeEditPanel
+        aliasTable = new AliasTable();
+        typeEditPanel.add(
+                ToolbarDecorator.createDecorator(aliasTable)
+                        .setAddAction(button -> aliasTable.addAlias())
+                        .setRemoveAction(button -> aliasTable.removeSelectedAliases())
+                        .setEditAction(button -> aliasTable.editAlias())
+                        .setMoveUpAction(anActionButton -> aliasTable.moveUp())
+                        .setMoveDownAction(anActionButton -> aliasTable.moveDown())
+                        .addExtraAction
+                                (new AnActionButton("Reset Default Aliases", AllIcons.Actions.Rollback) {
+                                    @Override
+                                    public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
+                                        aliasTable.resetDefaultAliases();
+                                    }
+                                }).createPanel(), BorderLayout.CENTER);
+
 
         // DoubleClickListener
         new DoubleClickListener() {

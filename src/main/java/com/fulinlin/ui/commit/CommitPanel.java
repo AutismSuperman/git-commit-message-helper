@@ -4,8 +4,10 @@ import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.utils.PropertiesUtils;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VfsUtil;
 
 import javax.swing.*;
+import java.io.File;
 import java.util.List;
 
 
@@ -30,11 +32,15 @@ public class CommitPanel {
         for (TypeAlias type : typeAliases) {
             changeType.addItem(type);
         }
-       /* fix fulin  File workingDirectory = VfsUtil.virtualToIoFile(project.getBaseDir());
-        Command.Result result = new Command(workingDirectory, "git log --all --format=%s | grep -Eo '^[a-z]+(\\(.*\\)):.*$' | sed 's/^.*(\\(.*\\)):.*$/\\1/' | sort -n | uniq").execute();
-        if (result.isSuccess()) {
-            result.getOutput().forEach(changeScope::addItem);
-        }*/
+         /* //fix fulin
+            File workingDirectory = VfsUtil.virtualToIoFile(project.getBaseDir());
+            Command.Result result =
+            new Command(workingDirectory, "git log --all --format=%s | grep -Eo '^[a-z]+(\\(.*\\)):.*$' | sed 's/^.*(\\(.*\\)):.*$/\\1/' | sort -n | uniq")
+                  .execute();
+            if (result.isSuccess()) {
+                result.getOutput().forEach(changeScope::addItem);
+            }
+          */
     }
 
     JPanel getMainPanel() {
@@ -60,8 +66,4 @@ public class CommitPanel {
         );
     }
 
-
-    private void createUIComponents() {
-        // TODO: place custom component creation code here
-    }
 }
