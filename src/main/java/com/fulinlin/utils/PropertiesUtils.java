@@ -9,7 +9,10 @@ public class PropertiesUtils {
     private final static ResourceBundle rb1 = ResourceBundle.getBundle(baseName);
 
     public static String getInfo(String key, String... params) {
-        return new MessageFormat(rb1.getString(key)).format(params);
+        String string = rb1.getString(key);
+        string = string.replace("${", "$'{'");
+        string = string.replace("}", "'}'");
+        return new MessageFormat(string).format(params);
     }
 
 }

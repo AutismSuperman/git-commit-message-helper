@@ -2,6 +2,7 @@ package com.fulinlin.ui.commit;
 
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.fulinlin.utils.PropertiesUtils;
 import com.intellij.openapi.project.Project;
 
 import javax.swing.*;
@@ -16,6 +17,7 @@ public class CommitPanel {
     private JTextArea longDescription;
     private JTextField closedIssues;
     private JTextArea breakingChanges;
+    private JLabel typeFieldName;
 
     public CommitPanel(Project project, GitCommitMessageHelperSettings settings) {
         //parameter
@@ -31,6 +33,7 @@ public class CommitPanel {
     }
 
     JPanel getMainPanel() {
+        typeFieldName.setText(PropertiesUtils.getInfo("type.field"));
         return mainPanel;
     }
 

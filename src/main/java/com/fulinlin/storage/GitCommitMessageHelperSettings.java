@@ -26,13 +26,11 @@ import java.util.List;
         storages = {@Storage(value = GitCommitConstants.ACTION_PREFIX + "-settings.xml", roamingType = RoamingType.DISABLED)})
 public class GitCommitMessageHelperSettings implements PersistentStateComponent<GitCommitMessageHelperSettings> {
     private static final Logger log = Logger.getInstance(GitCommitMessageHelperSettings.class);
+    private DataSettings dataSettings;
+
 
     public GitCommitMessageHelperSettings() {
     }
-
-
-    private DataSettings dataSettings;
-
 
     @Nullable
     @Override
@@ -52,6 +50,9 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         return dataSettings;
     }
 
+    public void setDateSettings(DataSettings dateSettings) {
+        this.dataSettings = dateSettings;
+    }
 
     @Override
     public void loadState(@NotNull GitCommitMessageHelperSettings gitCommitMessageHelperSettings) {
@@ -66,6 +67,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         try {
             dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
             List<TypeAlias> typeAliases = new LinkedList<>();
+            // default init i18n
             typeAliases.add(new TypeAlias("feature", PropertiesUtils.getInfo("feature.description")));
             typeAliases.add(new TypeAlias("fix", PropertiesUtils.getInfo("fix.description")));
             typeAliases.add(new TypeAlias("docs", PropertiesUtils.getInfo("docs.description")));
@@ -81,10 +83,6 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         } catch (Exception e) {
             log.error("loadDefaultSettings failed", e);
         }
-    }
-
-    public void setDateSettings(DataSettings dateSettings) {
-        this.dataSettings = dateSettings;
     }
 
     public void updateTemplate(String template) {

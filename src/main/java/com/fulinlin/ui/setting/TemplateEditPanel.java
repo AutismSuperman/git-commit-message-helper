@@ -1,6 +1,7 @@
 package com.fulinlin.ui.setting;
 
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.fulinlin.utils.PropertiesUtils;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -22,22 +23,59 @@ import java.util.Optional;
 
 
 public class TemplateEditPanel {
+    private final AliasTable aliasTable;
+    private final Editor templateEditor;
+    //my  attribute
+    protected GitCommitMessageHelperSettings settings;
     private JPanel mainPanel;
     private JPanel templateEditPanel;
     private JPanel typeEditPanel;
     private JTabbedPane tabbedPane;
-    //my  attribute
-    protected GitCommitMessageHelperSettings settings;
-    private final AliasTable aliasTable;
-    private final Editor templateEditor;
+    private JLabel description;
+    private JLabel explainDescriptionLabel;
+    private JLabel typeExplainDescriptionLabel;
+    private JLabel subjectExplainDescriptionLabel;
+    private JLabel bodyExplainDescriptionLabel;
+    private JLabel changesExplainDescriptionLabel;
+    private JLabel closesExplainDescriptionLabel;
+    private JLabel newLineExplainDescriptionLabel;
+    private JLabel settingTemplateDescriptionLabel;
 
 
     public TemplateEditPanel(GitCommitMessageHelperSettings settings) {
         //get setting
         this.settings = settings.clone();
+        //init  description
+        description.setText(PropertiesUtils.getInfo("setting.description"));
+        explainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.explainDescription"));
+        typeExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.typeExplainDescription"));
+        subjectExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.subjectExplainDescription"));
+        bodyExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.bodyExplainDescription"));
+        changesExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.changesExplainDescription"));
+        closesExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.closesExplainDescription"));
+        newLineExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.newLineExplainDescription"));
+        settingTemplateDescriptionLabel.setText(PropertiesUtils.getInfo("setting.settingTemplateDescription"));
+
+
+        //init  typeEditPanel
         aliasTable = new AliasTable();
-        String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
+        typeEditPanel.add(
+                ToolbarDecorator.createDecorator(aliasTable)
+                        .setAddAction(button -> aliasTable.addAlias())
+                        .setRemoveAction(button -> aliasTable.removeSelectedAliases())
+                        .setEditAction(button -> aliasTable.editAlias())
+                        .setMoveUpAction(anActionButton -> aliasTable.moveUp())
+                        .setMoveDownAction(anActionButton -> aliasTable.moveDown())
+                        .addExtraAction
+                                (new AnActionButton("Reset Default Aliases", AllIcons.Actions.Rollback) {
+                                    @Override
+                                    public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
+                                        aliasTable.resetDefaultAliases();
+                                    }
+                                }).createPanel(), BorderLayout.CENTER);
+
         //init  templateEditor
+        String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
         templateEditor = EditorFactory.getInstance().createEditor(
                 EditorFactory.getInstance().createDocument(""),
                 null,
@@ -53,21 +91,7 @@ public class TemplateEditPanel {
         templateEditPanel.add(jbScrollPane);
         ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(template));
 
-        //init   typeEditPanel
-        typeEditPanel.add(
-                ToolbarDecorator.createDecorator(aliasTable)
-                        .setAddAction(button -> aliasTable.addAlias())
-                        .setRemoveAction(button -> aliasTable.removeSelectedAliases())
-                        .setEditAction(button -> aliasTable.editAlias())
-                        .setMoveUpAction(anActionButton -> aliasTable.moveUp())
-                        .setMoveDownAction(anActionButton -> aliasTable.moveDown())
-                        .addExtraAction
-                                (new AnActionButton("Reset Default Aliases", AllIcons.Actions.Rollback) {
-                                    @Override
-                                    public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
-                                        aliasTable.resetDefaultAliases();
-                                    }
-                                }).createPanel(), BorderLayout.CENTER);
+        // DoubleClickListener
         new DoubleClickListener() {
             @Override
             protected boolean onDoubleClick(MouseEvent e) {

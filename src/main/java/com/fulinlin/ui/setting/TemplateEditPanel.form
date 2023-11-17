@@ -21,7 +21,7 @@
         </properties>
         <border type="none"/>
         <children>
-          <component id="30346" class="javax.swing.JLabel">
+          <component id="30346" class="javax.swing.JLabel" binding="description">
             <constraints>
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
@@ -46,8 +46,7 @@
         <properties/>
         <border type="none"/>
         <children>
-          <grid id="ab489" binding="typeEditPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-            <margin top="0" left="0" bottom="0" right="0"/>
+          <grid id="ab489" binding="typeEditPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
             <constraints>
               <tabbedpane title="type"/>
             </constraints>
@@ -71,7 +70,7 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="2be01" class="javax.swing.JLabel">
+                  <component id="2be01" class="javax.swing.JLabel" binding="explainDescriptionLabel">
                     <constraints>
                       <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                     </constraints>
@@ -87,7 +86,7 @@
                     <properties/>
                     <border type="none"/>
                     <children>
-                      <component id="b2ef5" class="javax.swing.JLabel">
+                      <component id="b2ef5" class="javax.swing.JLabel" binding="typeExplainDescriptionLabel">
                         <constraints>
                           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
@@ -103,7 +102,7 @@
                           <text value="  ${scope}corresponds to the submission menu 'Scope of this change'"/>
                         </properties>
                       </component>
-                      <component id="fd83a" class="javax.swing.JLabel">
+                      <component id="fd83a" class="javax.swing.JLabel" binding="subjectExplainDescriptionLabel">
                         <constraints>
                           <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
@@ -111,7 +110,7 @@
                           <text value="  ${subject} corresponds to the submission menu 'Short description'"/>
                         </properties>
                       </component>
-                      <component id="8ea9d" class="javax.swing.JLabel">
+                      <component id="8ea9d" class="javax.swing.JLabel" binding="bodyExplainDescriptionLabel">
                         <constraints>
                           <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
@@ -119,7 +118,7 @@
                           <text value="  ${body} corresponds to the submission menu 'Long description'"/>
                         </properties>
                       </component>
-                      <component id="87cbe" class="javax.swing.JLabel">
+                      <component id="87cbe" class="javax.swing.JLabel" binding="changesExplainDescriptionLabel">
                         <constraints>
                           <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
@@ -127,7 +126,7 @@
                           <text value="  ${changes} corresponds to the submission menu 'Breaking changes'"/>
                         </properties>
                       </component>
-                      <component id="433d9" class="javax.swing.JLabel">
+                      <component id="433d9" class="javax.swing.JLabel" binding="closesExplainDescriptionLabel">
                         <constraints>
                           <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
@@ -135,7 +134,7 @@
                           <text value="  ${closes} corresponds to the submission menu 'Closed issues'"/>
                         </properties>
                       </component>
-                      <component id="23ec7" class="javax.swing.JLabel">
+                      <component id="23ec7" class="javax.swing.JLabel" binding="newLineExplainDescriptionLabel">
                         <constraints>
                           <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
@@ -155,7 +154,7 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="b6df6" class="javax.swing.JLabel">
+                  <component id="b6df6" class="javax.swing.JLabel" binding="settingTemplateDescriptionLabel">
                     <constraints>
                       <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                     </constraints>
