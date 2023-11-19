@@ -5,8 +5,10 @@ import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.utils.I18nUtil;
 import com.intellij.openapi.project.Project;
+import com.intellij.ui.JBColor;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.util.List;
 
 
