@@ -17,6 +17,9 @@ public class GitCommitMessageStorage implements PersistentStateComponent<GitComm
 
     private MessageStorage messageStorage;
 
+    public GitCommitMessageStorage() {
+    }
+
     @Nullable
     @Override
     public GitCommitMessageStorage getState() {

@@ -28,6 +28,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     private static final Logger log = Logger.getInstance(GitCommitMessageHelperSettings.class);
     private DataSettings dataSettings;
 
+    public GitCommitMessageHelperSettings() {
+    }
 
     @Nullable
     @Override

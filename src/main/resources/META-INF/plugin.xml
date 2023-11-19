@@ -70,7 +70,6 @@
                 serviceImplementation="com.fulinlin.storage.GitCommitMessageHelperSettings"/>
         <projectService
                 serviceImplementation="com.fulinlin.storage.GitCommitMessageStorage"/>
-
         <applicationConfigurable
                 instance="com.fulinlin.ui.setting.TemplateEditPaneConfigurable" displayName="GitCommitMessageHelper"/>
     </extensions>
