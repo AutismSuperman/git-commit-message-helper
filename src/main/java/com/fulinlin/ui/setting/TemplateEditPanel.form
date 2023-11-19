@@ -48,7 +48,7 @@
         <children>
           <grid id="ab489" binding="typeEditPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
             <constraints>
-              <tabbedpane title="type"/>
+              <tabbedpane title="Type"/>
             </constraints>
             <properties/>
             <border type="none"/>
@@ -57,7 +57,7 @@
           <grid id="2026f" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
             <margin top="0" left="0" bottom="0" right="0"/>
             <constraints>
-              <tabbedpane title="template"/>
+              <tabbedpane title="Template"/>
             </constraints>
             <properties/>
             <border type="none"/>

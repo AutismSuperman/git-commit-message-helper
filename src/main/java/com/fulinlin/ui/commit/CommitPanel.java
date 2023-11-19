@@ -1,13 +1,12 @@
 package com.fulinlin.ui.commit;
 
+import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
-import com.fulinlin.utils.PropertiesUtils;
+import com.fulinlin.utils.I18nUtil;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VfsUtil;
 
 import javax.swing.*;
-import java.io.File;
 import java.util.List;
 
 
@@ -26,11 +25,25 @@ public class CommitPanel {
     private JLabel closedDescriptionLabel;
     private JLabel changeDescriptionLabel;
 
-    public CommitPanel(Project project, GitCommitMessageHelperSettings settings) {
+    public CommitPanel(Project project, GitCommitMessageHelperSettings settings, CommitTemplate commitMessageTemplate) {
         //parameter
         List<TypeAlias> typeAliases = settings.getDateSettings().getTypeAliases();
         for (TypeAlias type : typeAliases) {
             changeType.addItem(type);
+        }
+        if (commitMessageTemplate != null) {
+            // with cache init
+            typeAliases.stream()
+                    .filter(typeAlias -> typeAlias.getTitle().equals(commitMessageTemplate.getType()))
+                    .findFirst()
+                    .ifPresent(typeAlias ->
+                            changeType.setSelectedItem(typeAlias)
+                    );
+            changeScope.setText(commitMessageTemplate.getScope());
+            shortDescription.setText(commitMessageTemplate.getSubject());
+            longDescription.setText(commitMessageTemplate.getBody());
+            breakingChanges.setText(commitMessageTemplate.getChanges());
+            closedIssues.setText(commitMessageTemplate.getCloses());
         }
          /* //fix fulin
             File workingDirectory = VfsUtil.virtualToIoFile(project.getBaseDir());
@@ -44,12 +57,12 @@ public class CommitPanel {
     }
 
     JPanel getMainPanel() {
-        typeDescriptionLabel.setText(PropertiesUtils.getInfo("commit.type.field"));
-        scopeDescriptionLabel.setText(PropertiesUtils.getInfo("commit.scope.field"));
-        subjectDescriptionLabel.setText(PropertiesUtils.getInfo("commit.subject.field"));
-        bodyDescriptionLabel.setText(PropertiesUtils.getInfo("commit.body.field"));
-        closedDescriptionLabel.setText(PropertiesUtils.getInfo("commit.closes.field"));
-        changeDescriptionLabel.setText(PropertiesUtils.getInfo("commit.changes.field"));
+        typeDescriptionLabel.setText(I18nUtil.getInfo("commit.type.field"));
+        scopeDescriptionLabel.setText(I18nUtil.getInfo("commit.scope.field"));
+        subjectDescriptionLabel.setText(I18nUtil.getInfo("commit.subject.field"));
+        bodyDescriptionLabel.setText(I18nUtil.getInfo("commit.body.field"));
+        closedDescriptionLabel.setText(I18nUtil.getInfo("commit.closes.field"));
+        changeDescriptionLabel.setText(I18nUtil.getInfo("commit.changes.field"));
         return mainPanel;
     }
 
@@ -64,6 +77,19 @@ public class CommitPanel {
                 closedIssues.getText().trim(),
                 breakingChanges.getText().trim()
         );
+    }
+
+    CommitTemplate getCommitMessageTemplate() {
+        CommitTemplate commitTemplate = new CommitTemplate();
+        TypeAlias selectedItem = (TypeAlias) changeType.getSelectedItem();
+        assert selectedItem != null;
+        commitTemplate.setType(selectedItem.getTitle());
+        commitTemplate.setScope(changeScope.getText().trim());
+        commitTemplate.setSubject(shortDescription.getText().trim());
+        commitTemplate.setBody(longDescription.getText().trim());
+        commitTemplate.setChanges(breakingChanges.getText().trim());
+        commitTemplate.setCloses(closedIssues.getText().trim());
+        return commitTemplate;
     }
 
 }

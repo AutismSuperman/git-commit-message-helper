@@ -3,7 +3,7 @@ package com.fulinlin.utils;
 import java.text.MessageFormat;
 import java.util.ResourceBundle;
 
-public class PropertiesUtils {
+public class I18nUtil {
 
     private final static String baseName = "i18n/info";
     private final static ResourceBundle rb1 = ResourceBundle.getBundle(baseName);

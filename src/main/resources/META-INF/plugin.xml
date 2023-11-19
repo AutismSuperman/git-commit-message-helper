@@ -53,7 +53,7 @@
 
 
 
-    <idea-version since-build="171"/>
+    <idea-version since-build="202"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -68,8 +68,11 @@
         <!-- Add your extensions here -->
         <applicationService
                 serviceImplementation="com.fulinlin.storage.GitCommitMessageHelperSettings"/>
+        <projectService
+                serviceImplementation="com.fulinlin.storage.GitCommitMessageStorage"/>
+
         <applicationConfigurable
-                instance="com.fulinlin.ui.setting.TemplateEditPaneConfigurable"/>
+                instance="com.fulinlin.ui.setting.TemplateEditPaneConfigurable" displayName="GitCommitMessageHelper"/>
     </extensions>
 
 

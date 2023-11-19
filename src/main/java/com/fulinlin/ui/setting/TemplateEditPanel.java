@@ -1,7 +1,7 @@
 package com.fulinlin.ui.setting;
 
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
-import com.fulinlin.utils.PropertiesUtils;
+import com.fulinlin.utils.I18nUtil;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -25,7 +25,6 @@ import java.util.Optional;
 public class TemplateEditPanel {
     private final AliasTable aliasTable;
     private final Editor templateEditor;
-    //my  attribute
     protected GitCommitMessageHelperSettings settings;
     private JPanel mainPanel;
     private JPanel templateEditPanel;
@@ -47,17 +46,18 @@ public class TemplateEditPanel {
         //get setting
         this.settings = settings.clone();
         //init  description
-        description.setText(PropertiesUtils.getInfo("setting.description"));
-        explainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.explainDescription"));
-        typeExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.typeExplainDescription"));
-        scopeExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.scopeExplainDescription"));
-        subjectExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.subjectExplainDescription"));
-        bodyExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.bodyExplainDescription"));
-        changesExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.changesExplainDescription"));
-        closesExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.closesExplainDescription"));
-        newLineExplainDescriptionLabel.setText(PropertiesUtils.getInfo("setting.newLineExplainDescription"));
-        settingTemplateDescriptionLabel.setText(PropertiesUtils.getInfo("setting.settingTemplateDescription"));
-
+        description.setText(I18nUtil.getInfo("setting.description"));
+        explainDescriptionLabel.setText(I18nUtil.getInfo("setting.explainDescription"));
+        typeExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.typeExplainDescription"));
+        scopeExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.scopeExplainDescription"));
+        subjectExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.subjectExplainDescription"));
+        bodyExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.bodyExplainDescription"));
+        changesExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.changesExplainDescription"));
+        closesExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.closesExplainDescription"));
+        newLineExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.newLineExplainDescription"));
+        settingTemplateDescriptionLabel.setText(I18nUtil.getInfo("setting.settingTemplateDescription"));
+        tabbedPane.setTitleAt(0, I18nUtil.getInfo("setting.type.panel.title"));
+        tabbedPane.setTitleAt(1, I18nUtil.getInfo("setting.template.panel.title"));
         //init  templateEditor
         String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
         templateEditor = EditorFactory.getInstance().createEditor(
@@ -74,8 +74,6 @@ public class TemplateEditPanel {
         jbScrollPane.setMaximumSize(new Dimension(150, 50));
         templateEditPanel.add(jbScrollPane);
         ApplicationManager.getApplication().runWriteAction(() -> templateEditor.getDocument().setText(template));
-        
-
         //init  typeEditPanel
         aliasTable = new AliasTable();
         typeEditPanel.add(
@@ -127,10 +125,7 @@ public class TemplateEditPanel {
         if (!StringUtil.equals(settings.getDateSettings().getTemplate(), templateEditor.getDocument().getText())) {
             return true;
         }
-        if (settings.getDateSettings().getTypeAliases() == data.getDateSettings().getTypeAliases()) {
-            return true;
-        }
-        return false;
+        return settings.getDateSettings().getTypeAliases() == data.getDateSettings().getTypeAliases();
     }
 
 

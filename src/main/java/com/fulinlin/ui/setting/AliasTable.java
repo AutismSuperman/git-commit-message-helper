@@ -2,6 +2,7 @@ package com.fulinlin.ui.setting;
 
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.fulinlin.utils.I18nUtil;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.table.JBTable;
@@ -70,7 +71,7 @@ public class AliasTable extends JBTable {
 
 
     public void addAlias() {
-        final AliasEditor macroEditor = new AliasEditor("Add Type", "", "");
+        final AliasEditor macroEditor = new AliasEditor(I18nUtil.getInfo("setting.alias.add.title"), "", "");
         if (macroEditor.showAndGet()) {
             final String name = macroEditor.getTitle();
             typeAliases.add(new TypeAlias(macroEditor.getTitle(), macroEditor.getDescription()));
@@ -161,7 +162,7 @@ public class AliasTable extends JBTable {
         }
         final int selectedRow = getSelectedRow();
         final TypeAlias typeAlias = typeAliases.get(selectedRow);
-        final AliasEditor editor = new AliasEditor("Edit Type", typeAlias.getTitle(), typeAlias.getDescription());
+        final AliasEditor editor = new AliasEditor(I18nUtil.getInfo("setting.alias.edit.title"), typeAlias.getTitle(), typeAlias.getDescription());
         if (editor.showAndGet()) {
             typeAlias.setTitle(editor.getTitle());
             typeAlias.setDescription(editor.getDescription());
@@ -214,9 +215,9 @@ public class AliasTable extends JBTable {
         public String getColumnName(int columnIndex) {
             switch (columnIndex) {
                 case NAME_COLUMN:
-                    return "title";
+                    return I18nUtil.getInfo("setting.alias.field.title");
                 case VALUE_COLUMN:
-                    return "description";
+                    return I18nUtil.getInfo("setting.alias.field.description");
             }
             return null;
         }
