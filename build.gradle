@@ -22,7 +22,7 @@ repositories {
 
 dependencies {
     api  'uk.com.robust-it:cloning:1.9.12'
-    api 'commons-io:commons-io:2.11.0'
+    api 'org.apache.commons:commons-text:1.11.0'
     testImplementation 'junit:junit:4.13.2'
 }
 
@@ -34,6 +34,7 @@ intellij {
     downloadSources = true
     updateSinceUntilBuild = false
     buildSearchableOptions.enabled = false
+
 
     runIde {
         jvmArgs = project.runIdeJvmArgs.split(',').toList()

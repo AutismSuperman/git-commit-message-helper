@@ -1,6 +1,8 @@
 package com.fulinlin.model;
 
-import org.apache.commons.lang.StringEscapeUtils;
+
+import org.apache.commons.text.StringEscapeUtils;
+
 
 /**
  * @program: git-commit-message-helper

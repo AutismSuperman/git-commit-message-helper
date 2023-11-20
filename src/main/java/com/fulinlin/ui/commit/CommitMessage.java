@@ -55,7 +55,7 @@ public class CommitMessage {
         if (StringUtils.isNotBlank(closedIssues)) {
             commitTemplate.setCloses(closedIssues);
         }
-        String template = settings.getDateSettings().getTemplate();
+        String template = settings.getDateSettings().getTemplate().replaceAll("\\n", "");
         return VelocityUtils.convert(template, commitTemplate);
     }
 
