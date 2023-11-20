@@ -7,8 +7,6 @@ package com.fulinlin.constant;
  **/
 public class GitCommitConstants {
 
-    public static final String ACTION_SUFFIX = " ";
-
     public static final String ACTION_PREFIX = "$APP_CONFIG$/GitCommitMessageHelperSettings";
 
     public static final String DEFAULT_TEMPLATE = "#if($type)${type}#end#if($scope)(${scope})#end: #if($subject)${subject}#end" +

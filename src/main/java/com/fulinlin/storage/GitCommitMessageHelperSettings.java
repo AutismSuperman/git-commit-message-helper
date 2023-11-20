@@ -22,7 +22,7 @@ import java.util.List;
  * @author: fulin
  * @create: 2019-12-05 21:13
  **/
-@State(name = "GitCommitMessageHelperSettings" + GitCommitConstants.ACTION_SUFFIX,
+@State(name = "GitCommitMessageHelperSettings",
         storages = {@Storage(value = GitCommitConstants.ACTION_PREFIX + "-settings.xml")})
 public class GitCommitMessageHelperSettings implements PersistentStateComponent<GitCommitMessageHelperSettings> {
     private static final Logger log = Logger.getInstance(GitCommitMessageHelperSettings.class);
