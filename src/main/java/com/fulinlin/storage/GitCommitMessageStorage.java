@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 
-@State(name = "GitCommitMessageStorage" + GitCommitConstants.ACTION_SUFFIX,
+@State(name = "GitCommitMessageStorage",
         storages = {@Storage(value = "GitCommitMessageStorage.xml", roamingType = RoamingType.DISABLED)})
 public class GitCommitMessageStorage implements PersistentStateComponent<GitCommitMessageStorage> {
 
