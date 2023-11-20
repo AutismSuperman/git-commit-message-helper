@@ -5,10 +5,8 @@ import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.utils.I18nUtil;
 import com.intellij.openapi.project.Project;
-import com.intellij.ui.JBColor;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.util.List;
 
 
@@ -26,6 +24,8 @@ public class CommitPanel {
     private JLabel bodyDescriptionLabel;
     private JLabel closedDescriptionLabel;
     private JLabel changeDescriptionLabel;
+    private JScrollPane longDescriptionScrollPane;
+    private JScrollPane breakingChangesScrollPane;
 
     public CommitPanel(Project project, GitCommitMessageHelperSettings settings, CommitTemplate commitMessageTemplate) {
         //parameter
@@ -47,7 +47,7 @@ public class CommitPanel {
             breakingChanges.setText(commitMessageTemplate.getChanges());
             closedIssues.setText(commitMessageTemplate.getCloses());
         }
-         /* //fix fulin
+         /* //Todo Command check commit message template
             File workingDirectory = VfsUtil.virtualToIoFile(project.getBaseDir());
             Command.Result result =
             new Command(workingDirectory, "git log --all --format=%s | grep -Eo '^[a-z]+(\\(.*\\)):.*$' | sed 's/^.*(\\(.*\\)):.*$/\\1/' | sort -n | uniq")
@@ -65,6 +65,8 @@ public class CommitPanel {
         bodyDescriptionLabel.setText(I18nUtil.getInfo("commit.body.field"));
         closedDescriptionLabel.setText(I18nUtil.getInfo("commit.closes.field"));
         changeDescriptionLabel.setText(I18nUtil.getInfo("commit.changes.field"));
+        longDescriptionScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        breakingChangesScrollPane.setBorder(BorderFactory.createEmptyBorder());
         return mainPanel;
     }
 

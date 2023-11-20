@@ -81,7 +81,7 @@
         <action id="Commit.Button" class="com.fulinlin.action.CreateCommitAction"
                 text="Create Commit Message"
                 description="Create commit message"
-                icon="PluginIcons.ICON">
+                icon="PluginIcons.EDIT">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
         </action>
     </actions>
