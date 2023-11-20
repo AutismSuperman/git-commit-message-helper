@@ -4,7 +4,8 @@ import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.utils.VelocityUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+
 
 /**
  * @author fulin
