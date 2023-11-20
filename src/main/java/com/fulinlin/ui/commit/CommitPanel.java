@@ -4,6 +4,7 @@ import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.utils.I18nUtil;
+import com.intellij.ide.ui.laf.darcula.ui.DarculaTextBorder;
 import com.intellij.openapi.project.Project;
 
 import javax.swing.*;
@@ -15,9 +16,9 @@ public class CommitPanel {
     private JComboBox<TypeAlias> changeType;
     private JTextField changeScope;
     private JTextField shortDescription;
-    private JTextArea longDescription;
+    private JTextPane longDescription;
+    private JTextPane breakingChanges;
     private JTextField closedIssues;
-    private JTextArea breakingChanges;
     private JLabel typeDescriptionLabel;
     private JLabel scopeDescriptionLabel;
     private JLabel subjectDescriptionLabel;
@@ -67,6 +68,8 @@ public class CommitPanel {
         changeDescriptionLabel.setText(I18nUtil.getInfo("commit.changes.field"));
         longDescriptionScrollPane.setBorder(BorderFactory.createEmptyBorder());
         breakingChangesScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        longDescription.setBorder(new DarculaTextBorder());
+        breakingChanges.setBorder(new DarculaTextBorder());
         return mainPanel;
     }
 

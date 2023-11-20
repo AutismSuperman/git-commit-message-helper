@@ -97,13 +97,9 @@
         </properties>
         <border type="none"/>
         <children>
-          <component id="79197" class="javax.swing.JTextArea" binding="longDescription">
+          <component id="f9906" class="javax.swing.JTextPane" binding="longDescription">
             <constraints/>
-            <properties>
-              <autoscrolls value="true"/>
-              <lineWrap value="true"/>
-              <margin top="0" left="0" bottom="0" right="0"/>
-            </properties>
+            <properties/>
           </component>
         </children>
       </scrollpane>
@@ -126,7 +122,7 @@
         </properties>
         <border type="none"/>
         <children>
-          <component id="b7a8f" class="javax.swing.JTextArea" binding="breakingChanges">
+          <component id="fee2d" class="javax.swing.JTextPane" binding="breakingChanges">
             <constraints/>
             <properties/>
           </component>
