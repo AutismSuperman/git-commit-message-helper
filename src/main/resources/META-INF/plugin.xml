@@ -2,13 +2,21 @@
     <id>commit-message-helper-idea-plugin</id>
     <name>Git Commit Message Helper</name>
     <vendor email="fulinlin9527@outlook.com" url="https://github.com/AutismSuperman">FuLinLin</vendor>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 
 
     <description><![CDATA[<p>Git Commit Message Helper user gradle plugin generate description</p>]]></description>
 
     <change-notes>
         <![CDATA[
+         <strong>version 1.3.0<strong>
+         <br/>
+         <ul>
+             <li>Optimize Editor UI.</li>
+             <li>Can dynamically internationalize based on language plugins.</li>
+             <li>Fix some bugs.</li>
+         </ul>
+         <br/>
          <strong>version 1.2.0<strong>
          <br/>
          <ul>
