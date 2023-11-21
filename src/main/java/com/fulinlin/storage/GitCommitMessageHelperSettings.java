@@ -1,11 +1,10 @@
 package com.fulinlin.storage;
 
 import com.fulinlin.constant.GitCommitConstants;
+import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.DataSettings;
 import com.fulinlin.model.TypeAlias;
-import com.fulinlin.utils.I18nUtil;
 import com.intellij.openapi.components.PersistentStateComponent;
-import com.intellij.openapi.components.RoamingType;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import com.intellij.openapi.diagnostic.Logger;
@@ -65,17 +64,17 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
             List<TypeAlias> typeAliases = new LinkedList<>();
             // default init i18n
-            typeAliases.add(new TypeAlias("feature", I18nUtil.getInfo("feature.description")));
-            typeAliases.add(new TypeAlias("fix", I18nUtil.getInfo("fix.description")));
-            typeAliases.add(new TypeAlias("docs", I18nUtil.getInfo("docs.description")));
-            typeAliases.add(new TypeAlias("style", I18nUtil.getInfo("style.description")));
-            typeAliases.add(new TypeAlias("refactor", I18nUtil.getInfo("refactor.description")));
-            typeAliases.add(new TypeAlias("perf", I18nUtil.getInfo("perf.description")));
-            typeAliases.add(new TypeAlias("test", I18nUtil.getInfo("test.description")));
-            typeAliases.add(new TypeAlias("build", I18nUtil.getInfo("build.description")));
-            typeAliases.add(new TypeAlias("ci", I18nUtil.getInfo("ci.description")));
-            typeAliases.add(new TypeAlias("chore", I18nUtil.getInfo("chore.description")));
-            typeAliases.add(new TypeAlias("revert", I18nUtil.getInfo("revert.description")));
+            typeAliases.add(new TypeAlias("feature", PluginBundle.get("feature.description")));
+            typeAliases.add(new TypeAlias("fix", PluginBundle.get("fix.description")));
+            typeAliases.add(new TypeAlias("docs", PluginBundle.get("docs.description")));
+            typeAliases.add(new TypeAlias("style", PluginBundle.get("style.description")));
+            typeAliases.add(new TypeAlias("refactor", PluginBundle.get("refactor.description")));
+            typeAliases.add(new TypeAlias("perf", PluginBundle.get("perf.description")));
+            typeAliases.add(new TypeAlias("test", PluginBundle.get("test.description")));
+            typeAliases.add(new TypeAlias("build", PluginBundle.get("build.description")));
+            typeAliases.add(new TypeAlias("ci", PluginBundle.get("ci.description")));
+            typeAliases.add(new TypeAlias("chore", PluginBundle.get("chore.description")));
+            typeAliases.add(new TypeAlias("revert", PluginBundle.get("revert.description")));
             dataSettings.setTypeAliases(typeAliases);
         } catch (Exception e) {
             log.error("loadDefaultSettings failed", e);

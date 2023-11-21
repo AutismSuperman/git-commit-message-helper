@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-    api  'uk.com.robust-it:cloning:1.9.12'
+    api 'uk.com.robust-it:cloning:1.9.12'
     api 'org.apache.commons:commons-text:1.11.0'
     testImplementation 'junit:junit:4.13.2'
 }
@@ -34,7 +34,8 @@ intellij {
     downloadSources = true
     updateSinceUntilBuild = false
     buildSearchableOptions.enabled = false
-
+    //plugins=["com.intellij.zh:203.392"]
+    plugins=["com.intellij.ja:203.392"]
 
     runIde {
         jvmArgs = project.runIdeJvmArgs.split(',').toList()

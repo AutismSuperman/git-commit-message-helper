@@ -1,9 +1,9 @@
 package com.fulinlin.ui.commit;
 
+import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
-import com.fulinlin.utils.I18nUtil;
 import com.intellij.ide.ui.laf.darcula.ui.DarculaTextBorder;
 import com.intellij.openapi.project.Project;
 
@@ -60,12 +60,12 @@ public class CommitPanel {
     }
 
     JPanel getMainPanel() {
-        typeDescriptionLabel.setText(I18nUtil.getInfo("commit.type.field"));
-        scopeDescriptionLabel.setText(I18nUtil.getInfo("commit.scope.field"));
-        subjectDescriptionLabel.setText(I18nUtil.getInfo("commit.subject.field"));
-        bodyDescriptionLabel.setText(I18nUtil.getInfo("commit.body.field"));
-        closedDescriptionLabel.setText(I18nUtil.getInfo("commit.closes.field"));
-        changeDescriptionLabel.setText(I18nUtil.getInfo("commit.changes.field"));
+        typeDescriptionLabel.setText(PluginBundle.get("commit.type.field"));
+        scopeDescriptionLabel.setText(PluginBundle.get("commit.scope.field"));
+        subjectDescriptionLabel.setText(PluginBundle.get("commit.subject.field"));
+        bodyDescriptionLabel.setText(PluginBundle.get("commit.body.field"));
+        closedDescriptionLabel.setText(PluginBundle.get("commit.closes.field"));
+        changeDescriptionLabel.setText(PluginBundle.get("commit.changes.field"));
         longDescriptionScrollPane.setBorder(BorderFactory.createEmptyBorder());
         breakingChangesScrollPane.setBorder(BorderFactory.createEmptyBorder());
         longDescription.setBorder(new DarculaTextBorder());

@@ -1,11 +1,11 @@
 package com.fulinlin.action;
 
+import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.MessageStorage;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.storage.GitCommitMessageStorage;
 import com.fulinlin.ui.commit.CommitDialog;
-import com.fulinlin.ui.commit.CommitMessage;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.components.ServiceManager;

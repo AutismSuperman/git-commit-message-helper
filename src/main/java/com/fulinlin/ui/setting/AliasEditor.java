@@ -1,6 +1,6 @@
 package com.fulinlin.ui.setting;
 
-import com.fulinlin.utils.I18nUtil;
+import com.fulinlin.localization.PluginBundle;
 import com.intellij.openapi.ui.DialogWrapper;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,8 +21,8 @@ public class AliasEditor extends DialogWrapper {
     public AliasEditor(String title, String macroName, String value) {
         super(true);
         setTitle(title);
-        titleFieldLabel.setText(I18nUtil.getInfo("setting.alias.field.title"));
-        descriptionFieldLabel.setText(I18nUtil.getInfo("setting.alias.field.description"));
+        titleFieldLabel.setText(PluginBundle.get("setting.alias.field.title"));
+        descriptionFieldLabel.setText(PluginBundle.get("setting.alias.field.description"));
         titleField.setText(macroName);
         descriptionField.setText(value);
         init();

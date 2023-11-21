@@ -1,7 +1,7 @@
 package com.fulinlin.ui.setting;
 
+import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
-import com.fulinlin.utils.I18nUtil;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -46,18 +46,18 @@ public class TemplateEditPanel {
         //get setting
         this.settings = settings.clone();
         //init  description
-        description.setText(I18nUtil.getInfo("setting.description"));
-        explainDescriptionLabel.setText(I18nUtil.getInfo("setting.explainDescription"));
-        typeExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.typeExplainDescription"));
-        scopeExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.scopeExplainDescription"));
-        subjectExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.subjectExplainDescription"));
-        bodyExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.bodyExplainDescription"));
-        changesExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.changesExplainDescription"));
-        closesExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.closesExplainDescription"));
-        newLineExplainDescriptionLabel.setText(I18nUtil.getInfo("setting.newLineExplainDescription"));
-        settingTemplateDescriptionLabel.setText(I18nUtil.getInfo("setting.settingTemplateDescription"));
-        tabbedPane.setTitleAt(0, I18nUtil.getInfo("setting.type.panel.title"));
-        tabbedPane.setTitleAt(1, I18nUtil.getInfo("setting.template.panel.title"));
+        description.setText(PluginBundle.get("setting.description"));
+        explainDescriptionLabel.setText(PluginBundle.get("setting.explainDescription"));
+        typeExplainDescriptionLabel.setText(PluginBundle.get("setting.typeExplainDescription"));
+        scopeExplainDescriptionLabel.setText(PluginBundle.get("setting.scopeExplainDescription"));
+        subjectExplainDescriptionLabel.setText(PluginBundle.get("setting.subjectExplainDescription"));
+        bodyExplainDescriptionLabel.setText(PluginBundle.get("setting.bodyExplainDescription"));
+        changesExplainDescriptionLabel.setText(PluginBundle.get("setting.changesExplainDescription"));
+        closesExplainDescriptionLabel.setText(PluginBundle.get("setting.closesExplainDescription"));
+        newLineExplainDescriptionLabel.setText(PluginBundle.get("setting.newLineExplainDescription"));
+        settingTemplateDescriptionLabel.setText(PluginBundle.get("setting.settingTemplateDescription"));
+        tabbedPane.setTitleAt(0, PluginBundle.get("setting.type.panel.title"));
+        tabbedPane.setTitleAt(1, PluginBundle.get("setting.template.panel.title"));
         //init  templateEditor
         String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
         templateEditor = EditorFactory.getInstance().createEditor(

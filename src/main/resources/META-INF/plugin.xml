@@ -34,7 +34,7 @@
     </change-notes>
 
 
-    <idea-version since-build="202"/>
+    <idea-version since-build="203.*"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -53,10 +53,12 @@
                 serviceImplementation="com.fulinlin.storage.GitCommitMessageStorage"/>
         <applicationConfigurable
                 instance="com.fulinlin.ui.setting.TemplateEditPaneConfigurable" displayName="GitCommitMessageHelper"/>
+
     </extensions>
 
 
     <resource-bundle>i18n.info</resource-bundle>
+
 
     <actions>
         <action id="Commit.Button" class="com.fulinlin.action.CreateCommitAction"

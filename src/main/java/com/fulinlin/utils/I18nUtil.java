@@ -3,6 +3,8 @@ package com.fulinlin.utils;
 import java.text.MessageFormat;
 import java.util.ResourceBundle;
 
+
+@Deprecated
 public class I18nUtil {
 
     private final static String baseName = "i18n/info";

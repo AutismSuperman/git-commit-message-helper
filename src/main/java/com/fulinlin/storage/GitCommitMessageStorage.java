@@ -1,6 +1,5 @@
 package com.fulinlin.storage;
 
-import com.fulinlin.constant.GitCommitConstants;
 import com.fulinlin.model.MessageStorage;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.RoamingType;
