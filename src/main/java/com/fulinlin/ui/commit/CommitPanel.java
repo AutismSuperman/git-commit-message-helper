@@ -4,8 +4,9 @@ import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
-import com.intellij.ide.ui.laf.darcula.ui.DarculaTextBorder;
+import com.intellij.ide.ui.laf.darcula.ui.DarculaEditorTextFieldBorder;
 import com.intellij.openapi.project.Project;
+import com.intellij.ui.EditorTextField;
 
 import javax.swing.*;
 import java.util.List;
@@ -16,8 +17,8 @@ public class CommitPanel {
     private JComboBox<TypeAlias> changeType;
     private JTextField changeScope;
     private JTextField shortDescription;
-    private JTextPane longDescription;
-    private JTextPane breakingChanges;
+    private EditorTextField longDescription;
+    private EditorTextField breakingChanges;
     private JTextField closedIssues;
     private JLabel typeDescriptionLabel;
     private JLabel scopeDescriptionLabel;
@@ -28,7 +29,22 @@ public class CommitPanel {
     private JScrollPane longDescriptionScrollPane;
     private JScrollPane breakingChangesScrollPane;
 
+
     public CommitPanel(Project project, GitCommitMessageHelperSettings settings, CommitTemplate commitMessageTemplate) {
+        longDescription.setOneLineMode(false);
+        longDescription.ensureWillComputePreferredSize();
+        longDescription.addSettingsProvider(uEditor -> {
+            uEditor.setVerticalScrollbarVisible(true);
+            uEditor.setHorizontalScrollbarVisible(true);
+            uEditor.setBorder(null);
+        });
+        breakingChanges.setOneLineMode(false);
+        breakingChanges.ensureWillComputePreferredSize();
+        breakingChanges.addSettingsProvider(uEditor -> {
+            uEditor.setVerticalScrollbarVisible(true);
+            uEditor.setHorizontalScrollbarVisible(true);
+            uEditor.setBorder(null);
+        });
         //parameter
         List<TypeAlias> typeAliases = settings.getDateSettings().getTypeAliases();
         for (TypeAlias type : typeAliases) {
@@ -68,8 +84,8 @@ public class CommitPanel {
         changeDescriptionLabel.setText(PluginBundle.get("commit.changes.field"));
         longDescriptionScrollPane.setBorder(BorderFactory.createEmptyBorder());
         breakingChangesScrollPane.setBorder(BorderFactory.createEmptyBorder());
-        longDescription.setBorder(new CommitDarculaTextBorder());
-        breakingChanges.setBorder(new CommitDarculaTextBorder());
+        longDescription.setBorder(new DarculaEditorTextFieldBorder());
+        breakingChanges.setBorder(new DarculaEditorTextFieldBorder());
         return mainPanel;
     }
 
@@ -98,5 +114,6 @@ public class CommitPanel {
         commitTemplate.setCloses(closedIssues.getText().trim());
         return commitTemplate;
     }
+
 
 }

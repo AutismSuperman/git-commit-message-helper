@@ -97,7 +97,7 @@
         </properties>
         <border type="none"/>
         <children>
-          <component id="f9906" class="javax.swing.JTextPane" binding="longDescription">
+          <component id="a8ba1" class="com.intellij.ui.EditorTextField" binding="longDescription">
             <constraints/>
             <properties/>
           </component>
@@ -122,7 +122,7 @@
         </properties>
         <border type="none"/>
         <children>
-          <component id="fee2d" class="javax.swing.JTextPane" binding="breakingChanges">
+          <component id="92010" class="com.intellij.ui.EditorTextField" binding="breakingChanges">
             <constraints/>
             <properties/>
           </component>
