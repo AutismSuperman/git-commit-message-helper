@@ -37,7 +37,7 @@ public class PluginBundle extends AbstractBundle {
         var ideLocale = DynamicBundle.getLocale();
         if (!ideLocale.equals(Locale.ENGLISH)) {
             // load your bundle from baseName_<language>.properties, e.g. "baseName_zh.properties"
-            var localizedPath = pathToBundle + "_" + ideLocale.getLanguage();
+            //var localizedPath = pathToBundle + "_" + ideLocale.getLanguage();
             var localeBundle = ResourceBundle.getBundle(pathToBundle, ideLocale, loader, control);
             if (localeBundle != null && !base.equals(localeBundle)) {
                 setParent(localeBundle, base);

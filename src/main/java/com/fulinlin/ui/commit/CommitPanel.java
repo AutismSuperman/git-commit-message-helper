@@ -68,8 +68,8 @@ public class CommitPanel {
         changeDescriptionLabel.setText(PluginBundle.get("commit.changes.field"));
         longDescriptionScrollPane.setBorder(BorderFactory.createEmptyBorder());
         breakingChangesScrollPane.setBorder(BorderFactory.createEmptyBorder());
-        longDescription.setBorder(new DarculaTextBorder());
-        breakingChanges.setBorder(new DarculaTextBorder());
+        longDescription.setBorder(new CommitDarculaTextBorder());
+        breakingChanges.setBorder(new CommitDarculaTextBorder());
         return mainPanel;
     }
 
