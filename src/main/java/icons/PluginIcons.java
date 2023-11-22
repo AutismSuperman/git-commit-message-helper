@@ -6,9 +6,9 @@ import javax.swing.Icon;
 
 public interface PluginIcons {
 
-    Icon ICON = IconLoader.findIcon("/icons/icon.png");
+    Icon ICON = IconLoader.getIcon("/icons/icon.png",PluginIcons.class);
 
-    Icon EDIT = IconLoader.getIcon("/icons/edit.svg");
+    Icon EDIT = IconLoader.getIcon("/icons/edit.svg",PluginIcons.class);
 
-    Icon HISTORY = IconLoader.getIcon("/icons/history.svg");
+    Icon HISTORY = IconLoader.getIcon("/icons/history.svg",PluginIcons.class);
 }
