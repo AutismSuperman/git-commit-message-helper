@@ -31,6 +31,17 @@ public class CommitPanel {
 
 
     public CommitPanel(Project project, GitCommitMessageHelperSettings settings, CommitTemplate commitMessageTemplate) {
+        // Personalized UI configuration
+        typeDescriptionLabel.setText(PluginBundle.get("commit.type.field"));
+        scopeDescriptionLabel.setText(PluginBundle.get("commit.scope.field"));
+        subjectDescriptionLabel.setText(PluginBundle.get("commit.subject.field"));
+        bodyDescriptionLabel.setText(PluginBundle.get("commit.body.field"));
+        closedDescriptionLabel.setText(PluginBundle.get("commit.closes.field"));
+        changeDescriptionLabel.setText(PluginBundle.get("commit.changes.field"));
+        longDescriptionScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        breakingChangesScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        longDescription.setBorder(new DarculaEditorTextFieldBorder());
+        breakingChanges.setBorder(new DarculaEditorTextFieldBorder());
         longDescription.setOneLineMode(false);
         longDescription.ensureWillComputePreferredSize();
         longDescription.addSettingsProvider(uEditor -> {
@@ -76,16 +87,6 @@ public class CommitPanel {
     }
 
     JPanel getMainPanel() {
-        typeDescriptionLabel.setText(PluginBundle.get("commit.type.field"));
-        scopeDescriptionLabel.setText(PluginBundle.get("commit.scope.field"));
-        subjectDescriptionLabel.setText(PluginBundle.get("commit.subject.field"));
-        bodyDescriptionLabel.setText(PluginBundle.get("commit.body.field"));
-        closedDescriptionLabel.setText(PluginBundle.get("commit.closes.field"));
-        changeDescriptionLabel.setText(PluginBundle.get("commit.changes.field"));
-        longDescriptionScrollPane.setBorder(BorderFactory.createEmptyBorder());
-        breakingChangesScrollPane.setBorder(BorderFactory.createEmptyBorder());
-        longDescription.setBorder(new DarculaEditorTextFieldBorder());
-        breakingChanges.setBorder(new DarculaEditorTextFieldBorder());
         return mainPanel;
     }
 

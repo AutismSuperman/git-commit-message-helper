@@ -11,7 +11,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author fulin
  */
 public class CommitMessage {
-    private static final int MAX_LINE_LENGTH = 72; // https://stackoverflow.com/a/2120040/5138796
+
     private final String content;
 
     public CommitMessage(GitCommitMessageHelperSettings settings, TypeAlias typeAlias, String changeScope, String shortDescription, String longDescription, String closedIssues, String breakingChanges) {
