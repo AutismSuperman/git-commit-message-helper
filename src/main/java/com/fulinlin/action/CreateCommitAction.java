@@ -1,6 +1,5 @@
 package com.fulinlin.action;
 
-import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.MessageStorage;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
