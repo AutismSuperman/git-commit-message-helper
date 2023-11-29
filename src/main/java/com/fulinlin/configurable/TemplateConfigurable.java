@@ -1,6 +1,7 @@
-package com.fulinlin.ui.setting;
+package com.fulinlin.configurable;
 
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.fulinlin.ui.setting.TemplateEditPanel;
 import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.options.SearchableConfigurable;
 import org.jetbrains.annotations.Nls;
@@ -14,21 +15,21 @@ import javax.swing.*;
  *
  * @author: fulin
  */
-public class TemplateEditPaneConfigurable implements SearchableConfigurable {
+public class TemplateConfigurable implements SearchableConfigurable {
 
     private TemplateEditPanel templateEditPanel;
 
     private GitCommitMessageHelperSettings settings;
 
 
-    public TemplateEditPaneConfigurable() {
+    public TemplateConfigurable() {
         settings = ServiceManager.getService(GitCommitMessageHelperSettings.class);
     }
 
     @NotNull
     @Override
     public String getId() {
-        return "plugins.gitcommitmessagehelper";
+        return "plugins.gitcommitmessagehelper.template";
     }
 
 
@@ -51,7 +52,7 @@ public class TemplateEditPaneConfigurable implements SearchableConfigurable {
     @Nls(capitalization = Nls.Capitalization.Title)
     @Override
     public String getDisplayName() {
-        return "GitCommitMessageHelper";
+        return "Commit Template";
     }
 
 

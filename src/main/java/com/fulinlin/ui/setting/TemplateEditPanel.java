@@ -113,6 +113,7 @@ public class TemplateEditPanel {
         bodyCheckBox.addChangeListener(e -> showPreview());
         changesCheckBox.addChangeListener(e -> showPreview());
         closedCheckBox.addChangeListener(e -> showPreview());
+
         // Init  typeEditPanel
         aliasTable = new AliasTable();
         typeEditPanel.add(
@@ -129,7 +130,6 @@ public class TemplateEditPanel {
                                         aliasTable.resetDefaultAliases();
                                     }
                                 }).createPanel(), BorderLayout.CENTER);
-
 
         // Init data
         ApplicationManager.getApplication().runWriteAction(() -> {

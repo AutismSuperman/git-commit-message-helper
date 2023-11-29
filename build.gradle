@@ -45,6 +45,7 @@ intellij {
         sinceBuild = project.pluginSinceBuild
         untilBuild = project.pluginUntilBuild
         pluginDescription = new File(project.pluginDescription).getText('UTF-8')
+        changeNotes = new File(project.pluginChangeNotes).getText('UTF-8')
     }
 
 }
