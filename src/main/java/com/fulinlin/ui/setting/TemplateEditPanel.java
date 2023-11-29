@@ -8,14 +8,12 @@ import com.fulinlin.utils.VelocityUtils;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.EditorSettings;
 import com.intellij.openapi.editor.event.DocumentEvent;
 import com.intellij.openapi.editor.event.DocumentListener;
 import com.intellij.openapi.fileTypes.FileTypeManager;
-import com.intellij.openapi.fileTypes.PlainTextFileType;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.*;
 import com.intellij.ui.components.JBScrollPane;
@@ -44,6 +42,12 @@ public class TemplateEditPanel {
     private JPanel descriptionPanel;
     private JLabel previewLabel;
     private JPanel previewPanel;
+    private JCheckBox typeCheckBox;
+    private JCheckBox scopeCheckBox;
+    private JCheckBox subjectCheckBox;
+    private JCheckBox bodyCheckBox;
+    private JCheckBox changesCheckBox;
+    private JCheckBox closedCheckBox;
 
 
     public TemplateEditPanel(GitCommitMessageHelperSettings settings) {
@@ -100,18 +104,15 @@ public class TemplateEditPanel {
         templateEditor.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void documentChanged(@NotNull DocumentEvent event) {
-                CommitTemplate commitTemplate = new CommitTemplate();
-                commitTemplate.setType("<type>");
-                commitTemplate.setScope("<scope>");
-                commitTemplate.setSubject("<subject>");
-                commitTemplate.setBody("<body>");
-                commitTemplate.setChanges("<changes>");
-                commitTemplate.setCloses("<closes>");
-                String previewTemplate = templateEditor.getDocument().getText().replaceAll("\\n", "");
-                previewEditor.getDocument().setText(VelocityUtils.convert(previewTemplate, commitTemplate));
+                showPreview();
             }
         });
-
+        typeCheckBox.addChangeListener(e -> showPreview());
+        scopeCheckBox.addChangeListener(e -> showPreview());
+        subjectCheckBox.addChangeListener(e -> showPreview());
+        bodyCheckBox.addChangeListener(e -> showPreview());
+        changesCheckBox.addChangeListener(e -> showPreview());
+        closedCheckBox.addChangeListener(e -> showPreview());
         // Init  typeEditPanel
         aliasTable = new AliasTable();
         typeEditPanel.add(
@@ -143,6 +144,30 @@ public class TemplateEditPanel {
                 return aliasTable.editAlias();
             }
         }.installOn(aliasTable);
+    }
+
+    private void showPreview() {
+        CommitTemplate commitTemplate = new CommitTemplate();
+        if (typeCheckBox.isSelected()) {
+            commitTemplate.setType("<type>");
+        }
+        if (scopeCheckBox.isSelected()) {
+            commitTemplate.setScope("<scope>");
+        }
+        if (subjectCheckBox.isSelected()) {
+            commitTemplate.setSubject("<subject>");
+        }
+        if (bodyCheckBox.isSelected()) {
+            commitTemplate.setBody("<body>");
+        }
+        if (changesCheckBox.isSelected()) {
+            commitTemplate.setChanges("<changes>");
+        }
+        if (closedCheckBox.isSelected()) {
+            commitTemplate.setCloses("<closes>");
+        }
+        String previewTemplate = templateEditor.getDocument().getText().replaceAll("\\n", "");
+        previewEditor.getDocument().setText(VelocityUtils.convert(previewTemplate, commitTemplate));
     }
 
 
