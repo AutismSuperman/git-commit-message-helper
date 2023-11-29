@@ -46,15 +46,7 @@
         <properties/>
         <border type="none"/>
         <children>
-          <grid id="ab489" binding="typeEditPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
-            <constraints>
-              <tabbedpane title="Type"/>
-            </constraints>
-            <properties/>
-            <border type="none"/>
-            <children/>
-          </grid>
-          <grid id="2026f" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+          <grid id="2026f" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
             <margin top="0" left="0" bottom="0" right="0"/>
             <constraints>
               <tabbedpane title="Template"/>
@@ -70,79 +62,23 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="2be01" class="javax.swing.JLabel" binding="explainDescriptionLabel">
+                  <component id="2be01" class="javax.swing.JLabel" binding="descriptionLabel">
                     <constraints>
                       <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                     </constraints>
                     <properties>
-                      <text value="template  explain"/>
+                      <text value="Description"/>
                     </properties>
                   </component>
-                  <grid id="6e7a2" layout-manager="GridLayoutManager" row-count="7" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                    <margin top="0" left="0" bottom="0" right="0"/>
+                  <grid id="b1e1e" binding="descriptionPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
                     <constraints>
-                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="200"/>
+                      </grid>
                     </constraints>
                     <properties/>
                     <border type="none"/>
-                    <children>
-                      <component id="b2ef5" class="javax.swing.JLabel" binding="typeExplainDescriptionLabel">
-                        <constraints>
-                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <text value="  ${type} corresponds to the submission menu 'Type of chang'&#10;"/>
-                        </properties>
-                      </component>
-                      <component id="257b0" class="javax.swing.JLabel" binding="scopeExplainDescriptionLabel">
-                        <constraints>
-                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <text value="  ${scope} corresponds to the submission menu 'Scope of this change'"/>
-                        </properties>
-                      </component>
-                      <component id="fd83a" class="javax.swing.JLabel" binding="subjectExplainDescriptionLabel">
-                        <constraints>
-                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <text value="  ${subject} corresponds to the submission menu 'Short description'"/>
-                        </properties>
-                      </component>
-                      <component id="8ea9d" class="javax.swing.JLabel" binding="bodyExplainDescriptionLabel">
-                        <constraints>
-                          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <text value="  ${body} corresponds to the submission menu 'Long description'"/>
-                        </properties>
-                      </component>
-                      <component id="87cbe" class="javax.swing.JLabel" binding="changesExplainDescriptionLabel">
-                        <constraints>
-                          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <text value="  ${changes} corresponds to the submission menu 'Breaking changes'"/>
-                        </properties>
-                      </component>
-                      <component id="433d9" class="javax.swing.JLabel" binding="closesExplainDescriptionLabel">
-                        <constraints>
-                          <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <text value="  ${closes} corresponds to the submission menu 'Closed issues'"/>
-                        </properties>
-                      </component>
-                      <component id="23ec7" class="javax.swing.JLabel" binding="newLineExplainDescriptionLabel">
-                        <constraints>
-                          <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <text value="  ${newLine} is '\n'"/>
-                        </properties>
-                      </component>
-                    </children>
+                    <children/>
                   </grid>
                 </children>
               </grid>
@@ -154,17 +90,47 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="b6df6" class="javax.swing.JLabel" binding="settingTemplateDescriptionLabel">
+                  <component id="b6df6" class="javax.swing.JLabel" binding="templateLabel">
                     <constraints>
                       <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                     </constraints>
                     <properties>
-                      <text value="setting  git commit template"/>
+                      <text value="Setting commit template"/>
                     </properties>
                   </component>
-                  <grid id="ccd4b" binding="templateEditPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                  <grid id="ccd4b" binding="templatePanel" layout-manager="BorderLayout" hgap="0" vgap="0">
                     <constraints>
-                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="200"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children/>
+                  </grid>
+                </children>
+              </grid>
+              <grid id="85cba" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <component id="fdf8d" class="javax.swing.JLabel" binding="previewLabel">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <text value="Preview"/>
+                    </properties>
+                  </component>
+                  <grid id="f0f48" binding="previewPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                    <constraints>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="200"/>
+                      </grid>
                     </constraints>
                     <properties/>
                     <border type="none"/>
@@ -173,6 +139,14 @@
                 </children>
               </grid>
             </children>
+          </grid>
+          <grid id="ab489" binding="typeEditPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+            <constraints>
+              <tabbedpane title="Type"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children/>
           </grid>
         </children>
       </tabbedpane>

@@ -16,9 +16,9 @@ public class CommitDialog extends DialogWrapper {
     public CommitDialog(@Nullable Project project, GitCommitMessageHelperSettings settings, CommitTemplate commitMessageTemplate) {
         super(project);
         panel = new CommitPanel(project, settings, commitMessageTemplate);
-        setTitle(PluginBundle.get("commit.title"));
-        setOKButtonText(PluginBundle.get("commit.ok.button"));
-        setCancelButtonText(PluginBundle.get("commit.cancel.button"));
+        setTitle(PluginBundle.get("commit.panel.title"));
+        setOKButtonText(PluginBundle.get("commit.panel.ok.button"));
+        setCancelButtonText(PluginBundle.get("commit.panel.cancel.button"));
         init();
     }
 
