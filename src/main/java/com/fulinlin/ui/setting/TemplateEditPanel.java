@@ -166,8 +166,10 @@ public class TemplateEditPanel {
         if (closedCheckBox.isSelected()) {
             commitTemplate.setCloses("<closes>");
         }
-        String previewTemplate = templateEditor.getDocument().getText().replaceAll("\\n", "");
-        previewEditor.getDocument().setText(VelocityUtils.convert(previewTemplate, commitTemplate));
+        ApplicationManager.getApplication().runWriteAction(() -> {
+            String previewTemplate = templateEditor.getDocument().getText().replaceAll("\\n", "");
+            previewEditor.getDocument().setText(VelocityUtils.convert(previewTemplate, commitTemplate));
+        });
     }
 
 
