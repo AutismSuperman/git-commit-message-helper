@@ -3,8 +3,7 @@
 <table width="100%" border="0" cellpadding="5" cellspacing="0" style="border-collapse: collapse">
     <tr>
         <td><font face="verdana" size="-1">
-                In file templates, you can use text, code, comments, and predefined variables. <br>
-                The following provides a list of predefined variables.
+                ${globals.get('setting.template.description.tip')}
             </font><br>
         </td>
     </tr>
@@ -13,7 +12,7 @@
     <tr>
         <td colspan="3">
             <font face="verdana" size="-1">
-                Predefined variables take the following values:
+                ${globals.get('setting.template.description.predefined.tip')}
             </font>
         </td>
     </tr>
@@ -24,7 +23,7 @@
         <td width="10">&nbsp;</td>
         <td width="100%" valign="top">
             <font face="verdana" size="-1">
-                Corresponds to the submission menu 'Type of chang'
+                ${globals.get('setting.template.type')}
             </font>
         </td>
     </tr>
@@ -35,7 +34,7 @@
         <td width="10">&nbsp;</td>
         <td width="100%" valign="top">
             <font face="verdana" size="-1">
-                Corresponds to the submission menu 'Scope of this change'
+                ${globals.get('setting.template.scope')}
             </font>
         </td>
     </tr>
@@ -46,7 +45,7 @@
         <td width="10">&nbsp;</td>
         <td width="100%" valign="top">
             <font face="verdana" size="-1">
-                Corresponds to the submission menu 'Short description'
+                ${globals.get('setting.template.subject')}
             </font>
         </td>
     </tr>
@@ -57,7 +56,7 @@
         <td width="10">&nbsp;</td>
         <td width="100%" valign="top">
             <font face="verdana" size="-1">
-                Corresponds to the submission menu 'Long description'
+                ${globals.get('setting.template.body')}
             </font>
         </td>
     </tr>
@@ -68,7 +67,7 @@
         <td width="10">&nbsp;</td>
         <td width="100%" valign="top">
             <font face="verdana" size="-1">
-                Corresponds to the submission menu 'Breaking changes'
+                ${globals.get('setting.template.changes')}
             </font>
         </td>
     </tr>
@@ -79,7 +78,7 @@
         <td width="10">&nbsp;</td>
         <td width="100%" valign="top">
             <font face="verdana" size="-1">
-                Corresponds to the submission menu 'Closed issues'
+                ${globals.get('setting.template.closes')}
             </font>
         </td>
     </tr>
@@ -90,7 +89,7 @@
         <td width="10">&nbsp;</td>
         <td width="100%" valign="top">
             <font face="verdana" size="-1">
-                '\\n', indicating whether to wrap the line
+                ${globals.get('setting.template.newLine')}
             </font>
         </td>
     </tr>
@@ -100,6 +99,7 @@
     <a href='http://velocity.apache.org/engine/devel/user-guide.html#Velocity_Template_Language_VTL:_An_Introduction'>
         Apache Velocity
     </a>
-    template language is used</font>
+    ${globals.get('setting.template.used')}
+</font>
 </body>
 </html>

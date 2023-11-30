@@ -1,5 +1,6 @@
 package com.fulinlin.configurable;
 
+import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.ui.setting.TemplateEditPanel;
 import com.intellij.openapi.components.ServiceManager;
@@ -52,7 +53,7 @@ public class TemplateConfigurable implements SearchableConfigurable {
     @Nls(capitalization = Nls.Capitalization.Title)
     @Override
     public String getDisplayName() {
-        return "Commit Template";
+        return PluginBundle.get("setting.configurable.template");
     }
 
 

@@ -1,9 +1,18 @@
 package com.fulinlin.ui.setting.description;
 
+import b.j.P;
+import com.fulinlin.localization.PluginBundle;
+import com.fulinlin.model.CommitTemplate;
+import com.fulinlin.utils.VelocityTool;
+import com.fulinlin.utils.VelocityUtils;
+import org.apache.velocity.VelocityContext;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 
 public class DescriptionRead {
     public static String readHtmlFile() {
@@ -20,7 +29,8 @@ public class DescriptionRead {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return content.toString();
+        return VelocityUtils.convertDescription(content.toString());
     }
+
 
 }
