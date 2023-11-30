@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 public class DescriptionRead {
     public static String readHtmlFile() {
         StringBuilder content = new StringBuilder();
-        try (InputStream inputStream = DescriptionRead.class.getResourceAsStream("/template/defaultDescription.html")) {
+        try (InputStream inputStream = DescriptionRead.class.getResourceAsStream("/includes/defaultDescription.html")) {
             if (inputStream != null) {
                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader);

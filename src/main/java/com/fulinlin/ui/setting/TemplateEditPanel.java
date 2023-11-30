@@ -136,7 +136,6 @@ public class TemplateEditPanel {
             templateEditor.getDocument().setText(template);
             myDescriptionComponent.setText(DescriptionRead.readHtmlFile());
         });
-
         // Add  DoubleClickListener
         new DoubleClickListener() {
             @Override
