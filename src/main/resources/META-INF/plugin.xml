@@ -31,7 +31,7 @@
         <applicationConfigurable groupId="null"
                                  id="plugins.gitcommitmessagehelper"
                                  displayName="GitCommitMessageHelper"
-                                 instance="com.fulinlin.configurable.GitCommitMessageHelperConfigurable"/>
+                                 instance="com.fulinlin.configurable.CentralSettingConfigurable"/>
 
         <applicationConfigurable
                 instance="com.fulinlin.configurable.TemplateConfigurable"

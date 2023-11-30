@@ -65,7 +65,7 @@ public class VelocityUtils {
         velocityContext.put("setting.template.newLine", PluginBundle.get("setting.template.newLine"));
         velocityContext.put("setting.template.used", PluginBundle.get("setting.template.used"));
         velocityContext.put("globals",velocityContext);
-        String VM_LOG_TAG = "GitCommitMessage VelocityUtils";
+        String VM_LOG_TAG = "GitCommitMessage Description VelocityUtils";
         boolean isSuccess = engine.evaluate(velocityContext, writer, VM_LOG_TAG, html);
         if (!isSuccess) {
         }
