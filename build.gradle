@@ -34,7 +34,7 @@ intellij {
     downloadSources = true
     updateSinceUntilBuild = false
     buildSearchableOptions.enabled = false
-    //plugins=["com.intellij.zh:203.392"]
+    plugins=["com.intellij.zh:203.392"]
     //plugins=["com.intellij.ja:203.392"]
 
     runIde {

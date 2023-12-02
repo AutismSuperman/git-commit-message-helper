@@ -1,5 +1,7 @@
 package com.fulinlin.model;
 
+import b.j.S;
+
 import java.util.List;
 
 /**
@@ -10,6 +12,7 @@ import java.util.List;
 public class DataSettings {
     private String template;
     private List<TypeAlias> typeAliases;
+    private List<String> skipCis;
 
     public String getTemplate() {
         return template;
@@ -27,5 +30,11 @@ public class DataSettings {
         this.typeAliases = typeAliases;
     }
 
+    public List<String> getSkipCis() {
+        return skipCis;
+    }
 
+    public void setSkipCis(List<String> skipCis) {
+        this.skipCis = skipCis;
+    }
 }

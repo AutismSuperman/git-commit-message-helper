@@ -1,6 +1,8 @@
 package com.fulinlin.configurable;
 
+import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.ui.central.CentralSettingPanel;
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;
 import org.jetbrains.annotations.Nls;
@@ -14,27 +16,40 @@ public class CentralSettingConfigurable implements SearchableConfigurable {
 
     private CentralSettingPanel centralSettingPanel;
 
+    private GitCommitMessageHelperSettings settings;
+
+    public CentralSettingConfigurable() {
+        settings = ServiceManager.getService(GitCommitMessageHelperSettings.class);
+    }
+
     @Override
     public @NotNull @NonNls String getId() {
         return "plugins.gitcommitmessagehelper";
     }
 
+    @Nullable
     @Override
-    public @Nullable JComponent createComponent() {
+    public JComponent createComponent() {
         if (centralSettingPanel == null) {
-            centralSettingPanel = new CentralSettingPanel();
+            centralSettingPanel = new CentralSettingPanel(settings);
         }
         return centralSettingPanel.getMainPanel();
     }
 
     @Override
-    public boolean isModified() {
-        return false;
+    public void reset() {
+        centralSettingPanel.reset(settings);
     }
 
     @Override
-    public void apply() throws ConfigurationException {
+    public boolean isModified() {
+        return centralSettingPanel.isModified(settings);
+    }
 
+    @Override
+    public void apply() {
+        settings.setCentralSettings(centralSettingPanel.getSettings().getCentralSettings());
+        settings = centralSettingPanel.getSettings().clone();
     }
 
     @Nls(capitalization = Nls.Capitalization.Title)
