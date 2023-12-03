@@ -61,6 +61,9 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         return centralSettings;
     }
 
+    /**
+     * Spelling error here, in order to maintain the current status of existing user data
+     */
     public DataSettings getDateSettings() {
         if (dataSettings == null) {
             loadDefaultDataSettings();
@@ -75,7 +78,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         centralSettings = new CentralSettings();
         try {
             centralSettings.setTypeDisplayStyle(TypeDisplayStyleEnum.DROP_DOWN);
-            centralSettings.setTypeDisplayNum(-1);
+            centralSettings.setTypeDisplayNumber(-1);
             centralSettings.setSkipCiDefaultValue("[skip ci]");
             centralSettings.setSkipCiDefaultChecked(Boolean.FALSE);
             centralSettings.setSkipCiSelectionEnable(Boolean.FALSE);
@@ -162,6 +165,9 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         dataSettings.setTypeAliases(typeAliases);
     }
 
+    /**
+     * Spelling error here, in order to maintain the current status of existing user data
+     */
     public void setDateSettings(DataSettings dateSettings) {
         this.dataSettings = dateSettings;
     }

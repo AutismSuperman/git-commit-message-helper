@@ -38,7 +38,6 @@ public class CentralSettingPanel {
     private JLabel skipEnableSelectionLabel;
 
 
-
     public CentralSettingPanel(GitCommitMessageHelperSettings settings) {
         //Get setting
         this.settings = settings.clone();
@@ -91,7 +90,7 @@ public class CentralSettingPanel {
         } else if (typeMixingRadioButton.isSelected()) {
             settings.getCentralSettings().setTypeDisplayStyle(TypeDisplayStyleEnum.MIXING);
         }
-        settings.getCentralSettings().setTypeDisplayNum(number);
+        settings.getCentralSettings().setTypeDisplayNumber(number);
         // Skip CI Option
         settings.getCentralSettings().setSkipCiDefaultChecked(skipCiDefaultCheckedCheckedBox.isSelected());
         if (skipCiComboBox.getSelectedItem() != null) {
@@ -99,9 +98,9 @@ public class CentralSettingPanel {
         }
         settings.getCentralSettings().setSkipCiSelectionEnable(skipCiEnableCheckBox.isSelected());
         // Hidden Option
+        // settings.getCentralSettings().getHidden().setSubject(subjectCheckBox.isSelected());
         settings.getCentralSettings().getHidden().setType(typeCheckBox.isSelected());
         settings.getCentralSettings().getHidden().setScope(scopeCheckBox.isSelected());
-        settings.getCentralSettings().getHidden().setSubject(subjectCheckBox.isSelected());
         settings.getCentralSettings().getHidden().setBody(bodyCheckBox.isSelected());
         settings.getCentralSettings().getHidden().setChanges(changesCheckBox.isSelected());
         settings.getCentralSettings().getHidden().setClosed(closedCheckBox.isSelected());
@@ -126,7 +125,7 @@ public class CentralSettingPanel {
         } else {
             typeDropDownRadioButton.setSelected(true);
         }
-        typeDisplayNumberSpinner.setNumber(settings.getCentralSettings().getTypeDisplayNum());
+        typeDisplayNumberSpinner.setNumber(settings.getCentralSettings().getTypeDisplayNumber());
         // Skip CI Option
         skipCiDefaultCheckedCheckedBox.setSelected(settings.getCentralSettings().getSkipCiDefaultChecked());
         skipCiComboBox.setSelectedItem(settings.getCentralSettings().getSkipCiDefaultValue());
@@ -134,7 +133,8 @@ public class CentralSettingPanel {
         // Hidden Option
         typeCheckBox.setSelected(settings.getCentralSettings().getHidden().getType());
         scopeCheckBox.setSelected(settings.getCentralSettings().getHidden().getScope());
-        subjectCheckBox.setSelected(settings.getCentralSettings().getHidden().getSubject());
+        //subjectCheckBox.setSelected(settings.getCentralSettings().getHidden().getSubject());
+        subjectCheckBox.setEnabled(false);
         bodyCheckBox.setSelected(settings.getCentralSettings().getHidden().getBody());
         changesCheckBox.setSelected(settings.getCentralSettings().getHidden().getChanges());
         closedCheckBox.setSelected(settings.getCentralSettings().getHidden().getClosed());
@@ -154,7 +154,7 @@ public class CentralSettingPanel {
         } else if (typeMixingRadioButton.isSelected() != data.getCentralSettings().getTypeDisplayStyle()
                 .equals(TypeDisplayStyleEnum.MIXING)) {
             isModified = true;
-        } else if (typeDisplayNumberSpinner.getNumber() != data.getCentralSettings().getTypeDisplayNum()) {
+        } else if (typeDisplayNumberSpinner.getNumber() != data.getCentralSettings().getTypeDisplayNumber()) {
             isModified = true;
         }
         // Skip CI Option
@@ -170,8 +170,6 @@ public class CentralSettingPanel {
         else if (typeCheckBox.isSelected() != data.getCentralSettings().getHidden().getType()) {
             isModified = true;
         } else if (scopeCheckBox.isSelected() != data.getCentralSettings().getHidden().getScope()) {
-            isModified = true;
-        } else if (subjectCheckBox.isSelected() != data.getCentralSettings().getHidden().getSubject()) {
             isModified = true;
         } else if (bodyCheckBox.isSelected() != data.getCentralSettings().getHidden().getBody()) {
             isModified = true;

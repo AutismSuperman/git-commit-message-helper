@@ -6,7 +6,7 @@ public class CentralSettings {
 
     private TypeDisplayStyleEnum typeDisplayStyle;
 
-    private Integer typeDisplayNum;
+    private Integer typeDisplayNumber;
 
     private String skipCiDefaultValue;
 
@@ -25,12 +25,12 @@ public class CentralSettings {
         this.typeDisplayStyle = typeDisplayStyle;
     }
 
-    public Integer getTypeDisplayNum() {
-        return typeDisplayNum;
+    public Integer getTypeDisplayNumber() {
+        return typeDisplayNumber;
     }
 
-    public void setTypeDisplayNum(Integer typeDisplayNum) {
-        this.typeDisplayNum = typeDisplayNum;
+    public void setTypeDisplayNumber(Integer typeDisplayNumber) {
+        this.typeDisplayNumber = typeDisplayNumber;
     }
 
     public String getSkipCiDefaultValue() {
