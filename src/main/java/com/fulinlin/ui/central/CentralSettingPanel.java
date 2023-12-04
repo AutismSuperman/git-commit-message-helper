@@ -52,8 +52,8 @@ public class CentralSettingPanel {
         typeDiskPlayStyleLabel.setText(PluginBundle.get("setting.central.type.style"));
         typeDisplayNumberLabel.setText(PluginBundle.get("setting.central.type.number"));
         typeDisplayNumberSpinner.setToolTipText(PluginBundle.get("setting.central.type.number.tooltip"));
-        typeCheckboxRadioButton.setText(PluginBundle.get("setting.central.type.dropdown.button"));
-        typeRadioRadioButton.setText(PluginBundle.get("setting.central.type.selection.button"));
+        typeCheckboxRadioButton.setText(PluginBundle.get("setting.central.type.combobox.button"));
+        typeRadioRadioButton.setText(PluginBundle.get("setting.central.type.radio.button"));
         typeMixingRadioButton.setText(PluginBundle.get("setting.central.type.mixing.button"));
         // Init  skip ci option
         skipCiDefaultValueLabel.setText(PluginBundle.get("setting.central.skip.ci.enable.default"));

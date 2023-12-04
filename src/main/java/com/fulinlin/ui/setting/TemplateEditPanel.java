@@ -1,5 +1,6 @@
 package com.fulinlin.ui.setting;
 
+import com.fulinlin.constant.GitCommitConstants;
 import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
@@ -49,6 +50,7 @@ public class TemplateEditPanel {
     private JCheckBox changesCheckBox;
     private JCheckBox closedCheckBox;
     private JCheckBox skipCiCheckBox;
+    private JButton restoreDefaultsButton;
 
 
     public TemplateEditPanel(GitCommitMessageHelperSettings settings) {
@@ -62,6 +64,7 @@ public class TemplateEditPanel {
         previewLabel.setText(PluginBundle.get("setting.template.preview"));
         tabbedPane.setTitleAt(0, PluginBundle.get("setting.tabbed.panel.template"));
         tabbedPane.setTitleAt(1, PluginBundle.get("setting.tabbed.panel.type"));
+        restoreDefaultsButton.setText(PluginBundle.get("setting.template.restore.defaults"));
 
         // Init descriptionPanel
         myDescriptionComponent = new JEditorPane();
@@ -136,6 +139,11 @@ public class TemplateEditPanel {
         ApplicationManager.getApplication().runWriteAction(() -> {
             templateEditor.getDocument().setText(template);
             myDescriptionComponent.setText(DescriptionRead.readHtmlFile());
+        });
+        restoreDefaultsButton.addActionListener(e -> {
+            ApplicationManager.getApplication().runWriteAction(() -> {
+                templateEditor.getDocument().setText(GitCommitConstants.DEFAULT_TEMPLATE);
+            });
         });
         // Add  DoubleClickListener
         new DoubleClickListener() {
