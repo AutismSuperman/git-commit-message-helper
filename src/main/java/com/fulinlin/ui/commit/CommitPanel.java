@@ -77,13 +77,13 @@ public class CommitPanel {
             typeDescriptionLabel.setVisible(false);
             typePanel.setVisible(false);
         } else {
-            if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.DROP_DOWN) {
+            if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.CHECKBOX) {
                 changeType = new ComboBox<>();
                 for (TypeAlias type : typeAliases) {
                     changeType.addItem(type);
                 }
                 if (commitMessageTemplate != null) {
-                    if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.DROP_DOWN) {
+                    if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.RADIO) {
                         typeAliases.stream()
                                 .filter(typeAlias -> typeAlias.getTitle().equals(commitMessageTemplate.getType()))
                                 .findFirst()
@@ -93,7 +93,7 @@ public class CommitPanel {
                     }
                 }
                 typePanel.add(changeType);
-            } else if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.SELECTION) {
+            } else if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.RADIO){
                 buttonGroup = new ButtonGroup();
                 typePanel.setLayout(new GridLayout(0, 1));
                 Integer typeDisplayNumber = centralSettings.getTypeDisplayNumber();
@@ -110,10 +110,8 @@ public class CommitPanel {
                     buttonGroup.add(radioButton);
                     typePanel.add(radioButton);
                     if (commitMessageTemplate != null) {
-                        if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.SELECTION) {
-                            if (type.getTitle().equals(commitMessageTemplate.getType())) {
-                                radioButton.setSelected(true);
-                            }
+                        if (type.getTitle().equals(commitMessageTemplate.getType())) {
+                            radioButton.setSelected(true);
                         }
                     }
                 }
@@ -177,13 +175,13 @@ public class CommitPanel {
 
     CommitMessage getCommitMessage(GitCommitMessageHelperSettings settings) {
         TypeAlias type = new TypeAlias();
-        if (settings.getCentralSettings().getTypeDisplayStyle() == TypeDisplayStyleEnum.DROP_DOWN) {
+        if (settings.getCentralSettings().getTypeDisplayStyle() == TypeDisplayStyleEnum.CHECKBOX) {
             if (changeType != null) {
                 if (changeType.getSelectedItem() != null) {
                     type = ((TypeAlias) Objects.requireNonNull(changeType.getSelectedItem()));
                 }
             }
-        } else if (settings.getCentralSettings().getTypeDisplayStyle() == TypeDisplayStyleEnum.SELECTION) {
+        } else if (settings.getCentralSettings().getTypeDisplayStyle() == TypeDisplayStyleEnum.RADIO) {
             if (buttonGroup != null) {
                 if (buttonGroup.getSelection() != null) {
                     if (buttonGroup.getSelection().getActionCommand() != null) {
@@ -205,13 +203,13 @@ public class CommitPanel {
 
     CommitTemplate getCommitMessageTemplate() {
         CommitTemplate commitTemplate = new CommitTemplate();
-        if (settings.getCentralSettings().getTypeDisplayStyle() == TypeDisplayStyleEnum.DROP_DOWN) {
+        if (settings.getCentralSettings().getTypeDisplayStyle() == TypeDisplayStyleEnum.CHECKBOX) {
             if (changeType != null) {
                 if (changeType.getSelectedItem() != null) {
                     commitTemplate.setType(((TypeAlias) Objects.requireNonNull(changeType.getSelectedItem())).getTitle());
                 }
             }
-        } else if (settings.getCentralSettings().getTypeDisplayStyle() == TypeDisplayStyleEnum.SELECTION) {
+        } else if (settings.getCentralSettings().getTypeDisplayStyle() == TypeDisplayStyleEnum.RADIO) {
             if (buttonGroup != null) {
                 if (buttonGroup.getSelection() != null) {
                     if (buttonGroup.getSelection().getActionCommand() != null) {

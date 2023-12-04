@@ -1,8 +1,8 @@
 package com.fulinlin.model.enums;
 
 public enum TypeDisplayStyleEnum {
-    DROP_DOWN("Drop Down"),
-    SELECTION("Selection"),
+    CHECKBOX("Checkbox"),
+    RADIO("Radio"),
     MIXING("Mixing");
 
     private final String name;

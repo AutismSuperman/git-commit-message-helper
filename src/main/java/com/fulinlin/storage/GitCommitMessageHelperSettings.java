@@ -77,11 +77,11 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     private void loadDefaultCentralSettings() {
         centralSettings = new CentralSettings();
         try {
-            centralSettings.setTypeDisplayStyle(TypeDisplayStyleEnum.DROP_DOWN);
+            centralSettings.setTypeDisplayStyle(TypeDisplayStyleEnum.CHECKBOX);
             centralSettings.setTypeDisplayNumber(-1);
             centralSettings.setSkipCiDefaultValue("[skip ci]");
             centralSettings.setSkipCiDefaultChecked(Boolean.FALSE);
-            centralSettings.setSkipCiSelectionEnable(Boolean.FALSE);
+            centralSettings.setSkipCiCheckboxEnable(Boolean.FALSE);
             CentralSettings.Hidden hidden = new CentralSettings.Hidden();
             centralSettings.setHidden(hidden);
             centralSettings.getHidden().setType(Boolean.FALSE);

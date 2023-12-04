@@ -12,7 +12,7 @@ public class CentralSettings {
 
     private Boolean skipCiDefaultChecked;
 
-    private Boolean skipCiSelectionEnable;
+    private Boolean skipCiCheckboxEnable;
 
     private Hidden hidden;
 
@@ -49,12 +49,12 @@ public class CentralSettings {
         this.skipCiDefaultChecked = skipCiDefaultChecked;
     }
 
-    public Boolean getSkipCiSelectionEnable() {
-        return skipCiSelectionEnable;
+    public Boolean getSkipCiCheckboxEnable() {
+        return skipCiCheckboxEnable;
     }
 
-    public void setSkipCiSelectionEnable(Boolean skipCiSelectionEnable) {
-        this.skipCiSelectionEnable = skipCiSelectionEnable;
+    public void setSkipCiCheckboxEnable(Boolean skipCiCheckboxEnable) {
+        this.skipCiCheckboxEnable = skipCiCheckboxEnable;
     }
 
     public Hidden getHidden() {
