@@ -51,6 +51,7 @@ public class CentralSettingPanel {
         buttonGroup.add(typeMixingRadioButton);
         typeDiskPlayStyleLabel.setText(PluginBundle.get("setting.central.type.style"));
         typeDisplayNumberLabel.setText(PluginBundle.get("setting.central.type.number"));
+        typeDisplayNumberSpinner.setToolTipText(PluginBundle.get("setting.central.type.number.tooltip"));
         typeCheckboxRadioButton.setText(PluginBundle.get("setting.central.type.dropdown.button"));
         typeRadioRadioButton.setText(PluginBundle.get("setting.central.type.selection.button"));
         typeMixingRadioButton.setText(PluginBundle.get("setting.central.type.mixing.button"));
