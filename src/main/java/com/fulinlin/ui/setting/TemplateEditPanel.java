@@ -57,7 +57,7 @@ public class TemplateEditPanel {
         //Get setting
         this.settings = settings.clone();
 
-        // Init  description
+        // Init  description 
         description.setText(PluginBundle.get("setting.description"));
         descriptionLabel.setText(PluginBundle.get("setting.template.description"));
         templateLabel.setText(PluginBundle.get("setting.template.edit"));

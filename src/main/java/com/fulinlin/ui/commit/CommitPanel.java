@@ -172,67 +172,68 @@ public class CommitPanel {
                 }
                 typePanel.add(changeType);
             }
-            if (centralSettings.getHidden().getScope()) {
-                scopeDescriptionLabel.setVisible(false);
-                changeScope.setVisible(false);
-            }
-            if (centralSettings.getHidden().getBody()) {
-                bodyDescriptionLabel.setVisible(false);
-                longDescriptionScrollPane.setVisible(false);
-                longDescription.setVisible(false);
-            }
-            if (centralSettings.getHidden().getChanges()) {
-                changeDescriptionLabel.setVisible(false);
-                breakingChangesScrollPane.setVisible(false);
-                breakingChanges.setVisible(false);
-            }
-            if (centralSettings.getHidden().getClosed()) {
-                closedDescriptionLabel.setVisible(false);
-                closedIssues.setVisible(false);
-            }
-            if (centralSettings.getHidden().getSkipCi()) {
-                skipCiLabel.setVisible(false);
+        }
+        if (centralSettings.getHidden().getScope()) {
+            scopeDescriptionLabel.setVisible(false);
+            changeScope.setVisible(false);
+        }
+        if (centralSettings.getHidden().getBody()) {
+            bodyDescriptionLabel.setVisible(false);
+            longDescriptionScrollPane.setVisible(false);
+            longDescription.setVisible(false);
+        }
+        if (centralSettings.getHidden().getChanges()) {
+            changeDescriptionLabel.setVisible(false);
+            breakingChangesScrollPane.setVisible(false);
+            breakingChanges.setVisible(false);
+        }
+        if (centralSettings.getHidden().getClosed()) {
+            closedDescriptionLabel.setVisible(false);
+            closedIssues.setVisible(false);
+        }
+        if (centralSettings.getHidden().getSkipCi()) {
+            skipCiLabel.setVisible(false);
+            skipCiComboBox.setVisible(false);
+            approveCheckBox.setVisible(false);
+        } else {
+            if (!centralSettings.getSkipCiComboboxEnable()) {
                 skipCiComboBox.setVisible(false);
-                approveCheckBox.setVisible(false);
-            } else {
-                if (!centralSettings.getSkipCiComboboxEnable()) {
-                    skipCiComboBox.setVisible(false);
-                }
-                List<String> skipCis = settings.getDateSettings().getSkipCis();
-                for (String skipCi : skipCis) {
-                    skipCiComboBox.addItem(skipCi);
-                }
-                if (settings.getCentralSettings().getSkipCiDefaultApprove()) {
-                    approveCheckBox.setSelected(true);
-                }
-                if (settings.getCentralSettings().getSkipCiDefaultValue() != null) {
-                    skipCiComboBox.setSelectedItem(settings.getCentralSettings().getSkipCiDefaultValue());
-                }
             }
-            if (commitMessageTemplate != null) {
-                // with cache init
-                changeScope.setText(commitMessageTemplate.getScope());
-                shortDescription.setText(commitMessageTemplate.getSubject());
-                longDescription.setText(commitMessageTemplate.getBody());
-                breakingChanges.setText(commitMessageTemplate.getChanges());
-                closedIssues.setText(commitMessageTemplate.getCloses());
+            List<String> skipCis = settings.getDateSettings().getSkipCis();
+            for (String skipCi : skipCis) {
+                skipCiComboBox.addItem(skipCi);
+            }
+            if (settings.getCentralSettings().getSkipCiDefaultApprove()) {
+                approveCheckBox.setSelected(true);
+            }
+            if (settings.getCentralSettings().getSkipCiDefaultValue() != null) {
+                skipCiComboBox.setSelectedItem(settings.getCentralSettings().getSkipCiDefaultValue());
             }
         }
+        if (commitMessageTemplate != null) {
+            // with cache init
+            changeScope.setText(commitMessageTemplate.getScope());
+            shortDescription.setText(commitMessageTemplate.getSubject());
+            longDescription.setText(commitMessageTemplate.getBody());
+            breakingChanges.setText(commitMessageTemplate.getChanges());
+            closedIssues.setText(commitMessageTemplate.getCloses());
+        }
     }
+
 
     private void computePanelHeight() {
         int height = 0;
         if (changeType != null) {
-            height += 30;
+            height += 33;
         }
         if (buttonGroup != null) {
-            height += 30 * buttonGroup.getButtonCount();
+            height += 33 * buttonGroup.getButtonCount();
         }
         if (!settings.getCentralSettings().getHidden().getScope()) {
-            height += 30;
+            height += 33;
         }
         if (!settings.getCentralSettings().getHidden().getSubject()) {
-            height += 30;
+            height += 33;
         }
         if (!settings.getCentralSettings().getHidden().getBody()) {
             longDescriptionScrollPane.setPreferredSize(new Dimension(730, 130));
@@ -243,10 +244,10 @@ public class CommitPanel {
             height += 100;
         }
         if (!settings.getCentralSettings().getHidden().getClosed()) {
-            height += 30;
+            height += 43;
         }
         if (!settings.getCentralSettings().getHidden().getSkipCi()) {
-            height += 30;
+            height += 33;
         }
         mainPanel.setPreferredSize(new Dimension(730, height));
     }

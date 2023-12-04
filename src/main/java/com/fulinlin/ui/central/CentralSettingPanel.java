@@ -8,6 +8,7 @@ import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.JBIntSpinner;
 
 import javax.swing.*;
+import java.awt.event.ItemEvent;
 import java.util.List;
 
 public class CentralSettingPanel {
@@ -16,7 +17,7 @@ public class CentralSettingPanel {
     private JPanel hiddenPanel;
     private JPanel typePanel;
     private JPanel skipCiPanel;
-    private JRadioButton typeCheckboxRadioButton;
+    private JRadioButton typeComboboxRadioButton;
     private JRadioButton typeRadioRadioButton;
     private JRadioButton typeMixingRadioButton;
     private JBIntSpinner typeDisplayNumberSpinner;
@@ -46,13 +47,13 @@ public class CentralSettingPanel {
         skipCiPanel.setBorder(IdeBorderFactory.createTitledBorder(PluginBundle.get("setting.central.skip.ci.panel.title"), true));
         hiddenPanel.setBorder(IdeBorderFactory.createTitledBorder(PluginBundle.get("setting.central.hidden.panel.title"), true));
         ButtonGroup buttonGroup = new ButtonGroup();
-        buttonGroup.add(typeCheckboxRadioButton);
+        buttonGroup.add(typeComboboxRadioButton);
         buttonGroup.add(typeRadioRadioButton);
         buttonGroup.add(typeMixingRadioButton);
         typeDiskPlayStyleLabel.setText(PluginBundle.get("setting.central.type.style"));
         typeDisplayNumberLabel.setText(PluginBundle.get("setting.central.type.number"));
         typeDisplayNumberSpinner.setToolTipText(PluginBundle.get("setting.central.type.number.tooltip"));
-        typeCheckboxRadioButton.setText(PluginBundle.get("setting.central.type.combobox.button"));
+        typeComboboxRadioButton.setText(PluginBundle.get("setting.central.type.combobox.button"));
         typeRadioRadioButton.setText(PluginBundle.get("setting.central.type.radio.button"));
         typeMixingRadioButton.setText(PluginBundle.get("setting.central.type.mixing.button"));
         // Init  skip ci option
@@ -66,14 +67,20 @@ public class CentralSettingPanel {
             skipCiComboBox.addItem(skipCi);
         }
         // Init
-        typeCheckboxRadioButton.addChangeListener(e -> {
-            typeDisplayNumberSpinner.setEnabled(false);
+        typeComboboxRadioButton.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                typeDisplayNumberSpinner.setEnabled(false);
+            }
         });
-        typeRadioRadioButton.addChangeListener(e -> {
-            typeDisplayNumberSpinner.setEnabled(true);
+        typeRadioRadioButton.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                typeDisplayNumberSpinner.setEnabled(true);
+            }
         });
-        typeMixingRadioButton.addChangeListener(e -> {
-            typeDisplayNumberSpinner.setEnabled(true);
+        typeMixingRadioButton.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                typeDisplayNumberSpinner.setEnabled(true);
+            }
         });
         // Init  Component
         initComponent(settings);
@@ -83,7 +90,7 @@ public class CentralSettingPanel {
     public GitCommitMessageHelperSettings getSettings() {
         // Type Display Style Option
         int number = typeDisplayNumberSpinner.getNumber();
-        if (typeCheckboxRadioButton.isSelected()) {
+        if (typeComboboxRadioButton.isSelected()) {
             settings.getCentralSettings().setTypeDisplayStyle(TypeDisplayStyleEnum.CHECKBOX);
         } else if (typeRadioRadioButton.isSelected()) {
             settings.getCentralSettings().setTypeDisplayStyle(TypeDisplayStyleEnum.RADIO);
@@ -117,13 +124,13 @@ public class CentralSettingPanel {
     private void initComponent(GitCommitMessageHelperSettings settings) {
         // Type Display Style Option
         if (settings.getCentralSettings().getTypeDisplayStyle().equals(TypeDisplayStyleEnum.CHECKBOX)) {
-            typeCheckboxRadioButton.setSelected(true);
+            typeComboboxRadioButton.setSelected(true);
         } else if (settings.getCentralSettings().getTypeDisplayStyle().equals(TypeDisplayStyleEnum.RADIO)) {
             typeRadioRadioButton.setSelected(true);
         } else if (settings.getCentralSettings().getTypeDisplayStyle().equals(TypeDisplayStyleEnum.MIXING)) {
             typeMixingRadioButton.setSelected(true);
         } else {
-            typeCheckboxRadioButton.setSelected(true);
+            typeComboboxRadioButton.setSelected(true);
         }
         typeDisplayNumberSpinner.setNumber(settings.getCentralSettings().getTypeDisplayNumber());
         // Skip CI Option
@@ -145,7 +152,7 @@ public class CentralSettingPanel {
     public boolean isModified(GitCommitMessageHelperSettings data) {
         boolean isModified = false;
         // Type Display Style Option
-        if (typeCheckboxRadioButton.isSelected() != data.getCentralSettings().getTypeDisplayStyle()
+        if (typeComboboxRadioButton.isSelected() != data.getCentralSettings().getTypeDisplayStyle()
                 .equals(TypeDisplayStyleEnum.CHECKBOX)) {
             isModified = true;
         } else if (typeRadioRadioButton.isSelected() != data.getCentralSettings().getTypeDisplayStyle()
