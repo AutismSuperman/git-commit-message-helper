@@ -13,6 +13,7 @@ public class CommitTemplate {
     private String body;
     private String changes;
     private String closes;
+    private String skipCi;
 
     public String getType() {
         return type;
@@ -60,5 +61,13 @@ public class CommitTemplate {
 
     public void setCloses(String closes) {
         this.closes = closes;
+    }
+
+    public String getSkipCi() {
+        return skipCi;
+    }
+
+    public void setSkipCi(String skipCi) {
+        this.skipCi = skipCi;
     }
 }

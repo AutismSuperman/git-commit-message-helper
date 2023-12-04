@@ -14,7 +14,15 @@ public class CommitMessage {
 
     private final String content;
 
-    public CommitMessage(GitCommitMessageHelperSettings settings, TypeAlias typeAlias, String changeScope, String shortDescription, String longDescription, String closedIssues, String breakingChanges) {
+    public CommitMessage(GitCommitMessageHelperSettings settings,
+                         TypeAlias typeAlias,
+                         String changeScope,
+                         String shortDescription,
+                         String longDescription,
+                         String closedIssues,
+                         String breakingChanges,
+                         String skipCi
+    ) {
         this.content = buildContent(
                 settings,
                 typeAlias,
@@ -22,7 +30,8 @@ public class CommitMessage {
                 shortDescription,
                 longDescription,
                 breakingChanges,
-                closedIssues
+                closedIssues,
+                skipCi
         );
     }
 
@@ -32,7 +41,8 @@ public class CommitMessage {
                                 String shortDescription,
                                 String longDescription,
                                 String breakingChanges,
-                                String closedIssues
+                                String closedIssues,
+                                String skipCi
     ) {
 
         CommitTemplate commitTemplate = new CommitTemplate();
@@ -55,6 +65,9 @@ public class CommitMessage {
         }
         if (StringUtils.isNotBlank(closedIssues)) {
             commitTemplate.setCloses(closedIssues);
+        }
+        if (StringUtils.isNotBlank(skipCi)) {
+            commitTemplate.setSkipCi(skipCi);
         }
         String template = settings.getDateSettings().getTemplate().replaceAll("\\n", "");
         return VelocityUtils.convert(template, commitTemplate);

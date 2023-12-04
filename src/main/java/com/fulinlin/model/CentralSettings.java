@@ -10,9 +10,9 @@ public class CentralSettings {
 
     private String skipCiDefaultValue;
 
-    private Boolean skipCiDefaultChecked;
+    private Boolean skipCiDefaultApprove;
 
-    private Boolean skipCiCheckboxEnable;
+    private Boolean skipCiComboboxEnable;
 
     private Hidden hidden;
 
@@ -41,20 +41,20 @@ public class CentralSettings {
         this.skipCiDefaultValue = skipCiDefaultValue;
     }
 
-    public Boolean getSkipCiDefaultChecked() {
-        return skipCiDefaultChecked;
+    public Boolean getSkipCiDefaultApprove() {
+        return skipCiDefaultApprove;
     }
 
-    public void setSkipCiDefaultChecked(Boolean skipCiDefaultChecked) {
-        this.skipCiDefaultChecked = skipCiDefaultChecked;
+    public void setSkipCiDefaultApprove(Boolean skipCiDefaultApprove) {
+        this.skipCiDefaultApprove = skipCiDefaultApprove;
     }
 
-    public Boolean getSkipCiCheckboxEnable() {
-        return skipCiCheckboxEnable;
+    public Boolean getSkipCiComboboxEnable() {
+        return skipCiComboboxEnable;
     }
 
-    public void setSkipCiCheckboxEnable(Boolean skipCiCheckboxEnable) {
-        this.skipCiCheckboxEnable = skipCiCheckboxEnable;
+    public void setSkipCiComboboxEnable(Boolean skipCiComboboxEnable) {
+        this.skipCiComboboxEnable = skipCiComboboxEnable;
     }
 
     public Hidden getHidden() {

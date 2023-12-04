@@ -22,7 +22,7 @@ public class CentralSettingPanel {
     private JBIntSpinner typeDisplayNumberSpinner;
     private JCheckBox skipCiEnableCheckBox;
     private JComboBox<String> skipCiComboBox;
-    private JCheckBox skipCiDefaultCheckedCheckedBox;
+    private JCheckBox skipCiDefaultApproveCheckedBox;
 
     //********************* hidden *********************//
     private JCheckBox typeCheckBox;
@@ -35,7 +35,7 @@ public class CentralSettingPanel {
     private JLabel typeDiskPlayStyleLabel;
     private JLabel typeDisplayNumberLabel;
     private JLabel skipCiDefaultValueLabel;
-    private JLabel skipEnableSelectionLabel;
+    private JLabel skipEnableComboboxLabel;
 
 
     public CentralSettingPanel(GitCommitMessageHelperSettings settings) {
@@ -56,9 +56,9 @@ public class CentralSettingPanel {
         typeMixingRadioButton.setText(PluginBundle.get("setting.central.type.mixing.button"));
         // Init  skip ci option
         skipCiDefaultValueLabel.setText(PluginBundle.get("setting.central.skip.ci.enable.default"));
-        skipEnableSelectionLabel.setText(PluginBundle.get("setting.central.skip.ci.enable.selection"));
+        skipEnableComboboxLabel.setText(PluginBundle.get("setting.central.skip.ci.enable.selection"));
         skipCiEnableCheckBox.setText(PluginBundle.get("setting.central.skip.ci.enable.checkbox"));
-        skipCiDefaultCheckedCheckedBox.setText(PluginBundle.get("setting.central.skip.ci.default.checked.checkbox"));
+        skipCiDefaultApproveCheckedBox.setText(PluginBundle.get("setting.central.skip.ci.default.checked.checkbox"));
         DataSettings dateSettings = settings.getDateSettings();
         List<String> skipCis = dateSettings.getSkipCis();
         for (String skipCi : skipCis) {
@@ -91,11 +91,11 @@ public class CentralSettingPanel {
         }
         settings.getCentralSettings().setTypeDisplayNumber(number);
         // Skip CI Option
-        settings.getCentralSettings().setSkipCiDefaultChecked(skipCiDefaultCheckedCheckedBox.isSelected());
+        settings.getCentralSettings().setSkipCiDefaultApprove(skipCiDefaultApproveCheckedBox.isSelected());
         if (skipCiComboBox.getSelectedItem() != null) {
             settings.getCentralSettings().setSkipCiDefaultValue(skipCiComboBox.getSelectedItem().toString());
         }
-        settings.getCentralSettings().setSkipCiCheckboxEnable(skipCiEnableCheckBox.isSelected());
+        settings.getCentralSettings().setSkipCiComboboxEnable(skipCiEnableCheckBox.isSelected());
         // Hidden Option
         // settings.getCentralSettings().getHidden().setSubject(subjectCheckBox.isSelected());
         settings.getCentralSettings().getHidden().setType(typeCheckBox.isSelected());
@@ -126,9 +126,9 @@ public class CentralSettingPanel {
         }
         typeDisplayNumberSpinner.setNumber(settings.getCentralSettings().getTypeDisplayNumber());
         // Skip CI Option
-        skipCiDefaultCheckedCheckedBox.setSelected(settings.getCentralSettings().getSkipCiDefaultChecked());
+        skipCiDefaultApproveCheckedBox.setSelected(settings.getCentralSettings().getSkipCiDefaultApprove());
         skipCiComboBox.setSelectedItem(settings.getCentralSettings().getSkipCiDefaultValue());
-        skipCiEnableCheckBox.setSelected(settings.getCentralSettings().getSkipCiCheckboxEnable());
+        skipCiEnableCheckBox.setSelected(settings.getCentralSettings().getSkipCiComboboxEnable());
         // Hidden Option
         typeCheckBox.setSelected(settings.getCentralSettings().getHidden().getType());
         scopeCheckBox.setSelected(settings.getCentralSettings().getHidden().getScope());
@@ -157,12 +157,12 @@ public class CentralSettingPanel {
             isModified = true;
         }
         // Skip CI Option
-        else if (skipCiDefaultCheckedCheckedBox.isSelected() != data.getCentralSettings().getSkipCiDefaultChecked()) {
+        else if (skipCiDefaultApproveCheckedBox.isSelected() != data.getCentralSettings().getSkipCiDefaultApprove()) {
             isModified = true;
         } else if (skipCiComboBox.getSelectedItem() != null && !skipCiComboBox.getSelectedItem().toString()
                 .equals(data.getCentralSettings().getSkipCiDefaultValue())) {
             isModified = true;
-        } else if (skipCiEnableCheckBox.isSelected() != data.getCentralSettings().getSkipCiCheckboxEnable()) {
+        } else if (skipCiEnableCheckBox.isSelected() != data.getCentralSettings().getSkipCiComboboxEnable()) {
             isModified = true;
         }
         // Hidden Option

@@ -10,7 +10,6 @@ import com.intellij.ide.ui.laf.darcula.ui.DarculaEditorTextFieldBorder;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.EditorTextField;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -36,6 +35,9 @@ public class CommitPanel {
     private JScrollPane longDescriptionScrollPane;
     private JScrollPane breakingChangesScrollPane;
     private JPanel typePanel;
+    private JCheckBox approveCheckBox;
+    private JComboBox<String> skipCiComboBox;
+    private JLabel skipCiLabel;
     private ButtonGroup buttonGroup;
 
 
@@ -66,6 +68,7 @@ public class CommitPanel {
             uEditor.setHorizontalScrollbarVisible(true);
             uEditor.setBorder(null);
         });
+        approveCheckBox.setText(PluginBundle.get("commit.panel.skip.ci.checkbox"));
         settingHidden(commitMessageTemplate);
         computePanelHeight();
     }
@@ -187,6 +190,25 @@ public class CommitPanel {
                 closedDescriptionLabel.setVisible(false);
                 closedIssues.setVisible(false);
             }
+            if (centralSettings.getHidden().getSkipCi()) {
+                skipCiLabel.setVisible(false);
+                skipCiComboBox.setVisible(false);
+                approveCheckBox.setVisible(false);
+            } else {
+                if (!centralSettings.getSkipCiComboboxEnable()) {
+                    skipCiComboBox.setVisible(false);
+                }
+                List<String> skipCis = settings.getDateSettings().getSkipCis();
+                for (String skipCi : skipCis) {
+                    skipCiComboBox.addItem(skipCi);
+                }
+                if (settings.getCentralSettings().getSkipCiDefaultApprove()) {
+                    approveCheckBox.setSelected(true);
+                }
+                if (settings.getCentralSettings().getSkipCiDefaultValue() != null) {
+                    skipCiComboBox.setSelectedItem(settings.getCentralSettings().getSkipCiDefaultValue());
+                }
+            }
             if (commitMessageTemplate != null) {
                 // with cache init
                 changeScope.setText(commitMessageTemplate.getScope());
@@ -223,6 +245,9 @@ public class CommitPanel {
         if (!settings.getCentralSettings().getHidden().getClosed()) {
             height += 30;
         }
+        if (!settings.getCentralSettings().getHidden().getSkipCi()) {
+            height += 30;
+        }
         mainPanel.setPreferredSize(new Dimension(730, height));
     }
 
@@ -249,6 +274,19 @@ public class CommitPanel {
                 }
             }
         }
+        String skipCi = "";
+        if (!settings.getCentralSettings().getHidden().getSkipCi()) {
+            if (approveCheckBox.isSelected()) {
+                if (settings.getCentralSettings().getSkipCiComboboxEnable()) {
+                    if (skipCiComboBox.getSelectedItem() != null) {
+                        skipCi = skipCiComboBox.getSelectedItem().toString();
+                    }
+                } else {
+                    skipCi = settings.getCentralSettings().getSkipCiDefaultValue();
+                }
+            }
+
+        }
         return new CommitMessage(
                 settings,
                 type,
@@ -256,7 +294,8 @@ public class CommitPanel {
                 shortDescription.getText().trim(),
                 longDescription.getText().trim(),
                 closedIssues.getText().trim(),
-                breakingChanges.getText().trim()
+                breakingChanges.getText().trim(),
+                skipCi.trim()
         );
     }
 
@@ -283,6 +322,20 @@ public class CommitPanel {
                 }
             }
         }
+        String skipCi = "";
+        if (!settings.getCentralSettings().getHidden().getSkipCi()) {
+            if (approveCheckBox.isSelected()) {
+                if (settings.getCentralSettings().getSkipCiComboboxEnable()) {
+                    if (skipCiComboBox.getSelectedItem() != null) {
+                        skipCi = skipCiComboBox.getSelectedItem().toString();
+                    } else {
+                        skipCi = settings.getCentralSettings().getSkipCiDefaultValue();
+                    }
+                }
+            }
+
+        }
+        commitTemplate.setSkipCi(skipCi.trim());
         commitTemplate.setScope(changeScope.getText().trim());
         commitTemplate.setSubject(shortDescription.getText().trim());
         commitTemplate.setBody(longDescription.getText().trim());
