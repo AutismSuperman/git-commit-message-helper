@@ -48,6 +48,7 @@ public class TemplateEditPanel {
     private JCheckBox bodyCheckBox;
     private JCheckBox changesCheckBox;
     private JCheckBox closedCheckBox;
+    private JCheckBox skipCiCheckBox;
 
 
     public TemplateEditPanel(GitCommitMessageHelperSettings settings) {
@@ -113,7 +114,7 @@ public class TemplateEditPanel {
         bodyCheckBox.addChangeListener(e -> showPreview());
         changesCheckBox.addChangeListener(e -> showPreview());
         closedCheckBox.addChangeListener(e -> showPreview());
-
+        skipCiCheckBox.addChangeListener(e -> showPreview());
         // Init  typeEditPanel
         aliasTable = new AliasTable();
         typeEditPanel.add(
@@ -164,6 +165,9 @@ public class TemplateEditPanel {
         }
         if (closedCheckBox.isSelected()) {
             commitTemplate.setCloses("<closes>");
+        }
+        if (skipCiCheckBox.isSelected()) {
+            commitTemplate.setSkipCi("<skipCi>");
         }
         ApplicationManager.getApplication().runWriteAction(() -> {
             String previewTemplate = templateEditor.getDocument().getText().replaceAll("\\n", "");
