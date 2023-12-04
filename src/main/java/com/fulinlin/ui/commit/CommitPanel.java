@@ -83,17 +83,15 @@ public class CommitPanel {
                     changeType.addItem(type);
                 }
                 if (commitMessageTemplate != null) {
-                    if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.RADIO) {
-                        typeAliases.stream()
-                                .filter(typeAlias -> typeAlias.getTitle().equals(commitMessageTemplate.getType()))
-                                .findFirst()
-                                .ifPresent(typeAlias ->
-                                        changeType.setSelectedItem(typeAlias)
-                                );
-                    }
+                    typeAliases.stream()
+                            .filter(typeAlias -> typeAlias.getTitle().equals(commitMessageTemplate.getType()))
+                            .findFirst()
+                            .ifPresent(typeAlias ->
+                                    changeType.setSelectedItem(typeAlias)
+                            );
                 }
                 typePanel.add(changeType);
-            } else if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.RADIO){
+            } else if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.RADIO) {
                 buttonGroup = new ButtonGroup();
                 typePanel.setLayout(new GridLayout(0, 1));
                 Integer typeDisplayNumber = centralSettings.getTypeDisplayNumber();
@@ -115,33 +113,88 @@ public class CommitPanel {
                         }
                     }
                 }
+            } else if (centralSettings.getTypeDisplayStyle() == TypeDisplayStyleEnum.MIXING) {
+                typePanel.setLayout(new GridLayout(0, 1));
+                changeType = new ComboBox<>();
+                buttonGroup = new ButtonGroup();
+                Integer typeDisplayNumber = centralSettings.getTypeDisplayNumber();
+                if (typeDisplayNumber == -1) {
+                    typeDisplayNumber = typeAliases.size();
+                }
+                if (typeDisplayNumber > typeAliases.size()) {
+                    typeDisplayNumber = typeAliases.size();
+                }
+                for (int i = 0; i < typeDisplayNumber; i++) {
+                    TypeAlias type = typeAliases.get(i);
+                    JRadioButton radioButton = new JRadioButton(type.getTitle() + "-" + type.getDescription());
+                    radioButton.setActionCommand(type.getTitle());
+                    radioButton.addChangeListener(e -> {
+                        if (radioButton.isSelected()) {
+                            typeAliases.stream()
+                                    .filter(typeAlias -> typeAlias.getTitle().equals(radioButton.getActionCommand()))
+                                    .findFirst()
+                                    .ifPresent(typeAlias ->
+                                            changeType.setSelectedItem(typeAlias)
+                                    );
+                        }
+                    });
+                    buttonGroup.add(radioButton);
+                    typePanel.add(radioButton);
+                    if (commitMessageTemplate != null) {
+                        if (type.getTitle().equals(commitMessageTemplate.getType())) {
+                            radioButton.setSelected(true);
+                        }
+                    }
+                }
+                changeType.addActionListener(e -> {
+                    if (changeType.getSelectedItem() != null) {
+                        String typeTitle = ((TypeAlias) Objects.requireNonNull(changeType.getSelectedItem())).getTitle();
+                        buttonGroup.getElements().asIterator().forEachRemaining(radioButton -> {
+                            if (radioButton.getActionCommand().equals(typeTitle)) {
+                                radioButton.setSelected(true);
+                            }
+                        });
+                    }
+                });
+                for (TypeAlias type : typeAliases) {
+                    changeType.addItem(type);
+                }
+                if (commitMessageTemplate != null) {
+                    typeAliases.stream()
+                            .filter(typeAlias -> typeAlias.getTitle().equals(commitMessageTemplate.getType()))
+                            .findFirst()
+                            .ifPresent(typeAlias ->
+                                    changeType.setSelectedItem(typeAlias)
+                            );
+                }
+                typePanel.add(changeType);
             }
-        }
-        if (centralSettings.getHidden().getScope()) {
-            scopeDescriptionLabel.setVisible(false);
-            changeScope.setVisible(false);
-        }
-        if (centralSettings.getHidden().getBody()) {
-            bodyDescriptionLabel.setVisible(false);
-            longDescriptionScrollPane.setVisible(false);
-            longDescription.setVisible(false);
-        }
-        if (centralSettings.getHidden().getChanges()) {
-            changeDescriptionLabel.setVisible(false);
-            breakingChangesScrollPane.setVisible(false);
-            breakingChanges.setVisible(false);
-        }
-        if (centralSettings.getHidden().getClosed()) {
-            closedDescriptionLabel.setVisible(false);
-            closedIssues.setVisible(false);
-        }
-        if (commitMessageTemplate != null) {
-            // with cache init
-            changeScope.setText(commitMessageTemplate.getScope());
-            shortDescription.setText(commitMessageTemplate.getSubject());
-            longDescription.setText(commitMessageTemplate.getBody());
-            breakingChanges.setText(commitMessageTemplate.getChanges());
-            closedIssues.setText(commitMessageTemplate.getCloses());
+            if (centralSettings.getHidden().getScope()) {
+                scopeDescriptionLabel.setVisible(false);
+                changeScope.setVisible(false);
+            }
+            if (centralSettings.getHidden().getBody()) {
+                bodyDescriptionLabel.setVisible(false);
+                longDescriptionScrollPane.setVisible(false);
+                longDescription.setVisible(false);
+            }
+            if (centralSettings.getHidden().getChanges()) {
+                changeDescriptionLabel.setVisible(false);
+                breakingChangesScrollPane.setVisible(false);
+                breakingChanges.setVisible(false);
+            }
+            if (centralSettings.getHidden().getClosed()) {
+                closedDescriptionLabel.setVisible(false);
+                closedIssues.setVisible(false);
+            }
+            if (commitMessageTemplate != null) {
+                // with cache init
+                changeScope.setText(commitMessageTemplate.getScope());
+                shortDescription.setText(commitMessageTemplate.getSubject());
+                longDescription.setText(commitMessageTemplate.getBody());
+                breakingChanges.setText(commitMessageTemplate.getChanges());
+                closedIssues.setText(commitMessageTemplate.getCloses());
+            }
         }
     }
 
@@ -160,17 +213,17 @@ public class CommitPanel {
             height += 30;
         }
         if (!settings.getCentralSettings().getHidden().getBody()) {
-            longDescriptionScrollPane.setPreferredSize(new Dimension(700, 130));
+            longDescriptionScrollPane.setPreferredSize(new Dimension(730, 130));
             height += 150;
         }
         if (!settings.getCentralSettings().getHidden().getChanges()) {
-            longDescriptionScrollPane.setPreferredSize(new Dimension(700, 100));
+            longDescriptionScrollPane.setPreferredSize(new Dimension(730, 100));
             height += 100;
         }
         if (!settings.getCentralSettings().getHidden().getClosed()) {
             height += 30;
         }
-        mainPanel.setPreferredSize(new Dimension(700, height));
+        mainPanel.setPreferredSize(new Dimension(730, height));
     }
 
     CommitMessage getCommitMessage(GitCommitMessageHelperSettings settings) {
@@ -187,6 +240,12 @@ public class CommitPanel {
                     if (buttonGroup.getSelection().getActionCommand() != null) {
                         type = new TypeAlias(buttonGroup.getSelection().getActionCommand(), "");
                     }
+                }
+            }
+        } else if (settings.getCentralSettings().getTypeDisplayStyle() == TypeDisplayStyleEnum.MIXING) {
+            if (changeType != null) {
+                if (changeType.getSelectedItem() != null) {
+                    type = ((TypeAlias) Objects.requireNonNull(changeType.getSelectedItem()));
                 }
             }
         }
@@ -215,6 +274,12 @@ public class CommitPanel {
                     if (buttonGroup.getSelection().getActionCommand() != null) {
                         commitTemplate.setType(buttonGroup.getSelection().getActionCommand());
                     }
+                }
+            }
+        } else if (settings.getCentralSettings().getTypeDisplayStyle() == TypeDisplayStyleEnum.MIXING) {
+            if (changeType != null) {
+                if (changeType.getSelectedItem() != null) {
+                    commitTemplate.setType(((TypeAlias) Objects.requireNonNull(changeType.getSelectedItem())).getTitle());
                 }
             }
         }
