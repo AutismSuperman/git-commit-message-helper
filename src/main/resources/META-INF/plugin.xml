@@ -36,7 +36,6 @@
         <applicationConfigurable
                 instance="com.fulinlin.configurable.TemplateConfigurable"
                 id="plugins.gitcommitmessagehelper.template"
-                key="setting.configurable.template"
                 groupId="plugins.gitcommitmessagehelper"/>
 
     </extensions>
