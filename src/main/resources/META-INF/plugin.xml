@@ -2,7 +2,7 @@
     <id>commit-message-helper-idea-plugin</id>
     <name>Git Commit Message Helper</name>
     <vendor email="fulinlin9527@outlook.com" url="https://github.com/AutismSuperman">FuLinLin</vendor>
-    <version>1.4.0</version>
+    <version>1.4.1</version>
 
 
     <description><![CDATA[<p>Description notes will be filled by gradle build</p>]]></description>
