@@ -1,5 +1,6 @@
 package com.fulinlin.utils;
 
+import com.fulinlin.exception.TemplateConvertException;
 import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.CommitTemplate;
 import org.apache.velocity.VelocityContext;
@@ -31,7 +32,7 @@ public class VelocityUtils {
         engine.init(props);
     }
 
-    public static String convert(String template, CommitTemplate commitTemplate) {
+    public static String convert(String template, CommitTemplate commitTemplate) throws TemplateConvertException {
         StringWriter writer = new StringWriter();
         VelocityContext velocityContext = new VelocityContext();
         velocityContext.put("type", commitTemplate.getType());
@@ -44,15 +45,16 @@ public class VelocityUtils {
         velocityContext.put("newline", "\n");
         velocityContext.put("velocityTool", new VelocityTool());
         String VM_LOG_TAG = "GitCommitMessage VelocityUtils";
-        boolean isSuccess = engine.evaluate(velocityContext, writer, VM_LOG_TAG, template);
-        if (!isSuccess) {
+        try {
+            engine.evaluate(velocityContext, writer, VM_LOG_TAG, template);
+            return writer.toString();
+        } catch (Exception e) {
+            throw new TemplateConvertException(PluginBundle.get("setting.template.description.error"));
         }
-        return writer.toString();
     }
 
 
-
-    public static String convertDescription(String html) {
+    public static String convertDescription(String html) throws TemplateConvertException {
         StringWriter writer = new StringWriter();
         VelocityContext velocityContext = new VelocityContext();
         velocityContext.put("setting.template.description.tip", PluginBundle.get("setting.template.description.tip"));
@@ -66,11 +68,13 @@ public class VelocityUtils {
         velocityContext.put("setting.template.description.skip.ci", PluginBundle.get("setting.template.description.skip.ci"));
         velocityContext.put("setting.template.description.newLine", PluginBundle.get("setting.template.description.newLine"));
         velocityContext.put("setting.template.description.used", PluginBundle.get("setting.template.description.used"));
-        velocityContext.put("globals",velocityContext);
+        velocityContext.put("globals", velocityContext);
         String VM_LOG_TAG = "GitCommitMessage Description VelocityUtils";
-        boolean isSuccess = engine.evaluate(velocityContext, writer, VM_LOG_TAG, html);
-        if (!isSuccess) {
+        try {
+            engine.evaluate(velocityContext, writer, VM_LOG_TAG, html);
+            return writer.toString();
+        } catch (Exception e) {
+            throw new TemplateConvertException(PluginBundle.get("setting.template.description.error"));
         }
-        return writer.toString();
     }
 }
