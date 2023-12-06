@@ -30,7 +30,7 @@
             </constraints>
             <properties>
               <text value="Radio display number:"/>
-              <toolTipText value="1212121212"/>
+              <toolTipText value=""/>
             </properties>
           </component>
           <component id="ea2a5" class="javax.swing.JLabel" binding="typeDiskPlayStyleLabel">
