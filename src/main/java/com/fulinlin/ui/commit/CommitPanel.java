@@ -13,6 +13,7 @@ import com.intellij.ui.EditorTextField;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -152,11 +153,20 @@ public class CommitPanel {
                 changeType.addActionListener(e -> {
                     if (changeType.getSelectedItem() != null) {
                         String typeTitle = ((TypeAlias) Objects.requireNonNull(changeType.getSelectedItem())).getTitle();
-                        buttonGroup.getElements().asIterator().forEachRemaining(radioButton -> {
-                            if (radioButton.getActionCommand().equals(typeTitle)) {
-                                radioButton.setSelected(true);
+                        Iterator<AbstractButton> iterator = buttonGroup.getElements().asIterator();
+                        boolean flag = false;
+                        while (iterator.hasNext()) {
+                            AbstractButton radioButton = iterator.next();
+                            boolean equals = radioButton.getActionCommand().equals(typeTitle);
+                            radioButton.setSelected(equals);
+                            if (equals) {
+                                flag = true;
+                                break;
                             }
-                        });
+                        }
+                        if (!flag) {
+                            buttonGroup.clearSelection();
+                        }
                     }
                 });
                 for (TypeAlias type : typeAliases) {
