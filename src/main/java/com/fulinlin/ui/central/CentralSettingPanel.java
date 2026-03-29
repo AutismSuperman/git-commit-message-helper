@@ -10,6 +10,7 @@ import com.intellij.ui.JBIntSpinner;
 import javax.swing.*;
 import java.awt.event.ItemEvent;
 import java.util.List;
+import java.util.Objects;
 
 public class CentralSettingPanel {
     protected GitCommitMessageHelperSettings settings;
@@ -17,6 +18,8 @@ public class CentralSettingPanel {
     private JPanel hiddenPanel;
     private JPanel typePanel;
     private JPanel skipCiPanel;
+    private JPanel llmPanel;
+    private JPanel actionPanel;
     private JRadioButton typeComboboxRadioButton;
     private JRadioButton typeRadioRadioButton;
     private JRadioButton typeMixingRadioButton;
@@ -37,6 +40,15 @@ public class CentralSettingPanel {
     private JLabel typeDisplayNumberLabel;
     private JLabel skipCiDefaultValueLabel;
     private JLabel skipEnableComboboxLabel;
+    private JTextField llmBaseUrlField;
+    private JTextField llmModelField;
+    private JPasswordField llmApiKeyField;
+    private JLabel llmBaseUrlLabel;
+    private JLabel llmApiKeyLabel;
+    private JLabel llmModelLabel;
+    private JCheckBox createCommitActionVisibleCheckBox;
+    private JCheckBox generateCommitActionVisibleCheckBox;
+    private JCheckBox formatCommitActionVisibleCheckBox;
 
 
     public CentralSettingPanel(GitCommitMessageHelperSettings settings) {
@@ -46,6 +58,8 @@ public class CentralSettingPanel {
         typePanel.setBorder(IdeBorderFactory.createTitledBorder(PluginBundle.get("setting.central.type.panel.title"), true));
         skipCiPanel.setBorder(IdeBorderFactory.createTitledBorder(PluginBundle.get("setting.central.skip.ci.panel.title"), true));
         hiddenPanel.setBorder(IdeBorderFactory.createTitledBorder(PluginBundle.get("setting.central.hidden.panel.title"), true));
+        llmPanel.setBorder(IdeBorderFactory.createTitledBorder(PluginBundle.get("setting.central.llm.panel.title"), true));
+        actionPanel.setBorder(IdeBorderFactory.createTitledBorder(PluginBundle.get("setting.central.action.panel.title"), true));
         ButtonGroup buttonGroup = new ButtonGroup();
         buttonGroup.add(typeComboboxRadioButton);
         buttonGroup.add(typeRadioRadioButton);
@@ -61,6 +75,12 @@ public class CentralSettingPanel {
         skipEnableComboboxLabel.setText(PluginBundle.get("setting.central.skip.ci.enable.selection"));
         skipCiEnableCheckBox.setText(PluginBundle.get("setting.central.skip.ci.enable.checkbox"));
         skipCiDefaultApproveCheckedBox.setText(PluginBundle.get("setting.central.skip.ci.default.checked.checkbox"));
+        llmBaseUrlLabel.setText(PluginBundle.get("setting.central.llm.base.url"));
+        llmApiKeyLabel.setText(PluginBundle.get("setting.central.llm.api.key"));
+        llmModelLabel.setText(PluginBundle.get("setting.central.llm.model"));
+        createCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.create.visible"));
+        generateCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.generate.visible"));
+        formatCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.format.visible"));
         DataSettings dateSettings = settings.getDateSettings();
         List<String> skipCis = dateSettings.getSkipCis();
         for (String skipCi : skipCis) {
@@ -104,6 +124,12 @@ public class CentralSettingPanel {
             settings.getCentralSettings().setSkipCiDefaultValue(skipCiComboBox.getSelectedItem().toString());
         }
         settings.getCentralSettings().setSkipCiComboboxEnable(skipCiEnableCheckBox.isSelected());
+        settings.getCentralSettings().getLlmSettings().setBaseUrl(llmBaseUrlField.getText().trim());
+        settings.getCentralSettings().getLlmSettings().setApiKey(new String(llmApiKeyField.getPassword()).trim());
+        settings.getCentralSettings().getLlmSettings().setModel(llmModelField.getText().trim());
+        settings.getCentralSettings().getActionSettings().setCreateCommitActionVisible(createCommitActionVisibleCheckBox.isSelected());
+        settings.getCentralSettings().getActionSettings().setGenerateCommitActionVisible(generateCommitActionVisibleCheckBox.isSelected());
+        settings.getCentralSettings().getActionSettings().setFormatCommitActionVisible(formatCommitActionVisibleCheckBox.isSelected());
         // Hidden Option
         // settings.getCentralSettings().getHidden().setSubject(subjectCheckBox.isSelected());
         settings.getCentralSettings().getHidden().setType(typeCheckBox.isSelected());
@@ -137,6 +163,12 @@ public class CentralSettingPanel {
         skipCiDefaultApproveCheckedBox.setSelected(settings.getCentralSettings().getSkipCiDefaultApprove());
         skipCiComboBox.setSelectedItem(settings.getCentralSettings().getSkipCiDefaultValue());
         skipCiEnableCheckBox.setSelected(settings.getCentralSettings().getSkipCiComboboxEnable());
+        llmBaseUrlField.setText(settings.getCentralSettings().getLlmSettings().getBaseUrl());
+        llmApiKeyField.setText(settings.getCentralSettings().getLlmSettings().getApiKey());
+        llmModelField.setText(settings.getCentralSettings().getLlmSettings().getModel());
+        createCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getCreateCommitActionVisible());
+        generateCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getGenerateCommitActionVisible());
+        formatCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getFormatCommitActionVisible());
         // Hidden Option
         typeCheckBox.setSelected(settings.getCentralSettings().getHidden().getType());
         scopeCheckBox.setSelected(settings.getCentralSettings().getHidden().getScope());
@@ -171,6 +203,20 @@ public class CentralSettingPanel {
                 .equals(data.getCentralSettings().getSkipCiDefaultValue())) {
             isModified = true;
         } else if (skipCiEnableCheckBox.isSelected() != data.getCentralSettings().getSkipCiComboboxEnable()) {
+            isModified = true;
+        }
+        // LLM and action option
+        else if (!Objects.equals(llmBaseUrlField.getText().trim(), data.getCentralSettings().getLlmSettings().getBaseUrl())) {
+            isModified = true;
+        } else if (!Objects.equals(new String(llmApiKeyField.getPassword()).trim(), data.getCentralSettings().getLlmSettings().getApiKey())) {
+            isModified = true;
+        } else if (!Objects.equals(llmModelField.getText().trim(), data.getCentralSettings().getLlmSettings().getModel())) {
+            isModified = true;
+        } else if (createCommitActionVisibleCheckBox.isSelected() != data.getCentralSettings().getActionSettings().getCreateCommitActionVisible()) {
+            isModified = true;
+        } else if (generateCommitActionVisibleCheckBox.isSelected() != data.getCentralSettings().getActionSettings().getGenerateCommitActionVisible()) {
+            isModified = true;
+        } else if (formatCommitActionVisibleCheckBox.isSelected() != data.getCentralSettings().getActionSettings().getFormatCommitActionVisible()) {
             isModified = true;
         }
         // Hidden Option

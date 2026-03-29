@@ -30,7 +30,7 @@ public class CreateCommitAction extends AnAction implements DumbAware {
 
     @Override
     public void actionPerformed(@Nullable AnActionEvent actionEvent) {
-        final CommitMessageI commitPanel = getCommitPanel(actionEvent);
+        final CommitMessageI commitPanel = CommitPanelActionSupport.getCommitPanel(actionEvent);
         if (commitPanel == null) {
             return;
         }
@@ -59,15 +59,9 @@ public class CreateCommitAction extends AnAction implements DumbAware {
         }
     }
 
-    @Nullable
-    private static CommitMessageI getCommitPanel(@Nullable AnActionEvent e) {
-        if (e == null) {
-            return null;
-        }
-        Refreshable data = Refreshable.PANEL_KEY.getData(e.getDataContext());
-        if (data instanceof CommitMessageI) {
-            return (CommitMessageI) data;
-        }
-        return VcsDataKeys.COMMIT_MESSAGE_CONTROL.getData(e.getDataContext());
+    @Override
+    public void update(@Nullable AnActionEvent e) {
+        boolean visible = settings.getCentralSettings().getActionSettings().getCreateCommitActionVisible();
+        CommitPanelActionSupport.updatePresentation(e, visible);
     }
 }

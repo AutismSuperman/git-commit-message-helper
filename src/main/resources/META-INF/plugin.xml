@@ -45,6 +45,18 @@
 
 
     <actions>
+        <action id="Commit.GenerateByLlm.Button" class="com.fulinlin.action.GenerateCommitByLlmAction"
+                text="Generate Commit Message"
+                description="Generate commit message by LLM"
+                icon="PluginIcons.AI_GENERATE">
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="after" relative-to-action="Commit.Button"/>
+        </action>
+        <action id="Commit.FormatByLlm.Button" class="com.fulinlin.action.FormatCommitByLlmAction"
+                text="Format Commit Message"
+                description="Format commit message by LLM"
+                icon="PluginIcons.COMMIT_FORMAT">
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="after" relative-to-action="Commit.GenerateByLlm.Button"/>
+        </action>
         <action id="Commit.Button" class="com.fulinlin.action.CreateCommitAction"
                 text="Create Commit Message"
                 description="Create commit message"

@@ -11,4 +11,8 @@ public interface PluginIcons {
     Icon EDIT = IconLoader.getIcon("/icons/edit.svg",PluginIcons.class);
 
     Icon HISTORY = IconLoader.getIcon("/icons/history.svg",PluginIcons.class);
+
+    Icon AI_GENERATE = IconLoader.getIcon("/icons/ai_generate.svg", PluginIcons.class);
+
+    Icon COMMIT_FORMAT = IconLoader.getIcon("/icons/commit_format.svg", PluginIcons.class);
 }

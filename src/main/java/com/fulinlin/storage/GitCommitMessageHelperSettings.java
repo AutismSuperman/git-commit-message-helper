@@ -2,8 +2,10 @@ package com.fulinlin.storage;
 
 import com.fulinlin.constant.GitCommitConstants;
 import com.fulinlin.localization.PluginBundle;
+import com.fulinlin.model.ActionSettings;
 import com.fulinlin.model.CentralSettings;
 import com.fulinlin.model.DataSettings;
+import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.model.enums.TypeDisplayStyleEnum;
 import com.intellij.openapi.components.PersistentStateComponent;
@@ -44,6 +46,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         }
         if (centralSettings == null) {
             loadDefaultCentralSettings();
+        } else {
+            checkDefaultCentralSettings(centralSettings);
         }
         return this;
     }
@@ -57,6 +61,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     public CentralSettings getCentralSettings() {
         if (centralSettings == null) {
             loadDefaultCentralSettings();
+        } else {
+            checkDefaultCentralSettings(centralSettings);
         }
         return centralSettings;
     }
@@ -91,8 +97,66 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             centralSettings.getHidden().setClosed(Boolean.FALSE);
             centralSettings.getHidden().setChanges(Boolean.FALSE);
             centralSettings.getHidden().setSkipCi(Boolean.FALSE);
+            LlmSettings llmSettings = new LlmSettings();
+            llmSettings.setBaseUrl("https://api.openai.com/v1");
+            llmSettings.setApiKey("");
+            llmSettings.setModel("");
+            centralSettings.setLlmSettings(llmSettings);
+            ActionSettings actionSettings = new ActionSettings();
+            actionSettings.setCreateCommitActionVisible(Boolean.TRUE);
+            actionSettings.setGenerateCommitActionVisible(Boolean.TRUE);
+            actionSettings.setFormatCommitActionVisible(Boolean.TRUE);
+            centralSettings.setActionSettings(actionSettings);
         } catch (Exception e) {
             log.error("loadDefaultCentralSettings failed", e);
+        }
+    }
+
+    private void checkDefaultCentralSettings(CentralSettings settings) {
+        if (settings.getHidden() == null) {
+            CentralSettings.Hidden hidden = new CentralSettings.Hidden();
+            hidden.setType(Boolean.FALSE);
+            hidden.setScope(Boolean.FALSE);
+            hidden.setSubject(Boolean.FALSE);
+            hidden.setBody(Boolean.FALSE);
+            hidden.setClosed(Boolean.FALSE);
+            hidden.setChanges(Boolean.FALSE);
+            hidden.setSkipCi(Boolean.FALSE);
+            settings.setHidden(hidden);
+        }
+        if (settings.getLlmSettings() == null) {
+            LlmSettings llmSettings = new LlmSettings();
+            llmSettings.setBaseUrl("https://api.openai.com/v1");
+            llmSettings.setApiKey("");
+            llmSettings.setModel("");
+            settings.setLlmSettings(llmSettings);
+        } else {
+            if (settings.getLlmSettings().getBaseUrl() == null) {
+                settings.getLlmSettings().setBaseUrl("https://api.openai.com/v1");
+            }
+            if (settings.getLlmSettings().getApiKey() == null) {
+                settings.getLlmSettings().setApiKey("");
+            }
+            if (settings.getLlmSettings().getModel() == null) {
+                settings.getLlmSettings().setModel("");
+            }
+        }
+        if (settings.getActionSettings() == null) {
+            ActionSettings actionSettings = new ActionSettings();
+            actionSettings.setCreateCommitActionVisible(Boolean.TRUE);
+            actionSettings.setGenerateCommitActionVisible(Boolean.TRUE);
+            actionSettings.setFormatCommitActionVisible(Boolean.TRUE);
+            settings.setActionSettings(actionSettings);
+        } else {
+            if (settings.getActionSettings().getCreateCommitActionVisible() == null) {
+                settings.getActionSettings().setCreateCommitActionVisible(Boolean.TRUE);
+            }
+            if (settings.getActionSettings().getGenerateCommitActionVisible() == null) {
+                settings.getActionSettings().setGenerateCommitActionVisible(Boolean.TRUE);
+            }
+            if (settings.getActionSettings().getFormatCommitActionVisible() == null) {
+                settings.getActionSettings().setFormatCommitActionVisible(Boolean.TRUE);
+            }
         }
     }
 

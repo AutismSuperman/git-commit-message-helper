@@ -16,6 +16,10 @@ public class CentralSettings {
 
     private Hidden hidden;
 
+    private LlmSettings llmSettings;
+
+    private ActionSettings actionSettings;
+
 
     public TypeDisplayStyleEnum getTypeDisplayStyle() {
         return typeDisplayStyle;
@@ -63,6 +67,22 @@ public class CentralSettings {
 
     public void setHidden(Hidden hidden) {
         this.hidden = hidden;
+    }
+
+    public LlmSettings getLlmSettings() {
+        return llmSettings;
+    }
+
+    public void setLlmSettings(LlmSettings llmSettings) {
+        this.llmSettings = llmSettings;
+    }
+
+    public ActionSettings getActionSettings() {
+        return actionSettings;
+    }
+
+    public void setActionSettings(ActionSettings actionSettings) {
+        this.actionSettings = actionSettings;
     }
 
     public static class Hidden {
