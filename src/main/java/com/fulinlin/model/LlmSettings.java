@@ -8,6 +8,10 @@ public class LlmSettings {
 
     private String model;
 
+    private Double temperature;
+
+    private String responseLanguage;
+
     public String getBaseUrl() {
         return baseUrl;
     }
@@ -30,5 +34,21 @@ public class LlmSettings {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+    public Double getTemperature() {
+        return temperature;
+    }
+
+    public void setTemperature(Double temperature) {
+        this.temperature = temperature;
+    }
+
+    public String getResponseLanguage() {
+        return responseLanguage;
+    }
+
+    public void setResponseLanguage(String responseLanguage) {
+        this.responseLanguage = responseLanguage;
     }
 }

@@ -42,10 +42,14 @@ public class CentralSettingPanel {
     private JLabel skipEnableComboboxLabel;
     private JTextField llmBaseUrlField;
     private JTextField llmModelField;
+    private JTextField llmTemperatureField;
+    private JTextField llmResponseLanguageField;
     private JPasswordField llmApiKeyField;
     private JLabel llmBaseUrlLabel;
     private JLabel llmApiKeyLabel;
     private JLabel llmModelLabel;
+    private JLabel llmTemperatureLabel;
+    private JLabel llmResponseLanguageLabel;
     private JCheckBox createCommitActionVisibleCheckBox;
     private JCheckBox generateCommitActionVisibleCheckBox;
     private JCheckBox formatCommitActionVisibleCheckBox;
@@ -78,6 +82,8 @@ public class CentralSettingPanel {
         llmBaseUrlLabel.setText(PluginBundle.get("setting.central.llm.base.url"));
         llmApiKeyLabel.setText(PluginBundle.get("setting.central.llm.api.key"));
         llmModelLabel.setText(PluginBundle.get("setting.central.llm.model"));
+        llmTemperatureLabel.setText(PluginBundle.get("setting.central.llm.temperature"));
+        llmResponseLanguageLabel.setText(PluginBundle.get("setting.central.llm.response.language"));
         createCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.create.visible"));
         generateCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.generate.visible"));
         formatCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.format.visible"));
@@ -127,6 +133,8 @@ public class CentralSettingPanel {
         settings.getCentralSettings().getLlmSettings().setBaseUrl(llmBaseUrlField.getText().trim());
         settings.getCentralSettings().getLlmSettings().setApiKey(new String(llmApiKeyField.getPassword()).trim());
         settings.getCentralSettings().getLlmSettings().setModel(llmModelField.getText().trim());
+        settings.getCentralSettings().getLlmSettings().setTemperature(parseTemperature(llmTemperatureField.getText()));
+        settings.getCentralSettings().getLlmSettings().setResponseLanguage(llmResponseLanguageField.getText().trim());
         settings.getCentralSettings().getActionSettings().setCreateCommitActionVisible(createCommitActionVisibleCheckBox.isSelected());
         settings.getCentralSettings().getActionSettings().setGenerateCommitActionVisible(generateCommitActionVisibleCheckBox.isSelected());
         settings.getCentralSettings().getActionSettings().setFormatCommitActionVisible(formatCommitActionVisibleCheckBox.isSelected());
@@ -166,6 +174,8 @@ public class CentralSettingPanel {
         llmBaseUrlField.setText(settings.getCentralSettings().getLlmSettings().getBaseUrl());
         llmApiKeyField.setText(settings.getCentralSettings().getLlmSettings().getApiKey());
         llmModelField.setText(settings.getCentralSettings().getLlmSettings().getModel());
+        llmTemperatureField.setText(String.valueOf(settings.getCentralSettings().getLlmSettings().getTemperature()));
+        llmResponseLanguageField.setText(settings.getCentralSettings().getLlmSettings().getResponseLanguage());
         createCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getCreateCommitActionVisible());
         generateCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getGenerateCommitActionVisible());
         formatCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getFormatCommitActionVisible());
@@ -212,6 +222,10 @@ public class CentralSettingPanel {
             isModified = true;
         } else if (!Objects.equals(llmModelField.getText().trim(), data.getCentralSettings().getLlmSettings().getModel())) {
             isModified = true;
+        } else if (!Objects.equals(parseTemperature(llmTemperatureField.getText()), data.getCentralSettings().getLlmSettings().getTemperature())) {
+            isModified = true;
+        } else if (!Objects.equals(llmResponseLanguageField.getText().trim(), data.getCentralSettings().getLlmSettings().getResponseLanguage())) {
+            isModified = true;
         } else if (createCommitActionVisibleCheckBox.isSelected() != data.getCentralSettings().getActionSettings().getCreateCommitActionVisible()) {
             isModified = true;
         } else if (generateCommitActionVisibleCheckBox.isSelected() != data.getCentralSettings().getActionSettings().getGenerateCommitActionVisible()) {
@@ -244,5 +258,13 @@ public class CentralSettingPanel {
 
     private void createUIComponents() {
         typeDisplayNumberSpinner = new JBIntSpinner(1, -1, 999);
+    }
+
+    private static Double parseTemperature(String value) {
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (Exception ignored) {
+            return 0.2D;
+        }
     }
 }

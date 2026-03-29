@@ -49,7 +49,8 @@ public class LlmCommitService {
                 + "1. Follow the project's commit template strictly.\n"
                 + "2. Prefer one concise subject line and only include body/breaking/closes/skip ci sections when needed.\n"
                 + "3. Choose the most suitable type from the allowed types.\n"
-                + "4. Return commit message text only, no markdown fences, no explanation.\n\n"
+                + "4. Write the commit message in " + getResponseLanguage(settings) + ".\n"
+                + "5. Return commit message text only, no markdown fences, no explanation.\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
                 + "Commit Template (Velocity syntax):\n" + settings.getDateSettings().getTemplate() + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
@@ -64,11 +65,18 @@ public class LlmCommitService {
                 + "1. Preserve the original intent.\n"
                 + "2. Follow the project's commit template strictly.\n"
                 + "3. Choose the closest valid type from the allowed types.\n"
-                + "4. Return commit message text only, no markdown fences, no explanation.\n\n"
+                + "4. Rewrite the commit message in " + getResponseLanguage(settings) + ".\n"
+                + "5. Return commit message text only, no markdown fences, no explanation.\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
                 + "Commit Template (Velocity syntax):\n" + settings.getDateSettings().getTemplate() + "\n\n"
                 + "Current Commit Message:\n" + currentMessage + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
+    }
+
+    @NotNull
+    private static String getResponseLanguage(@NotNull GitCommitMessageHelperSettings settings) {
+        String responseLanguage = settings.getCentralSettings().getLlmSettings().getResponseLanguage();
+        return notBlank(responseLanguage) ? responseLanguage.trim() : "English";
     }
 
     @NotNull

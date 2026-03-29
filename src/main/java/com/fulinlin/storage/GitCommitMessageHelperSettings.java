@@ -101,6 +101,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             llmSettings.setBaseUrl("https://api.openai.com/v1");
             llmSettings.setApiKey("");
             llmSettings.setModel("");
+            llmSettings.setTemperature(0.2D);
+            llmSettings.setResponseLanguage("English");
             centralSettings.setLlmSettings(llmSettings);
             ActionSettings actionSettings = new ActionSettings();
             actionSettings.setCreateCommitActionVisible(Boolean.TRUE);
@@ -139,6 +141,12 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             }
             if (settings.getLlmSettings().getModel() == null) {
                 settings.getLlmSettings().setModel("");
+            }
+            if (settings.getLlmSettings().getTemperature() == null) {
+                settings.getLlmSettings().setTemperature(0.2D);
+            }
+            if (settings.getLlmSettings().getResponseLanguage() == null) {
+                settings.getLlmSettings().setResponseLanguage("English");
             }
         }
         if (settings.getActionSettings() == null) {

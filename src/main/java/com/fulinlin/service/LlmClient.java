@@ -30,6 +30,9 @@ public class LlmClient {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", settings.getModel().trim());
         requestBody.addProperty("stream", true);
+        if (settings.getTemperature() != null) {
+            requestBody.addProperty("temperature", settings.getTemperature());
+        }
         requestBody.add("messages", createMessages(systemPrompt, userPrompt));
         write(connection, GSON.toJson(requestBody));
 
