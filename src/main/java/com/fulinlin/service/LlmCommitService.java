@@ -1,8 +1,10 @@
 package com.fulinlin.service;
 
+import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.fulinlin.utils.VelocityUtils;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,7 +54,7 @@ public class LlmCommitService {
                 + "4. Write the commit message in " + getResponseLanguage(settings) + ".\n"
                 + "5. Return commit message text only, no markdown fences, no explanation.\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
-                + "Commit Template (Velocity syntax):\n" + settings.getDateSettings().getTemplate() + "\n\n"
+                + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
     }
 
@@ -68,9 +70,27 @@ public class LlmCommitService {
                 + "4. Rewrite the commit message in " + getResponseLanguage(settings) + ".\n"
                 + "5. Return commit message text only, no markdown fences, no explanation.\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
-                + "Commit Template (Velocity syntax):\n" + settings.getDateSettings().getTemplate() + "\n\n"
+                + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
                 + "Current Commit Message:\n" + currentMessage + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
+    }
+
+    @NotNull
+    private static String buildTemplatePreview(@NotNull GitCommitMessageHelperSettings settings) {
+        String template = settings.getDateSettings().getTemplate();
+        CommitTemplate commitTemplate = new CommitTemplate();
+        commitTemplate.setType("<type>");
+        commitTemplate.setScope("<scope>");
+        commitTemplate.setSubject("<subject>");
+        commitTemplate.setBody("<body>");
+        commitTemplate.setChanges("<changes>");
+        commitTemplate.setCloses("<closes>");
+        commitTemplate.setSkipCi("<skipCi>");
+        try {
+            return VelocityUtils.convert(template, commitTemplate);
+        } catch (RuntimeException ignored) {
+            return template;
+        }
     }
 
     @NotNull
