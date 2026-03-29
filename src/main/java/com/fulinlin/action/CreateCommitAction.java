@@ -35,10 +35,14 @@ public class CreateCommitAction extends AnAction implements DumbAware {
             return;
         }
         Project project = actionEvent.getProject();
-        assert project != null;
+        if (project == null) {
+            return;
+        }
         GitCommitMessageStorage storage = project.getService(GitCommitMessageStorage.class);
         GitCommitMessageStorage state = storage.getState();
-        assert state != null;
+        if (state == null) {
+            return;
+        }
         MessageStorage messageStorage = state.getMessageStorage();
         CommitDialog dialog = new CommitDialog(
                 project, settings,

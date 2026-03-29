@@ -101,7 +101,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         dataSettings = new DataSettings();
         try {
             dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
-            List<TypeAlias> typeAliases = getTypeAliases();
+            List<TypeAlias> typeAliases = createDefaultTypeAliases();
             dataSettings.setTypeAliases(typeAliases);
             List<String> skipCis = getSkipCis();
             dataSettings.setSkipCis(skipCis);
@@ -115,7 +115,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
         }
         if (dataSettings.getTypeAliases() == null) {
-            List<TypeAlias> typeAliases = getTypeAliases();
+            List<TypeAlias> typeAliases = createDefaultTypeAliases();
             dataSettings.setTypeAliases(typeAliases);
         }
         if (dataSettings.getSkipCis() == null) {
@@ -139,7 +139,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     }
 
     @NotNull
-    private static List<TypeAlias> getTypeAliases() {
+    public static List<TypeAlias> createDefaultTypeAliases() {
         List<TypeAlias> typeAliases = new LinkedList<>();
         // default init i18n
         typeAliases.add(new TypeAlias("feat", PluginBundle.get("feat.description")));

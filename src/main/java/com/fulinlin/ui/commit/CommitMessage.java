@@ -69,7 +69,7 @@ public class CommitMessage {
         if (StringUtils.isNotBlank(skipCi)) {
             commitTemplate.setSkipCi(skipCi);
         }
-        String template = settings.getDateSettings().getTemplate().replaceAll("\\n", "");
+        String template = settings.getDateSettings().getTemplate();
         return VelocityUtils.convert(template, commitTemplate);
     }
 

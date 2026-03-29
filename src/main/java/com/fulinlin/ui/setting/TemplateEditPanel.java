@@ -178,7 +178,7 @@ public class TemplateEditPanel {
             commitTemplate.setSkipCi("<skipCi>");
         }
         ApplicationManager.getApplication().runWriteAction(() -> {
-            String previewTemplate = templateEditor.getDocument().getText().replaceAll("\\n", "");
+            String previewTemplate = templateEditor.getDocument().getText();
             previewEditor.getDocument().setText(VelocityUtils.convert(previewTemplate, commitTemplate));
         });
     }

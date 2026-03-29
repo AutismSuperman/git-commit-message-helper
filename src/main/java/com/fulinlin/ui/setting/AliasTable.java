@@ -90,21 +90,25 @@ public class AliasTable extends JBTable {
 
     public void moveUp() {
         int selectedRow = getSelectedRow();
-        int index1 = selectedRow - 1;
-        if (selectedRow != -1) {
-            Collections.swap(typeAliases, selectedRow, index1);
+        if (selectedRow <= 0 || selectedRow >= typeAliases.size()) {
+            return;
         }
-        setRowSelectionInterval(index1, index1);
+        int targetRow = selectedRow - 1;
+        Collections.swap(typeAliases, selectedRow, targetRow);
+        myTableModel.fireTableDataChanged();
+        setRowSelectionInterval(targetRow, targetRow);
     }
 
 
     public void moveDown() {
         int selectedRow = getSelectedRow();
-        int index1 = selectedRow + 1;
-        if (selectedRow != -1) {
-            Collections.swap(typeAliases, selectedRow, index1);
+        if (selectedRow < 0 || selectedRow >= typeAliases.size() - 1) {
+            return;
         }
-        setRowSelectionInterval(index1, index1);
+        int targetRow = selectedRow + 1;
+        Collections.swap(typeAliases, selectedRow, targetRow);
+        myTableModel.fireTableDataChanged();
+        setRowSelectionInterval(targetRow, targetRow);
     }
 
 
@@ -134,7 +138,12 @@ public class AliasTable extends JBTable {
     }
 
     public void resetDefaultAliases() {
+        typeAliases.clear();
+        typeAliases.addAll(GitCommitMessageHelperSettings.createDefaultTypeAliases());
         myTableModel.fireTableDataChanged();
+        if (!typeAliases.isEmpty()) {
+            setRowSelectionInterval(0, 0);
+        }
     }
 
     public void reset(GitCommitMessageHelperSettings settings) {
