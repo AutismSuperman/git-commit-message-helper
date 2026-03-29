@@ -42,9 +42,9 @@ public class CentralSettingPanel {
     private JLabel skipEnableComboboxLabel;
     private JTextField llmBaseUrlField;
     private JTextField llmModelField;
-    private JTextField llmTemperatureField;
     private JTextField llmResponseLanguageField;
     private JPasswordField llmApiKeyField;
+    private JSpinner llmTemperatureSpinner;
     private JLabel llmBaseUrlLabel;
     private JLabel llmApiKeyLabel;
     private JLabel llmModelLabel;
@@ -133,7 +133,7 @@ public class CentralSettingPanel {
         settings.getCentralSettings().getLlmSettings().setBaseUrl(llmBaseUrlField.getText().trim());
         settings.getCentralSettings().getLlmSettings().setApiKey(new String(llmApiKeyField.getPassword()).trim());
         settings.getCentralSettings().getLlmSettings().setModel(llmModelField.getText().trim());
-        settings.getCentralSettings().getLlmSettings().setTemperature(parseTemperature(llmTemperatureField.getText()));
+        settings.getCentralSettings().getLlmSettings().setTemperature(((Number) llmTemperatureSpinner.getValue()).doubleValue());
         settings.getCentralSettings().getLlmSettings().setResponseLanguage(llmResponseLanguageField.getText().trim());
         settings.getCentralSettings().getActionSettings().setCreateCommitActionVisible(createCommitActionVisibleCheckBox.isSelected());
         settings.getCentralSettings().getActionSettings().setGenerateCommitActionVisible(generateCommitActionVisibleCheckBox.isSelected());
@@ -174,7 +174,7 @@ public class CentralSettingPanel {
         llmBaseUrlField.setText(settings.getCentralSettings().getLlmSettings().getBaseUrl());
         llmApiKeyField.setText(settings.getCentralSettings().getLlmSettings().getApiKey());
         llmModelField.setText(settings.getCentralSettings().getLlmSettings().getModel());
-        llmTemperatureField.setText(String.valueOf(settings.getCentralSettings().getLlmSettings().getTemperature()));
+        llmTemperatureSpinner.setValue(settings.getCentralSettings().getLlmSettings().getTemperature());
         llmResponseLanguageField.setText(settings.getCentralSettings().getLlmSettings().getResponseLanguage());
         createCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getCreateCommitActionVisible());
         generateCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getGenerateCommitActionVisible());
@@ -222,7 +222,7 @@ public class CentralSettingPanel {
             isModified = true;
         } else if (!Objects.equals(llmModelField.getText().trim(), data.getCentralSettings().getLlmSettings().getModel())) {
             isModified = true;
-        } else if (!Objects.equals(parseTemperature(llmTemperatureField.getText()), data.getCentralSettings().getLlmSettings().getTemperature())) {
+        } else if (!Objects.equals(((Number) llmTemperatureSpinner.getValue()).doubleValue(), data.getCentralSettings().getLlmSettings().getTemperature())) {
             isModified = true;
         } else if (!Objects.equals(llmResponseLanguageField.getText().trim(), data.getCentralSettings().getLlmSettings().getResponseLanguage())) {
             isModified = true;
@@ -258,13 +258,6 @@ public class CentralSettingPanel {
 
     private void createUIComponents() {
         typeDisplayNumberSpinner = new JBIntSpinner(1, -1, 999);
-    }
-
-    private static Double parseTemperature(String value) {
-        try {
-            return Double.parseDouble(value.trim());
-        } catch (Exception ignored) {
-            return 0.2D;
-        }
+        llmTemperatureSpinner = new JSpinner(new SpinnerNumberModel(0.5D, 0.0D, 2.0D, 0.1D));
     }
 }
