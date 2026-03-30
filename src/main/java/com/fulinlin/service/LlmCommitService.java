@@ -3,6 +3,9 @@ package com.fulinlin.service;
 import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.TypeAlias;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.utils.VelocityUtils;
 import com.intellij.openapi.project.Project;
@@ -15,6 +18,7 @@ import java.util.stream.Collectors;
 
 public class LlmCommitService {
 
+    private static final Gson GSON = new Gson();
     private final GitContextService gitContextService = new GitContextService();
     private final LlmClient llmClient = new LlmClient();
 
@@ -41,6 +45,19 @@ public class LlmCommitService {
                 buildFormatPrompt(settings, gitContext, currentMessage),
                 onDelta
         );
+    }
+
+    @NotNull
+    public CommitTemplate parseCommitMessageToTemplate(@NotNull Project project,
+                                                       @NotNull GitCommitMessageHelperSettings settings,
+                                                       @NotNull String currentMessage) throws IOException {
+        GitContextService.GitContext gitContext = gitContextService.collect(project);
+        String response = llmClient.chat(
+                settings.getCentralSettings().getLlmSettings(),
+                "You convert git commit messages into structured commit template fields.",
+                buildParsePrompt(settings, gitContext, currentMessage)
+        );
+        return parseTemplateResponse(response);
     }
 
     @NotNull
@@ -71,6 +88,25 @@ public class LlmCommitService {
                 + "5. Return commit message text only, no markdown fences, no explanation.\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
                 + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
+                + "Current Commit Message:\n" + currentMessage + "\n\n"
+                + "Git Context:\n" + gitContext.toPromptText();
+    }
+
+    @NotNull
+    private static String buildParsePrompt(@NotNull GitCommitMessageHelperSettings settings,
+                                           @NotNull GitContextService.GitContext gitContext,
+                                           @NotNull String currentMessage) {
+        return "Parse the current git commit message into the project's commit template fields.\n\n"
+                + "Requirements:\n"
+                + "1. Preserve the original intent.\n"
+                + "2. Map the message into these fields only: type, scope, subject, body, changes, closes, skipCi.\n"
+                + "3. Choose the closest valid type from the allowed types.\n"
+                + "4. Return valid JSON only, without markdown fences or extra explanation.\n"
+                + "5. Use empty strings for missing fields.\n\n"
+                + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
+                + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
+                + "Expected JSON Shape:\n"
+                + "{\"type\":\"\",\"scope\":\"\",\"subject\":\"\",\"body\":\"\",\"changes\":\"\",\"closes\":\"\",\"skipCi\":\"\"}\n\n"
                 + "Current Commit Message:\n" + currentMessage + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
     }
@@ -114,7 +150,54 @@ public class LlmCommitService {
                 && notBlank(llmSettings.getModel());
     }
 
+    public static boolean isSmartEchoEnabled(@NotNull GitCommitMessageHelperSettings settings) {
+        LlmSettings llmSettings = settings.getCentralSettings().getLlmSettings();
+        return llmSettings != null && Boolean.TRUE.equals(llmSettings.getSmartEchoEnabled());
+    }
+
     private static boolean notBlank(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    @NotNull
+    private static CommitTemplate parseTemplateResponse(@NotNull String response) {
+        String normalized = normalizeJson(response);
+        JsonObject jsonObject = JsonParser.parseString(normalized).getAsJsonObject();
+        CommitTemplate commitTemplate = new CommitTemplate();
+        commitTemplate.setType(getString(jsonObject, "type"));
+        commitTemplate.setScope(getString(jsonObject, "scope"));
+        commitTemplate.setSubject(getString(jsonObject, "subject"));
+        commitTemplate.setBody(getString(jsonObject, "body"));
+        commitTemplate.setChanges(getString(jsonObject, "changes"));
+        commitTemplate.setCloses(getString(jsonObject, "closes"));
+        commitTemplate.setSkipCi(getString(jsonObject, "skipCi"));
+        return commitTemplate;
+    }
+
+    @NotNull
+    private static String normalizeJson(@NotNull String response) {
+        String trimmed = response.trim();
+        if (trimmed.startsWith("```")) {
+            int firstLineBreak = trimmed.indexOf('\n');
+            if (firstLineBreak >= 0) {
+                trimmed = trimmed.substring(firstLineBreak + 1);
+            }
+            if (trimmed.endsWith("```")) {
+                trimmed = trimmed.substring(0, trimmed.length() - 3).trim();
+            }
+        }
+        int start = trimmed.indexOf('{');
+        int end = trimmed.lastIndexOf('}');
+        if (start >= 0 && end >= start) {
+            return trimmed.substring(start, end + 1);
+        }
+        return trimmed;
+    }
+
+    @NotNull
+    private static String getString(@NotNull JsonObject jsonObject, @NotNull String field) {
+        return jsonObject.has(field) && !jsonObject.get(field).isJsonNull()
+                ? GSON.fromJson(jsonObject.get(field), String.class)
+                : "";
     }
 }

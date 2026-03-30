@@ -50,6 +50,7 @@ public class CentralSettingPanel {
     private JLabel llmModelLabel;
     private JLabel llmTemperatureLabel;
     private JLabel llmResponseLanguageLabel;
+    private JCheckBox llmSmartEchoEnabledCheckBox;
     private JCheckBox createCommitActionVisibleCheckBox;
     private JCheckBox generateCommitActionVisibleCheckBox;
     private JCheckBox formatCommitActionVisibleCheckBox;
@@ -84,6 +85,7 @@ public class CentralSettingPanel {
         llmModelLabel.setText(PluginBundle.get("setting.central.llm.model"));
         llmTemperatureLabel.setText(PluginBundle.get("setting.central.llm.temperature"));
         llmResponseLanguageLabel.setText(PluginBundle.get("setting.central.llm.response.language"));
+        llmSmartEchoEnabledCheckBox.setText(PluginBundle.get("setting.central.llm.smart.echo"));
         createCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.create.visible"));
         generateCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.generate.visible"));
         formatCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.format.visible"));
@@ -135,6 +137,7 @@ public class CentralSettingPanel {
         settings.getCentralSettings().getLlmSettings().setModel(llmModelField.getText().trim());
         settings.getCentralSettings().getLlmSettings().setTemperature(((Number) llmTemperatureSpinner.getValue()).doubleValue());
         settings.getCentralSettings().getLlmSettings().setResponseLanguage(llmResponseLanguageField.getText().trim());
+        settings.getCentralSettings().getLlmSettings().setSmartEchoEnabled(llmSmartEchoEnabledCheckBox.isSelected());
         settings.getCentralSettings().getActionSettings().setCreateCommitActionVisible(createCommitActionVisibleCheckBox.isSelected());
         settings.getCentralSettings().getActionSettings().setGenerateCommitActionVisible(generateCommitActionVisibleCheckBox.isSelected());
         settings.getCentralSettings().getActionSettings().setFormatCommitActionVisible(formatCommitActionVisibleCheckBox.isSelected());
@@ -176,6 +179,7 @@ public class CentralSettingPanel {
         llmModelField.setText(settings.getCentralSettings().getLlmSettings().getModel());
         llmTemperatureSpinner.setValue(settings.getCentralSettings().getLlmSettings().getTemperature());
         llmResponseLanguageField.setText(settings.getCentralSettings().getLlmSettings().getResponseLanguage());
+        llmSmartEchoEnabledCheckBox.setSelected(settings.getCentralSettings().getLlmSettings().getSmartEchoEnabled());
         createCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getCreateCommitActionVisible());
         generateCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getGenerateCommitActionVisible());
         formatCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getFormatCommitActionVisible());
@@ -225,6 +229,8 @@ public class CentralSettingPanel {
         } else if (!Objects.equals(((Number) llmTemperatureSpinner.getValue()).doubleValue(), data.getCentralSettings().getLlmSettings().getTemperature())) {
             isModified = true;
         } else if (!Objects.equals(llmResponseLanguageField.getText().trim(), data.getCentralSettings().getLlmSettings().getResponseLanguage())) {
+            isModified = true;
+        } else if (llmSmartEchoEnabledCheckBox.isSelected() != data.getCentralSettings().getLlmSettings().getSmartEchoEnabled()) {
             isModified = true;
         } else if (createCommitActionVisibleCheckBox.isSelected() != data.getCentralSettings().getActionSettings().getCreateCommitActionVisible()) {
             isModified = true;

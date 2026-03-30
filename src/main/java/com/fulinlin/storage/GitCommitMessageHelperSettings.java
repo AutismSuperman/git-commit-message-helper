@@ -103,6 +103,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             llmSettings.setModel("");
             llmSettings.setTemperature(0.5D);
             llmSettings.setResponseLanguage("English");
+            llmSettings.setSmartEchoEnabled(Boolean.FALSE);
             centralSettings.setLlmSettings(llmSettings);
             ActionSettings actionSettings = new ActionSettings();
             actionSettings.setCreateCommitActionVisible(Boolean.TRUE);
@@ -147,6 +148,9 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             }
             if (settings.getLlmSettings().getResponseLanguage() == null) {
                 settings.getLlmSettings().setResponseLanguage("English");
+            }
+            if (settings.getLlmSettings().getSmartEchoEnabled() == null) {
+                settings.getLlmSettings().setSmartEchoEnabled(Boolean.FALSE);
             }
         }
         if (settings.getActionSettings() == null) {

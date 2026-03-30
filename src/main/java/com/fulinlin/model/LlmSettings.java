@@ -12,6 +12,8 @@ public class LlmSettings {
 
     private String responseLanguage;
 
+    private Boolean smartEchoEnabled;
+
     public String getBaseUrl() {
         return baseUrl;
     }
@@ -50,5 +52,13 @@ public class LlmSettings {
 
     public void setResponseLanguage(String responseLanguage) {
         this.responseLanguage = responseLanguage;
+    }
+
+    public Boolean getSmartEchoEnabled() {
+        return smartEchoEnabled;
+    }
+
+    public void setSmartEchoEnabled(Boolean smartEchoEnabled) {
+        this.smartEchoEnabled = smartEchoEnabled;
     }
 }

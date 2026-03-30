@@ -22,18 +22,45 @@ public class LlmClient {
 
     private static final Gson GSON = new Gson();
 
+    @NotNull
+    public String chat(@NotNull LlmSettings settings,
+                       @NotNull String systemPrompt,
+                       @NotNull String userPrompt) throws IOException {
+        HttpURLConnection connection = createConnection(settings);
+        JsonObject requestBody = createRequestBody(settings, systemPrompt, userPrompt, false);
+        write(connection, GSON.toJson(requestBody));
+
+        int responseCode = connection.getResponseCode();
+        InputStream inputStream = responseCode >= 200 && responseCode < 300
+                ? connection.getInputStream()
+                : connection.getErrorStream();
+        if (responseCode < 200 || responseCode >= 300) {
+            throw new IOException(readAll(inputStream));
+        }
+
+        try {
+            JsonObject jsonObject = JsonParser.parseString(readAll(inputStream)).getAsJsonObject();
+            JsonArray choices = jsonObject.getAsJsonArray("choices");
+            if (choices == null || choices.size() == 0) {
+                return "";
+            }
+            JsonObject choice = choices.get(0).getAsJsonObject();
+            JsonObject message = choice.has("message") ? choice.getAsJsonObject("message") : null;
+            if (message != null && message.has("content") && !message.get("content").isJsonNull()) {
+                return extractMessageContent(message.get("content"));
+            }
+            return "";
+        } finally {
+            connection.disconnect();
+        }
+    }
+
     public void streamChat(@NotNull LlmSettings settings,
                            @NotNull String systemPrompt,
                            @NotNull String userPrompt,
                            @NotNull Consumer<String> onDelta) throws IOException {
         HttpURLConnection connection = createConnection(settings);
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("model", settings.getModel().trim());
-        requestBody.addProperty("stream", true);
-        if (settings.getTemperature() != null) {
-            requestBody.addProperty("temperature", settings.getTemperature());
-        }
-        requestBody.add("messages", createMessages(systemPrompt, userPrompt));
+        JsonObject requestBody = createRequestBody(settings, systemPrompt, userPrompt, true);
         write(connection, GSON.toJson(requestBody));
 
         int responseCode = connection.getResponseCode();
@@ -76,6 +103,21 @@ public class LlmClient {
         } finally {
             connection.disconnect();
         }
+    }
+
+    @NotNull
+    private static JsonObject createRequestBody(@NotNull LlmSettings settings,
+                                                @NotNull String systemPrompt,
+                                                @NotNull String userPrompt,
+                                                boolean stream) {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("model", settings.getModel().trim());
+        requestBody.addProperty("stream", stream);
+        if (settings.getTemperature() != null) {
+            requestBody.addProperty("temperature", settings.getTemperature());
+        }
+        requestBody.add("messages", createMessages(systemPrompt, userPrompt));
+        return requestBody;
     }
 
     @NotNull

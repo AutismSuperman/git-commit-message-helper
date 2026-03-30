@@ -227,6 +227,13 @@ public class CommitPanel {
             longDescription.setText(commitMessageTemplate.getBody());
             breakingChanges.setText(commitMessageTemplate.getChanges());
             closedIssues.setText(commitMessageTemplate.getCloses());
+            String skipCi = commitMessageTemplate.getSkipCi();
+            if (skipCi != null && !skipCi.trim().isEmpty() && !centralSettings.getHidden().getSkipCi()) {
+                approveCheckBox.setSelected(true);
+                if (centralSettings.getSkipCiComboboxEnable()) {
+                    skipCiComboBox.setSelectedItem(skipCi);
+                }
+            }
         }
     }
 
