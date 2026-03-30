@@ -14,7 +14,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
@@ -124,7 +124,7 @@ public class LlmClient {
     private static HttpURLConnection createConnection(@NotNull LlmSettings settings) throws IOException {
         String baseUrl = settings.getBaseUrl().trim();
         String endpoint = baseUrl.endsWith("/chat/completions") ? baseUrl : stripTrailingSlash(baseUrl) + "/chat/completions";
-        HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection();
+        HttpURLConnection connection = (HttpURLConnection) URI.create(endpoint).toURL().openConnection();
         connection.setRequestMethod("POST");
         connection.setDoOutput(true);
         connection.setConnectTimeout(15000);

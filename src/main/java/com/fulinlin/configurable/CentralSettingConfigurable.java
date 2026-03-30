@@ -2,7 +2,6 @@ package com.fulinlin.configurable;
 
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.ui.central.CentralSettingPanel;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;
 import org.jetbrains.annotations.Nls;
@@ -19,7 +18,7 @@ public class CentralSettingConfigurable implements SearchableConfigurable {
     private GitCommitMessageHelperSettings settings;
 
     public CentralSettingConfigurable() {
-        settings = ServiceManager.getService(GitCommitMessageHelperSettings.class);
+        settings = GitCommitMessageHelperSettings.getInstance();
     }
 
     @Override

@@ -7,6 +7,7 @@ import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.ui.setting.description.DescriptionRead;
 import com.fulinlin.utils.VelocityUtils;
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
@@ -18,6 +19,7 @@ import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.*;
 import com.intellij.ui.components.JBScrollPane;
+import com.intellij.util.ui.JBHtmlEditorKit;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +30,7 @@ import java.awt.event.MouseEvent;
 import java.util.Optional;
 
 
-public class TemplateEditPanel {
+public class TemplateEditPanel implements Disposable {
     private final AliasTable aliasTable;
     private final Editor templateEditor;
     private final EditorTextField previewEditor;
@@ -69,7 +71,7 @@ public class TemplateEditPanel {
 
         // Init descriptionPanel
         myDescriptionComponent = new JEditorPane();
-        myDescriptionComponent.setEditorKit(UIUtil.getHTMLEditorKit());
+        myDescriptionComponent.setEditorKit(new JBHtmlEditorKit());
         myDescriptionComponent.setEditable(false);
         myDescriptionComponent.setOpaque(false);
         myDescriptionComponent.addHyperlinkListener(new BrowserHyperlinkListener());
@@ -112,7 +114,7 @@ public class TemplateEditPanel {
             public void documentChanged(@NotNull DocumentEvent event) {
                 showPreview();
             }
-        });
+        }, this);
         typeCheckBox.addChangeListener(e -> showPreview());
         scopeCheckBox.addChangeListener(e -> showPreview());
         subjectCheckBox.addChangeListener(e -> showPreview());
@@ -129,7 +131,7 @@ public class TemplateEditPanel {
                         .setEditAction(button -> aliasTable.editAlias())
                         .setMoveUpAction(anActionButton -> aliasTable.moveUp())
                         .setMoveDownAction(anActionButton -> aliasTable.moveDown())
-                        .addExtraAction
+                        .addExtraActions
                                 (new AnActionButton("Reset Default Aliases", AllIcons.Actions.Rollback) {
                                     @Override
                                     public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
@@ -344,5 +346,10 @@ public class TemplateEditPanel {
         if (parent != null) {
             parent.remove(component);
         }
+    }
+
+    @Override
+    public void dispose() {
+        EditorFactory.getInstance().releaseEditor(templateEditor);
     }
 }

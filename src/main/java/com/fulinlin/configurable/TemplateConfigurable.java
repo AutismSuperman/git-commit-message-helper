@@ -3,7 +3,6 @@ package com.fulinlin.configurable;
 import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.ui.setting.TemplateEditPanel;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.options.SearchableConfigurable;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
@@ -24,7 +23,7 @@ public class TemplateConfigurable implements SearchableConfigurable {
 
 
     public TemplateConfigurable() {
-        settings = ServiceManager.getService(GitCommitMessageHelperSettings.class);
+        settings = GitCommitMessageHelperSettings.getInstance();
     }
 
     @NotNull
@@ -60,6 +59,14 @@ public class TemplateConfigurable implements SearchableConfigurable {
     public void reset() {
         if (templateEditPanel != null) {
             templateEditPanel.reset(settings);
+        }
+    }
+
+    @Override
+    public void disposeUIResources() {
+        if (templateEditPanel != null) {
+            templateEditPanel.dispose();
+            templateEditPanel = null;
         }
     }
 

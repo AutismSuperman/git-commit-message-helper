@@ -8,6 +8,7 @@ import com.fulinlin.model.DataSettings;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.model.enums.TypeDisplayStyleEnum;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
@@ -34,6 +35,11 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     private CentralSettings centralSettings;
 
     public GitCommitMessageHelperSettings() {
+    }
+
+    @NotNull
+    public static GitCommitMessageHelperSettings getInstance() {
+        return ApplicationManager.getApplication().getService(GitCommitMessageHelperSettings.class);
     }
 
     @Nullable

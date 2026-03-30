@@ -9,7 +9,6 @@ import com.fulinlin.storage.GitCommitMessageStorage;
 import com.fulinlin.ui.commit.CommitDialog;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
@@ -27,7 +26,7 @@ public class CreateCommitAction extends AnAction implements DumbAware {
     private final LlmCommitService llmCommitService = new LlmCommitService();
 
     public CreateCommitAction() {
-        this.settings = ServiceManager.getService(GitCommitMessageHelperSettings.class);
+        this.settings = GitCommitMessageHelperSettings.getInstance();
     }
 
     @Override
