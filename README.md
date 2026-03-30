@@ -21,6 +21,19 @@ If you want to change the type of submission, you can change it in settings
 
 ![settings-2.png](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/settings-2.png)
 
+## LLM Compatibility
+The current LLM integration uses an OpenAI-compatible Chat Completions API.
+
+Your configured `Base URL` is treated as either:
+- a full chat completions endpoint ending with `/chat/completions`
+- or a server base URL, in which case the plugin automatically appends `/chat/completions`
+
+The request format includes:
+- `Authorization: Bearer <API Key>`
+- JSON fields such as `model`, `temperature`, `stream`, and `messages`
+
+This means it is compatible with services that expose an OpenAI-style chat completions interface. It is not a generic implementation of the broader OpenAPI specification.
+
 ## License
 Licensed under the  [Apache License](http://www.apache.org/licenses/LICENSE-2.0), Version 2.0 (the "License"); you may not use this file except in compliance with the License.
 
