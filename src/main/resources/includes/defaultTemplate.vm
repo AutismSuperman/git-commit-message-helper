@@ -1,5 +1,8 @@
-#if($type)${type}#end#if($scope)(${scope})#end: #if($subject)${subject}#end
-#if($body)${newline}${newline}${body}#end
-#if($changes)${newline}${newline}BREAKING CHANGE: ${changes}#end
-#if($closes)${newline}${newline}Closes ${closes}#end
-#if($skipCi)${newline}${newline}${skipCi}#end
+#set($sep = "${newline}${newline}")
+#if($type || $scope || $subject)
+#if($type)${type}#end#if($scope)(${scope})#end#if($type || $scope): #end#if($subject)${subject}#end
+#end
+#if($body)${sep}${body}#end
+#if($changes)${sep}BREAKING CHANGE: ${changes}#end
+#if($closes)${sep}Closes ${closes}#end
+#if($skipCi)${sep}${skipCi}#end

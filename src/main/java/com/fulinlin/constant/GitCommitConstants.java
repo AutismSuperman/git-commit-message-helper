@@ -1,5 +1,9 @@
 package com.fulinlin.constant;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
 /**
  * @program: git-commit-message-helper
  * @author: fulin
@@ -9,9 +13,17 @@ public class GitCommitConstants {
 
     public static final String ACTION_PREFIX = "$APP_CONFIG$/GitCommitMessageHelperSettings";
 
-    public static final String DEFAULT_TEMPLATE = "#if($type)${type}#end#if($scope)(${scope})#end: #if($subject)${subject}#end\n" +
-            "#if($body)${newline}${newline}${body}#end\n" +
-            "#if($changes)${newline}${newline}BREAKING CHANGE: ${changes}#end\n" +
-            "#if($closes)${newline}${newline}Closes ${closes}#end\n" +
-            "#if($skipCi)${newline}${newline}${skipCi}#end";
+    public static final String DEFAULT_TEMPLATE = loadDefaultTemplate();
+
+    private static String loadDefaultTemplate() {
+        try (InputStream inputStream = GitCommitConstants.class.getClassLoader()
+                .getResourceAsStream("includes/defaultTemplate.vm")) {
+            if (inputStream == null) {
+                throw new IllegalStateException("Default template resource not found: includes/defaultTemplate.vm");
+            }
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load default template resource", e);
+        }
+    }
 }
