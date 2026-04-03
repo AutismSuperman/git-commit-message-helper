@@ -31,7 +31,8 @@ public class CreateCommitAction extends AnAction implements DumbAware {
 
     @Override
     public void actionPerformed(@Nullable AnActionEvent actionEvent) {
-        final CommitMessageI commitPanel = CommitPanelActionSupport.getCommitPanel(actionEvent);
+        CommitPanelActionSupport.CommitContext commitContext = CommitPanelActionSupport.getContext(actionEvent);
+        final CommitMessageI commitPanel = commitContext.getCommitPanel();
         if (commitPanel == null || actionEvent == null) {
             return;
         }
@@ -45,7 +46,7 @@ public class CreateCommitAction extends AnAction implements DumbAware {
             return;
         }
         MessageStorage messageStorage = state.getMessageStorage();
-        CommitTemplate initialCommitTemplate = resolveInitialCommitTemplate(project, commitPanel, messageStorage.getCommitTemplate());
+        CommitTemplate initialCommitTemplate = resolveInitialCommitTemplate(project, commitContext, commitPanel, messageStorage.getCommitTemplate());
         CommitDialog dialog = new CommitDialog(project, settings, initialCommitTemplate);
         dialog.show();
         if (dialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
@@ -65,6 +66,7 @@ public class CreateCommitAction extends AnAction implements DumbAware {
     }
 
     private CommitTemplate resolveInitialCommitTemplate(Project project,
+                                                        CommitPanelActionSupport.CommitContext commitContext,
                                                         CommitMessageI commitPanel,
                                                         CommitTemplate cachedCommitTemplate) {
         String currentMessage = CommitPanelActionSupport.getCurrentCommitMessage(commitPanel);
@@ -75,7 +77,13 @@ public class CreateCommitAction extends AnAction implements DumbAware {
         }
         try {
             return ProgressManager.getInstance().runProcessWithProgressSynchronously(
-                    () -> llmCommitService.parseCommitMessageToTemplate(project, settings, currentMessage),
+                    () -> llmCommitService.parseCommitMessageToTemplate(
+                            project,
+                            settings,
+                            commitContext.getSelectedChanges(),
+                            commitContext.getSelectedFiles(),
+                            currentMessage
+                    ),
                     PluginBundle.get("action.smart.echo.progress"),
                     false,
                     project

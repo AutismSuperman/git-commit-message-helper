@@ -27,9 +27,14 @@ public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
 
     @Override
     public void actionPerformed(@Nullable AnActionEvent actionEvent) {
-        CommitMessageI commitPanel = CommitPanelActionSupport.getCommitPanel(actionEvent);
+        CommitPanelActionSupport.CommitContext commitContext = CommitPanelActionSupport.getContext(actionEvent);
+        CommitMessageI commitPanel = commitContext.getCommitPanel();
         Project project = actionEvent == null ? null : actionEvent.getProject();
         if (commitPanel == null || project == null) {
+            return;
+        }
+        if (!commitContext.hasSelection()) {
+            Messages.showWarningDialog(project, PluginBundle.get("action.generate.empty.selection"), PluginBundle.get("action.llm.error.title"));
             return;
         }
         if (!LlmCommitService.isConfigured(settings)) {
@@ -42,10 +47,16 @@ public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
                 StringBuilder builder = new StringBuilder();
                 CommitPanelActionSupport.setCommitMessage(commitPanel, "");
                 try {
-                    llmCommitService.generateCommitMessage(project, settings, delta -> {
-                        builder.append(delta);
-                        CommitPanelActionSupport.setCommitMessage(commitPanel, builder.toString());
-                    });
+                    llmCommitService.generateCommitMessage(
+                            project,
+                            settings,
+                            commitContext.getSelectedChanges(),
+                            commitContext.getSelectedFiles(),
+                            delta -> {
+                                builder.append(delta);
+                                CommitPanelActionSupport.setCommitMessage(commitPanel, builder.toString());
+                            }
+                    );
                 } catch (Exception e) {
                     ApplicationManager.getApplication().invokeLater(() ->
                             Messages.showErrorDialog(project, e.getMessage(), PluginBundle.get("action.llm.error.title"))

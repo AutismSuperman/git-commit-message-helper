@@ -3,15 +3,18 @@ package com.fulinlin.service;
 import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.TypeAlias;
+import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.fulinlin.utils.VelocityUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.fulinlin.storage.GitCommitMessageHelperSettings;
-import com.fulinlin.utils.VelocityUtils;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vcs.changes.Change;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -24,8 +27,10 @@ public class LlmCommitService {
 
     public void generateCommitMessage(@NotNull Project project,
                                       @NotNull GitCommitMessageHelperSettings settings,
+                                      @NotNull Collection<Change> selectedChanges,
+                                      @NotNull Collection<File> selectedFiles,
                                       @NotNull Consumer<String> onDelta) throws IOException {
-        GitContextService.GitContext gitContext = gitContextService.collect(project);
+        GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
         llmClient.streamChat(
                 settings.getCentralSettings().getLlmSettings(),
                 "You are a senior engineer who writes precise git commit messages.",
@@ -36,9 +41,11 @@ public class LlmCommitService {
 
     public void formatCommitMessage(@NotNull Project project,
                                     @NotNull GitCommitMessageHelperSettings settings,
+                                    @NotNull Collection<Change> selectedChanges,
+                                    @NotNull Collection<File> selectedFiles,
                                     @NotNull String currentMessage,
                                     @NotNull Consumer<String> onDelta) throws IOException {
-        GitContextService.GitContext gitContext = gitContextService.collect(project);
+        GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
         llmClient.streamChat(
                 settings.getCentralSettings().getLlmSettings(),
                 "You rewrite git commit messages to match the requested project template exactly.",
@@ -50,8 +57,10 @@ public class LlmCommitService {
     @NotNull
     public CommitTemplate parseCommitMessageToTemplate(@NotNull Project project,
                                                        @NotNull GitCommitMessageHelperSettings settings,
+                                                       @NotNull Collection<Change> selectedChanges,
+                                                       @NotNull Collection<File> selectedFiles,
                                                        @NotNull String currentMessage) throws IOException {
-        GitContextService.GitContext gitContext = gitContextService.collect(project);
+        GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
         String response = llmClient.chat(
                 settings.getCentralSettings().getLlmSettings(),
                 "You convert git commit messages into structured commit template fields.",

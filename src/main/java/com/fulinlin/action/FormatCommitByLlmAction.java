@@ -27,7 +27,8 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
 
     @Override
     public void actionPerformed(@Nullable AnActionEvent actionEvent) {
-        CommitMessageI commitPanel = CommitPanelActionSupport.getCommitPanel(actionEvent);
+        CommitPanelActionSupport.CommitContext commitContext = CommitPanelActionSupport.getContext(actionEvent);
+        CommitMessageI commitPanel = commitContext.getCommitPanel();
         Project project = actionEvent == null ? null : actionEvent.getProject();
         if (commitPanel == null || project == null) {
             return;
@@ -47,10 +48,17 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
                 StringBuilder builder = new StringBuilder();
                 CommitPanelActionSupport.setCommitMessage(commitPanel, "");
                 try {
-                    llmCommitService.formatCommitMessage(project, settings, currentMessage, delta -> {
-                        builder.append(delta);
-                        CommitPanelActionSupport.setCommitMessage(commitPanel, builder.toString());
-                    });
+                    llmCommitService.formatCommitMessage(
+                            project,
+                            settings,
+                            commitContext.getSelectedChanges(),
+                            commitContext.getSelectedFiles(),
+                            currentMessage,
+                            delta -> {
+                                builder.append(delta);
+                                CommitPanelActionSupport.setCommitMessage(commitPanel, builder.toString());
+                            }
+                    );
                 } catch (Exception e) {
                     ApplicationManager.getApplication().invokeLater(() ->
                             Messages.showErrorDialog(project, e.getMessage(), PluginBundle.get("action.llm.error.title"))
