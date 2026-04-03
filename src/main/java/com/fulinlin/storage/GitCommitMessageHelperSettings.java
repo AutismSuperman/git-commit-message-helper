@@ -29,6 +29,8 @@ import java.util.List;
 @State(name = "GitCommitMessageHelperSettings",
         storages = {@Storage(value = GitCommitConstants.ACTION_PREFIX + "-settings.xml")})
 public class GitCommitMessageHelperSettings implements PersistentStateComponent<GitCommitMessageHelperSettings> {
+    private static final double MIN_TEMPERATURE = 0.0D;
+    private static final double MAX_TEMPERATURE = 2.0D;
     private static final Logger log = Logger.getInstance(GitCommitMessageHelperSettings.class);
     private DataSettings dataSettings;
 
@@ -107,7 +109,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             llmSettings.setBaseUrl("https://api.openai.com/v1");
             llmSettings.setApiKey("");
             llmSettings.setModel("");
-            llmSettings.setTemperature(0.5D);
+            llmSettings.setTemperature(normalizeTemperature(0.5D));
             llmSettings.setResponseLanguage("English");
             llmSettings.setSmartEchoEnabled(Boolean.FALSE);
             centralSettings.setLlmSettings(llmSettings);
@@ -150,7 +152,11 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
                 settings.getLlmSettings().setModel("");
             }
             if (settings.getLlmSettings().getTemperature() == null) {
-                settings.getLlmSettings().setTemperature(0.5D);
+                settings.getLlmSettings().setTemperature(normalizeTemperature(0.5D));
+            } else {
+                settings.getLlmSettings().setTemperature(
+                        normalizeTemperature(settings.getLlmSettings().getTemperature())
+                );
             }
             if (settings.getLlmSettings().getResponseLanguage() == null) {
                 settings.getLlmSettings().setResponseLanguage("English");
@@ -264,6 +270,13 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         Cloner cloner = new Cloner();
         cloner.nullInsteadOfClone();
         return cloner.deepClone(this);
+    }
+
+    private static double normalizeTemperature(Double temperature) {
+        if (temperature == null) {
+            return 0.5D;
+        }
+        return Math.max(MIN_TEMPERATURE, Math.min(MAX_TEMPERATURE, temperature));
     }
 
 }
