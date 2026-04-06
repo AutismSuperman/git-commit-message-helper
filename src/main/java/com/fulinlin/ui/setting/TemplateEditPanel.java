@@ -8,6 +8,7 @@ import com.fulinlin.ui.setting.description.DescriptionRead;
 import com.fulinlin.utils.VelocityUtils;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
@@ -71,7 +72,7 @@ public class TemplateEditPanel implements Disposable {
 
         // Init descriptionPanel
         myDescriptionComponent = new JEditorPane();
-        myDescriptionComponent.setEditorKit(new JBHtmlEditorKit());
+        myDescriptionComponent.setEditorKit(new JBHtmlEditorKit(true, false));
         myDescriptionComponent.setEditable(false);
         myDescriptionComponent.setOpaque(false);
         myDescriptionComponent.addHyperlinkListener(new BrowserHyperlinkListener());
@@ -124,20 +125,19 @@ public class TemplateEditPanel implements Disposable {
         skipCiCheckBox.addChangeListener(e -> showPreview());
         // Init  typeEditPanel
         aliasTable = new AliasTable();
-        typeEditPanel.add(
-                ToolbarDecorator.createDecorator(aliasTable)
-                        .setAddAction(button -> aliasTable.addAlias())
-                        .setRemoveAction(button -> aliasTable.removeSelectedAliases())
-                        .setEditAction(button -> aliasTable.editAlias())
-                        .setMoveUpAction(anActionButton -> aliasTable.moveUp())
-                        .setMoveDownAction(anActionButton -> aliasTable.moveDown())
-                        .addExtraActions
-                                (new AnActionButton("Reset Default Aliases", AllIcons.Actions.Rollback) {
-                                    @Override
-                                    public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
-                                        aliasTable.resetDefaultAliases();
-                                    }
-                                }).createPanel(), BorderLayout.CENTER);
+        ToolbarDecorator aliasToolbarDecorator = ToolbarDecorator.createDecorator(aliasTable)
+                .setAddAction(button -> aliasTable.addAlias())
+                .setRemoveAction(button -> aliasTable.removeSelectedAliases())
+                .setEditAction(button -> aliasTable.editAlias())
+                .setMoveUpAction(anActionButton -> aliasTable.moveUp())
+                .setMoveDownAction(anActionButton -> aliasTable.moveDown());
+        addExtraToolbarAction(aliasToolbarDecorator, new AnAction("Reset Default Aliases", null, AllIcons.Actions.Rollback) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
+                aliasTable.resetDefaultAliases();
+            }
+        });
+        typeEditPanel.add(aliasToolbarDecorator.createPanel(), BorderLayout.CENTER);
 
         // Init data
         ApplicationManager.getApplication().runWriteAction(() -> {
@@ -345,6 +345,20 @@ public class TemplateEditPanel implements Disposable {
         Container parent = component.getParent();
         if (parent != null) {
             parent.remove(component);
+        }
+    }
+
+    private static void addExtraToolbarAction(@NotNull ToolbarDecorator decorator, @NotNull AnAction action) {
+        try {
+            ToolbarDecorator.class.getMethod("addExtraAction", AnAction.class).invoke(decorator, action);
+        } catch (ReflectiveOperationException ignored) {
+            try {
+                ToolbarDecorator.class
+                        .getMethod("addExtraAction", AnActionButton.class)
+                        .invoke(decorator, AnActionButton.fromAction(action));
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException("Unable to add extra toolbar action", e);
+            }
         }
     }
 
