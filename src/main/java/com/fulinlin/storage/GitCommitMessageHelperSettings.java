@@ -5,6 +5,7 @@ import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.ActionSettings;
 import com.fulinlin.model.CentralSettings;
 import com.fulinlin.model.DataSettings;
+import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.model.enums.TypeDisplayStyleEnum;
@@ -105,14 +106,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             centralSettings.getHidden().setClosed(Boolean.FALSE);
             centralSettings.getHidden().setChanges(Boolean.FALSE);
             centralSettings.getHidden().setSkipCi(Boolean.FALSE);
-            LlmSettings llmSettings = new LlmSettings();
-            llmSettings.setBaseUrl("https://api.openai.com/v1");
-            llmSettings.setApiKey("");
-            llmSettings.setModel("");
-            llmSettings.setTemperature(normalizeTemperature(0.5D));
-            llmSettings.setResponseLanguage("English");
-            llmSettings.setSmartEchoEnabled(Boolean.FALSE);
-            centralSettings.setLlmSettings(llmSettings);
+            centralSettings.setLlmSettings(createDefaultLlmSettings());
             ActionSettings actionSettings = new ActionSettings();
             actionSettings.setCreateCommitActionVisible(Boolean.TRUE);
             actionSettings.setGenerateCommitActionVisible(Boolean.TRUE);
@@ -136,34 +130,9 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             settings.setHidden(hidden);
         }
         if (settings.getLlmSettings() == null) {
-            LlmSettings llmSettings = new LlmSettings();
-            llmSettings.setBaseUrl("https://api.openai.com/v1");
-            llmSettings.setApiKey("");
-            llmSettings.setModel("");
-            settings.setLlmSettings(llmSettings);
+            settings.setLlmSettings(createDefaultLlmSettings());
         } else {
-            if (settings.getLlmSettings().getBaseUrl() == null) {
-                settings.getLlmSettings().setBaseUrl("https://api.openai.com/v1");
-            }
-            if (settings.getLlmSettings().getApiKey() == null) {
-                settings.getLlmSettings().setApiKey("");
-            }
-            if (settings.getLlmSettings().getModel() == null) {
-                settings.getLlmSettings().setModel("");
-            }
-            if (settings.getLlmSettings().getTemperature() == null) {
-                settings.getLlmSettings().setTemperature(normalizeTemperature(0.5D));
-            } else {
-                settings.getLlmSettings().setTemperature(
-                        normalizeTemperature(settings.getLlmSettings().getTemperature())
-                );
-            }
-            if (settings.getLlmSettings().getResponseLanguage() == null) {
-                settings.getLlmSettings().setResponseLanguage("English");
-            }
-            if (settings.getLlmSettings().getSmartEchoEnabled() == null) {
-                settings.getLlmSettings().setSmartEchoEnabled(Boolean.FALSE);
-            }
+            checkDefaultLlmSettings(settings.getLlmSettings());
         }
         if (settings.getActionSettings() == null) {
             ActionSettings actionSettings = new ActionSettings();
@@ -270,6 +239,101 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         Cloner cloner = new Cloner();
         cloner.nullInsteadOfClone();
         return cloner.deepClone(this);
+    }
+
+    @NotNull
+    public static LlmSettings createDefaultLlmSettings() {
+        LlmSettings llmSettings = new LlmSettings();
+        List<LlmProfile> profiles = new LinkedList<>();
+        LlmProfile profile = createDefaultLlmProfile();
+        profiles.add(profile);
+        llmSettings.setActiveProfileId(profile.getId());
+        llmSettings.setProfiles(profiles);
+        llmSettings.setTemperature(normalizeTemperature(0.5D));
+        llmSettings.setResponseLanguage("English");
+        llmSettings.setSmartEchoEnabled(Boolean.FALSE);
+        llmSettings.setStreamingResponseEnabled(Boolean.TRUE);
+        syncLegacyLlmFields(llmSettings, profile);
+        return llmSettings;
+    }
+
+    @NotNull
+    public static LlmProfile createDefaultLlmProfile() {
+        LlmProfile profile = new LlmProfile();
+        profile.setId("default");
+        profile.setName("Default");
+        profile.setBaseUrl("https://api.openai.com/v1");
+        profile.setApiKey("");
+        profile.setModel("");
+        return profile;
+    }
+
+    public static void checkDefaultLlmSettings(@NotNull LlmSettings llmSettings) {
+        if (llmSettings.getProfiles() == null || llmSettings.getProfiles().isEmpty()) {
+            LlmProfile profile = createDefaultLlmProfile();
+            profile.setBaseUrl(defaultString(llmSettings.getBaseUrl(), profile.getBaseUrl()));
+            profile.setApiKey(defaultString(llmSettings.getApiKey(), profile.getApiKey()));
+            profile.setModel(defaultString(llmSettings.getModel(), profile.getModel()));
+            List<LlmProfile> profiles = new LinkedList<>();
+            profiles.add(profile);
+            llmSettings.setProfiles(profiles);
+            llmSettings.setActiveProfileId(profile.getId());
+        }
+        llmSettings.setTemperature(normalizeTemperature(llmSettings.getTemperature()));
+        if (llmSettings.getResponseLanguage() == null) {
+            llmSettings.setResponseLanguage("English");
+        }
+        if (llmSettings.getSmartEchoEnabled() == null) {
+            llmSettings.setSmartEchoEnabled(Boolean.FALSE);
+        }
+        if (llmSettings.getStreamingResponseEnabled() == null) {
+            llmSettings.setStreamingResponseEnabled(Boolean.TRUE);
+        }
+        for (LlmProfile profile : llmSettings.getProfiles()) {
+            checkDefaultLlmProfile(profile);
+        }
+        LlmProfile activeProfile = llmSettings.getActiveProfile();
+        if (activeProfile == null) {
+            LlmProfile profile = createDefaultLlmProfile();
+            llmSettings.getProfiles().add(profile);
+            llmSettings.setActiveProfileId(profile.getId());
+            activeProfile = profile;
+        } else if (llmSettings.getActiveProfileId() == null || llmSettings.getActiveProfileId().trim().isEmpty()) {
+            llmSettings.setActiveProfileId(activeProfile.getId());
+        }
+        syncLegacyLlmFields(llmSettings, activeProfile);
+    }
+
+    public static void checkDefaultLlmProfile(@NotNull LlmProfile profile) {
+        if (profile.getId() == null || profile.getId().trim().isEmpty()) {
+            profile.setId("profile-" + System.nanoTime());
+        }
+        if (profile.getName() == null || profile.getName().trim().isEmpty()) {
+            profile.setName("Default");
+        }
+        if (profile.getBaseUrl() == null) {
+            profile.setBaseUrl("https://api.openai.com/v1");
+        }
+        if (profile.getApiKey() == null) {
+            profile.setApiKey("");
+        }
+        if (profile.getModel() == null) {
+            profile.setModel("");
+        }
+    }
+
+    private static void syncLegacyLlmFields(@NotNull LlmSettings llmSettings, @NotNull LlmProfile profile) {
+        llmSettings.setBaseUrl(profile.getBaseUrl());
+        llmSettings.setApiKey(profile.getApiKey());
+        llmSettings.setModel(profile.getModel());
+    }
+
+    private static String defaultString(String value, String defaultValue) {
+        return value == null ? defaultValue : value;
+    }
+
+    private static Boolean defaultBoolean(Boolean value, Boolean defaultValue) {
+        return value == null ? defaultValue : value;
     }
 
     private static double normalizeTemperature(Double temperature) {

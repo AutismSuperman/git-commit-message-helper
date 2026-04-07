@@ -1,8 +1,8 @@
 package com.fulinlin.configurable;
 
+import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
-import com.fulinlin.ui.central.CentralSettingPanel;
-import com.intellij.openapi.options.ConfigurationException;
+import com.fulinlin.ui.central.LlmSettingPanel;
 import com.intellij.openapi.options.SearchableConfigurable;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NonNls;
@@ -11,52 +11,53 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 
-public class CentralSettingConfigurable implements SearchableConfigurable {
+public class LlmSettingConfigurable implements SearchableConfigurable {
 
-    private CentralSettingPanel centralSettingPanel;
+    private LlmSettingPanel llmSettingPanel;
 
     private GitCommitMessageHelperSettings settings;
 
-    public CentralSettingConfigurable() {
+    public LlmSettingConfigurable() {
         settings = GitCommitMessageHelperSettings.getInstance();
     }
 
     @Override
     public @NotNull @NonNls String getId() {
-        return "plugins.gitcommitmessagehelper";
+        return "plugins.gitcommitmessagehelper.llm";
     }
 
     @Nullable
     @Override
     public JComponent createComponent() {
-        if (centralSettingPanel == null) {
-            centralSettingPanel = new CentralSettingPanel(settings);
+        if (llmSettingPanel == null) {
+            llmSettingPanel = new LlmSettingPanel(settings);
         }
-        return centralSettingPanel.getMainPanel();
+        return llmSettingPanel.getMainPanel();
     }
 
     @Override
     public void reset() {
-        centralSettingPanel.reset(settings);
+        if (llmSettingPanel != null) {
+            llmSettingPanel.reset(settings);
+        }
     }
 
     @Override
     public boolean isModified() {
-        return centralSettingPanel.isModified(settings);
+        return llmSettingPanel != null && llmSettingPanel.isModified(settings);
     }
 
     @Override
     public void apply() {
-        GitCommitMessageHelperSettings panelSettings = centralSettingPanel.getSettings();
-        panelSettings.getCentralSettings().setLlmSettings(settings.getCentralSettings().getLlmSettings());
+        GitCommitMessageHelperSettings panelSettings = llmSettingPanel.getSettings();
         GitCommitMessageHelperSettings applicationSettings = GitCommitMessageHelperSettings.getInstance();
-        applicationSettings.setCentralSettings(panelSettings.getCentralSettings());
+        applicationSettings.getCentralSettings().setLlmSettings(panelSettings.getCentralSettings().getLlmSettings());
         settings = applicationSettings;
     }
 
     @Nls(capitalization = Nls.Capitalization.Title)
     @Override
     public String getDisplayName() {
-        return "GitCommitMessageHelper";
+        return PluginBundle.get("setting.configurable.llm");
     }
 }

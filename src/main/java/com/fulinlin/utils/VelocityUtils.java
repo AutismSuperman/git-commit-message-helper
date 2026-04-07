@@ -77,4 +77,5 @@ public class VelocityUtils {
             throw new TemplateConvertException(PluginBundle.get("setting.template.description.error"));
         }
     }
+
 }

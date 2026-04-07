@@ -1,6 +1,7 @@
 package com.fulinlin.service;
 
 import com.fulinlin.model.CommitTemplate;
+import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
@@ -31,12 +32,15 @@ public class LlmCommitService {
                                       @NotNull Collection<File> selectedFiles,
                                       @NotNull Consumer<String> onDelta) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
-        llmClient.streamChat(
-                settings.getCentralSettings().getLlmSettings(),
-                "You are a senior engineer who writes precise git commit messages.",
-                buildGeneratePrompt(settings, gitContext),
-                onDelta
-        );
+        LlmSettings llmSettings = getLlmSettings(settings);
+        LlmProfile profile = llmSettings.getActiveProfile();
+        String systemPrompt = "You are a senior engineer who writes precise git commit messages.";
+        String userPrompt = buildGeneratePrompt(settings, llmSettings, gitContext);
+        if (isStreamingResponseEnabled(llmSettings)) {
+            llmClient.streamChat(profile, llmSettings, systemPrompt, userPrompt, onDelta);
+        } else {
+            onDelta.accept(llmClient.chat(profile, llmSettings, systemPrompt, userPrompt));
+        }
     }
 
     public void formatCommitMessage(@NotNull Project project,
@@ -46,12 +50,15 @@ public class LlmCommitService {
                                     @NotNull String currentMessage,
                                     @NotNull Consumer<String> onDelta) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
-        llmClient.streamChat(
-                settings.getCentralSettings().getLlmSettings(),
-                "You rewrite git commit messages to match the requested project template exactly.",
-                buildFormatPrompt(settings, gitContext, currentMessage),
-                onDelta
-        );
+        LlmSettings llmSettings = getLlmSettings(settings);
+        LlmProfile profile = llmSettings.getActiveProfile();
+        String systemPrompt = "You rewrite git commit messages to match the requested project template exactly.";
+        String userPrompt = buildFormatPrompt(settings, llmSettings, gitContext, currentMessage);
+        if (isStreamingResponseEnabled(llmSettings)) {
+            llmClient.streamChat(profile, llmSettings, systemPrompt, userPrompt, onDelta);
+        } else {
+            onDelta.accept(llmClient.chat(profile, llmSettings, systemPrompt, userPrompt));
+        }
     }
 
     @NotNull
@@ -61,8 +68,11 @@ public class LlmCommitService {
                                                        @NotNull Collection<File> selectedFiles,
                                                        @NotNull String currentMessage) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
+        LlmSettings llmSettings = getLlmSettings(settings);
+        LlmProfile profile = llmSettings.getActiveProfile();
         String response = llmClient.chat(
-                settings.getCentralSettings().getLlmSettings(),
+                profile,
+                llmSettings,
                 "You convert git commit messages into structured commit template fields.",
                 buildParsePrompt(settings, gitContext, currentMessage)
         );
@@ -71,13 +81,14 @@ public class LlmCommitService {
 
     @NotNull
     private static String buildGeneratePrompt(@NotNull GitCommitMessageHelperSettings settings,
+                                              @NotNull LlmSettings llmSettings,
                                               @NotNull GitContextService.GitContext gitContext) {
         return "Generate a git commit message for this project.\n\n"
                 + "Requirements:\n"
                 + "1. Follow the project's commit template strictly.\n"
                 + "2. Prefer one concise subject line and only include body/breaking/closes/skip ci sections when needed.\n"
                 + "3. Choose the most suitable type from the allowed types.\n"
-                + "4. Write the commit message in " + getResponseLanguage(settings) + ".\n"
+                + "4. Write the commit message in " + getResponseLanguage(llmSettings) + ".\n"
                 + "5. Return commit message text only, no markdown fences, no explanation.\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
                 + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
@@ -86,6 +97,7 @@ public class LlmCommitService {
 
     @NotNull
     private static String buildFormatPrompt(@NotNull GitCommitMessageHelperSettings settings,
+                                            @NotNull LlmSettings llmSettings,
                                             @NotNull GitContextService.GitContext gitContext,
                                             @NotNull String currentMessage) {
         return "Format the current git commit message to match the project's template.\n\n"
@@ -93,7 +105,7 @@ public class LlmCommitService {
                 + "1. Preserve the original intent.\n"
                 + "2. Follow the project's commit template strictly.\n"
                 + "3. Choose the closest valid type from the allowed types.\n"
-                + "4. Rewrite the commit message in " + getResponseLanguage(settings) + ".\n"
+                + "4. Rewrite the commit message in " + getResponseLanguage(llmSettings) + ".\n"
                 + "5. Return commit message text only, no markdown fences, no explanation.\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
                 + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
@@ -139,8 +151,8 @@ public class LlmCommitService {
     }
 
     @NotNull
-    private static String getResponseLanguage(@NotNull GitCommitMessageHelperSettings settings) {
-        String responseLanguage = settings.getCentralSettings().getLlmSettings().getResponseLanguage();
+    private static String getResponseLanguage(@NotNull LlmSettings llmSettings) {
+        String responseLanguage = llmSettings.getResponseLanguage();
         return notBlank(responseLanguage) ? responseLanguage.trim() : "English";
     }
 
@@ -152,16 +164,30 @@ public class LlmCommitService {
     }
 
     public static boolean isConfigured(@NotNull GitCommitMessageHelperSettings settings) {
-        LlmSettings llmSettings = settings.getCentralSettings().getLlmSettings();
-        return llmSettings != null
-                && notBlank(llmSettings.getBaseUrl())
-                && notBlank(llmSettings.getApiKey())
-                && notBlank(llmSettings.getModel());
+        LlmProfile profile = getActiveProfile(settings);
+        return notBlank(profile.getBaseUrl())
+                && notBlank(profile.getApiKey())
+                && notBlank(profile.getModel());
     }
 
     public static boolean isSmartEchoEnabled(@NotNull GitCommitMessageHelperSettings settings) {
+        return Boolean.TRUE.equals(getLlmSettings(settings).getSmartEchoEnabled());
+    }
+
+    private static boolean isStreamingResponseEnabled(@NotNull LlmSettings llmSettings) {
+        return Boolean.TRUE.equals(llmSettings.getStreamingResponseEnabled());
+    }
+
+    @NotNull
+    private static LlmProfile getActiveProfile(@NotNull GitCommitMessageHelperSettings settings) {
+        return getLlmSettings(settings).getActiveProfile();
+    }
+
+    @NotNull
+    private static LlmSettings getLlmSettings(@NotNull GitCommitMessageHelperSettings settings) {
         LlmSettings llmSettings = settings.getCentralSettings().getLlmSettings();
-        return llmSettings != null && Boolean.TRUE.equals(llmSettings.getSmartEchoEnabled());
+        GitCommitMessageHelperSettings.checkDefaultLlmSettings(llmSettings);
+        return llmSettings;
     }
 
     private static boolean notBlank(String value) {

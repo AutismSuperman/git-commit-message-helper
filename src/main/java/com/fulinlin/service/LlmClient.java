@@ -1,5 +1,6 @@
 package com.fulinlin.service;
 
+import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -23,11 +24,12 @@ public class LlmClient {
     private static final Gson GSON = new Gson();
 
     @NotNull
-    public String chat(@NotNull LlmSettings settings,
+    public String chat(@NotNull LlmProfile profile,
+                       @NotNull LlmSettings settings,
                        @NotNull String systemPrompt,
                        @NotNull String userPrompt) throws IOException {
-        HttpURLConnection connection = createConnection(settings);
-        JsonObject requestBody = createRequestBody(settings, systemPrompt, userPrompt, false);
+        HttpURLConnection connection = createConnection(profile);
+        JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, false);
         write(connection, GSON.toJson(requestBody));
 
         int responseCode = connection.getResponseCode();
@@ -55,12 +57,13 @@ public class LlmClient {
         }
     }
 
-    public void streamChat(@NotNull LlmSettings settings,
+    public void streamChat(@NotNull LlmProfile profile,
+                           @NotNull LlmSettings settings,
                            @NotNull String systemPrompt,
                            @NotNull String userPrompt,
                            @NotNull Consumer<String> onDelta) throws IOException {
-        HttpURLConnection connection = createConnection(settings);
-        JsonObject requestBody = createRequestBody(settings, systemPrompt, userPrompt, true);
+        HttpURLConnection connection = createConnection(profile);
+        JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, true);
         write(connection, GSON.toJson(requestBody));
 
         int responseCode = connection.getResponseCode();
@@ -106,12 +109,13 @@ public class LlmClient {
     }
 
     @NotNull
-    private static JsonObject createRequestBody(@NotNull LlmSettings settings,
+    private static JsonObject createRequestBody(@NotNull LlmProfile profile,
+                                                @NotNull LlmSettings settings,
                                                 @NotNull String systemPrompt,
                                                 @NotNull String userPrompt,
                                                 boolean stream) {
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("model", settings.getModel().trim());
+        requestBody.addProperty("model", profile.getModel().trim());
         requestBody.addProperty("stream", stream);
         if (settings.getTemperature() != null) {
             requestBody.addProperty("temperature", settings.getTemperature());
@@ -121,7 +125,7 @@ public class LlmClient {
     }
 
     @NotNull
-    private static HttpURLConnection createConnection(@NotNull LlmSettings settings) throws IOException {
+    private static HttpURLConnection createConnection(@NotNull LlmProfile settings) throws IOException {
         String baseUrl = settings.getBaseUrl().trim();
         String endpoint = baseUrl.endsWith("/chat/completions") ? baseUrl : stripTrailingSlash(baseUrl) + "/chat/completions";
         HttpURLConnection connection = (HttpURLConnection) URI.create(endpoint).toURL().openConnection();
