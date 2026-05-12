@@ -116,4 +116,46 @@ public class LlmProviderClientTest {
         assertTrue(AnthropicLlmProviderClient.isEventStream("application/json", "data:{\"content\":[]}"));
         assertEquals("event: message_start", AnthropicLlmProviderClient.normalizeEventStreamLine("data:event: message_start"));
     }
+
+    @Test
+    public void commitResponseSanitizerRemovesThinkingBlocksAndDanglingFences() {
+        String response = "<think>\n"
+                + "analysis\n"
+                + "```\n"
+                + "chore(config): switch Nacos namespace from dev to prd\n"
+                + "```\n"
+                + "</think>\n\n"
+                + "chore(config): switch Nacos namespace from dev to prd\n"
+                + "```";
+
+        assertEquals(
+                "chore(config): switch Nacos namespace from dev to prd",
+                LlmCommitService.sanitizeCommitResponse(response)
+        );
+    }
+
+    @Test
+    public void commitResponseSanitizerExtractsFencedCommitMessage() {
+        String response = "Here is the commit message:\n\n"
+                + "```text\n"
+                + "fix(ui): keep LLM reasoning out of commit message\n"
+                + "```\n";
+
+        assertEquals(
+                "fix(ui): keep LLM reasoning out of commit message",
+                LlmCommitService.sanitizeCommitResponse(response)
+        );
+    }
+
+    @Test
+    public void jsonNormalizerIgnoresThinkingBlocksBeforeStructuredResponse() {
+        String response = "<think>analysis</think>\n"
+                + "```json\n"
+                + "{\"type\":\"fix\",\"scope\":\"llm\",\"subject\":\"clean generated commit output\"}\n"
+                + "```";
+
+        assertEquals("fix", LlmCommitService.parseTemplateResponse(response).getType());
+        assertEquals("llm", LlmCommitService.parseTemplateResponse(response).getScope());
+        assertEquals("clean generated commit output", LlmCommitService.parseTemplateResponse(response).getSubject());
+    }
 }

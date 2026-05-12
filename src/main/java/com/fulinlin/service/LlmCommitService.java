@@ -18,11 +18,17 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class LlmCommitService {
 
     private static final Gson GSON = new Gson();
+    private static final Pattern THINK_BLOCK_PATTERN = Pattern.compile("(?is)<think\\b[^>]*>.*?</think>");
+    private static final Pattern FENCED_BLOCK_PATTERN = Pattern.compile("(?s)```[^\\r\\n`]*\\R(.*?)```");
+    private static final Pattern FENCE_LINE_PATTERN = Pattern.compile("(?m)^\\s*```[^\\r\\n`]*\\s*$\\R?");
+    private static final Pattern COMMIT_SUBJECT_PATTERN = Pattern.compile("(?m)^[a-zA-Z][\\w-]*(?:\\([^\\r\\n()]+\\))?!?:\\s+\\S.*$");
     private final GitContextService gitContextService = new GitContextService();
     private final LlmClient llmClient = new LlmClient();
 
@@ -37,9 +43,9 @@ public class LlmCommitService {
         String systemPrompt = "You are a senior engineer who writes precise git commit messages.";
         String userPrompt = buildGeneratePrompt(settings, llmSettings, gitContext);
         if (isStreamingResponseEnabled(llmSettings)) {
-            llmClient.streamChat(profile, llmSettings, systemPrompt, userPrompt, onDelta);
+            streamSanitized(profile, llmSettings, systemPrompt, userPrompt, onDelta);
         } else {
-            onDelta.accept(llmClient.chat(profile, llmSettings, systemPrompt, userPrompt));
+            onDelta.accept(sanitizeCommitResponse(llmClient.chat(profile, llmSettings, systemPrompt, userPrompt)));
         }
     }
 
@@ -55,9 +61,9 @@ public class LlmCommitService {
         String systemPrompt = "You rewrite git commit messages to match the requested project template exactly.";
         String userPrompt = buildFormatPrompt(settings, llmSettings, gitContext, currentMessage);
         if (isStreamingResponseEnabled(llmSettings)) {
-            llmClient.streamChat(profile, llmSettings, systemPrompt, userPrompt, onDelta);
+            streamSanitized(profile, llmSettings, systemPrompt, userPrompt, onDelta);
         } else {
-            onDelta.accept(llmClient.chat(profile, llmSettings, systemPrompt, userPrompt));
+            onDelta.accept(sanitizeCommitResponse(llmClient.chat(profile, llmSettings, systemPrompt, userPrompt)));
         }
     }
 
@@ -77,6 +83,35 @@ public class LlmCommitService {
                 buildParsePrompt(settings, gitContext, currentMessage)
         );
         return parseTemplateResponse(response);
+    }
+
+    private void streamSanitized(@NotNull LlmProfile profile,
+                                 @NotNull LlmSettings llmSettings,
+                                 @NotNull String systemPrompt,
+                                 @NotNull String userPrompt,
+                                 @NotNull Consumer<String> onDelta) throws IOException {
+        StringBuilder rawResponse = new StringBuilder();
+        StringBuilder emittedResponse = new StringBuilder();
+        llmClient.streamChat(profile, llmSettings, systemPrompt, userPrompt, delta -> {
+            rawResponse.append(delta);
+            String sanitized = sanitizeCommitResponse(rawResponse.toString());
+            if (COMMIT_SUBJECT_PATTERN.matcher(sanitized).find()) {
+                emitSanitizedDelta(sanitized, emittedResponse, onDelta);
+            }
+        });
+        emitSanitizedDelta(sanitizeCommitResponse(rawResponse.toString()), emittedResponse, onDelta);
+    }
+
+    private static void emitSanitizedDelta(@NotNull String sanitized,
+                                           @NotNull StringBuilder emittedResponse,
+                                           @NotNull Consumer<String> onDelta) {
+        if (sanitized.startsWith(emittedResponse.toString())) {
+            String nextDelta = sanitized.substring(emittedResponse.length());
+            if (!nextDelta.isEmpty()) {
+                emittedResponse.append(nextDelta);
+                onDelta.accept(nextDelta);
+            }
+        }
     }
 
     @NotNull
@@ -157,6 +192,43 @@ public class LlmCommitService {
     }
 
     @NotNull
+    static String sanitizeCommitResponse(@NotNull String response) {
+        String withoutThinking = removeThinkingBlocks(response).trim();
+        String fencedContent = extractLastFencedBlock(withoutThinking);
+        String cleaned = fencedContent != null ? fencedContent : withoutThinking;
+        cleaned = FENCE_LINE_PATTERN.matcher(cleaned).replaceAll("").trim();
+
+        Matcher commitSubjectMatcher = COMMIT_SUBJECT_PATTERN.matcher(cleaned);
+        if (commitSubjectMatcher.find()) {
+            cleaned = cleaned.substring(commitSubjectMatcher.start()).trim();
+        }
+        return cleaned;
+    }
+
+    @NotNull
+    private static String removeThinkingBlocks(@NotNull String response) {
+        String cleaned = THINK_BLOCK_PATTERN.matcher(response).replaceAll("");
+        int openThink = cleaned.toLowerCase().lastIndexOf("<think");
+        int closeThink = cleaned.toLowerCase().lastIndexOf("</think>");
+        if (openThink >= 0 && openThink > closeThink) {
+            cleaned = cleaned.substring(0, openThink);
+        }
+        return cleaned.replaceAll("(?is)</think>", "");
+    }
+
+    private static String extractLastFencedBlock(@NotNull String response) {
+        Matcher matcher = FENCED_BLOCK_PATTERN.matcher(response);
+        String fencedContent = null;
+        while (matcher.find()) {
+            String candidate = matcher.group(1).trim();
+            if (!candidate.isEmpty()) {
+                fencedContent = candidate;
+            }
+        }
+        return fencedContent;
+    }
+
+    @NotNull
     private static String formatTypes(@NotNull List<TypeAlias> typeAliases) {
         return typeAliases.stream()
                 .map(typeAlias -> "- " + typeAlias.getTitle() + ": " + typeAlias.getDescription())
@@ -195,7 +267,7 @@ public class LlmCommitService {
     }
 
     @NotNull
-    private static CommitTemplate parseTemplateResponse(@NotNull String response) {
+    static CommitTemplate parseTemplateResponse(@NotNull String response) {
         String normalized = normalizeJson(response);
         JsonObject jsonObject = JsonParser.parseString(normalized).getAsJsonObject();
         CommitTemplate commitTemplate = new CommitTemplate();
@@ -211,7 +283,7 @@ public class LlmCommitService {
 
     @NotNull
     private static String normalizeJson(@NotNull String response) {
-        String trimmed = response.trim();
+        String trimmed = removeThinkingBlocks(response).trim();
         if (trimmed.startsWith("```")) {
             int firstLineBreak = trimmed.indexOf('\n');
             if (firstLineBreak >= 0) {
