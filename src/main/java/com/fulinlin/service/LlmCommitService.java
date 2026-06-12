@@ -7,6 +7,7 @@ import com.fulinlin.model.TypeAlias;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.utils.VelocityUtils;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.intellij.openapi.project.Project;
@@ -29,6 +30,15 @@ public class LlmCommitService {
     private static final Pattern FENCED_BLOCK_PATTERN = Pattern.compile("(?s)```[^\\r\\n`]*\\R(.*?)```");
     private static final Pattern FENCE_LINE_PATTERN = Pattern.compile("(?m)^\\s*```[^\\r\\n`]*\\s*$\\R?");
     private static final Pattern COMMIT_SUBJECT_PATTERN = Pattern.compile("(?m)^[a-zA-Z][\\w-]*(?:\\([^\\r\\n()]+\\))?!?:\\s+\\S.*$");
+    private static final Pattern BULLET_LINE_PATTERN = Pattern.compile("(?m)^\\s*[-*+]\\s+\\S.*$");
+    private static final String GENERATE_SYSTEM_PROMPT = "You are a senior engineer and Git maintainer. "
+            + "Analyze the selected changes carefully, identify the primary intent, and fill commit template fields. "
+            + "Keep your analysis internal and return only the requested JSON.";
+    private static final String FORMAT_SYSTEM_PROMPT = "You are a senior engineer and Git maintainer. "
+            + "Analyze the current commit message and selected changes, then fill commit template fields. "
+            + "Keep your analysis internal and return only the requested JSON.";
+    private static final String PARSE_SYSTEM_PROMPT = "You convert git commit messages into structured commit template fields. "
+            + "Keep your analysis internal and return only the requested JSON.";
     private final GitContextService gitContextService = new GitContextService();
     private final LlmClient llmClient = new LlmClient();
 
@@ -40,13 +50,9 @@ public class LlmCommitService {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
-        String systemPrompt = "You are a senior engineer who writes precise git commit messages.";
+        String systemPrompt = GENERATE_SYSTEM_PROMPT;
         String userPrompt = buildGeneratePrompt(settings, llmSettings, gitContext);
-        if (isStreamingResponseEnabled(llmSettings)) {
-            streamSanitized(profile, llmSettings, systemPrompt, userPrompt, onDelta);
-        } else {
-            onDelta.accept(sanitizeCommitResponse(llmClient.chat(profile, llmSettings, systemPrompt, userPrompt)));
-        }
+        onDelta.accept(completeTemplatedCommitMessage(settings, profile, llmSettings, systemPrompt, userPrompt));
     }
 
     public void formatCommitMessage(@NotNull Project project,
@@ -58,13 +64,9 @@ public class LlmCommitService {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
-        String systemPrompt = "You rewrite git commit messages to match the requested project template exactly.";
+        String systemPrompt = FORMAT_SYSTEM_PROMPT;
         String userPrompt = buildFormatPrompt(settings, llmSettings, gitContext, currentMessage);
-        if (isStreamingResponseEnabled(llmSettings)) {
-            streamSanitized(profile, llmSettings, systemPrompt, userPrompt, onDelta);
-        } else {
-            onDelta.accept(sanitizeCommitResponse(llmClient.chat(profile, llmSettings, systemPrompt, userPrompt)));
-        }
+        onDelta.accept(completeTemplatedCommitMessage(settings, profile, llmSettings, systemPrompt, userPrompt));
     }
 
     @NotNull
@@ -79,7 +81,7 @@ public class LlmCommitService {
         String response = llmClient.chat(
                 profile,
                 llmSettings,
-                "You convert git commit messages into structured commit template fields.",
+                PARSE_SYSTEM_PROMPT,
                 buildParsePrompt(settings, gitContext, currentMessage)
         );
         return parseTemplateResponse(response);
@@ -92,14 +94,85 @@ public class LlmCommitService {
                                  @NotNull Consumer<String> onDelta) throws IOException {
         StringBuilder rawResponse = new StringBuilder();
         StringBuilder emittedResponse = new StringBuilder();
-        llmClient.streamChat(profile, llmSettings, systemPrompt, userPrompt, delta -> {
-            rawResponse.append(delta);
-            String sanitized = sanitizeCommitResponse(rawResponse.toString());
-            if (COMMIT_SUBJECT_PATTERN.matcher(sanitized).find()) {
-                emitSanitizedDelta(sanitized, emittedResponse, onDelta);
+        try {
+            llmClient.streamChat(profile, llmSettings, systemPrompt, userPrompt, delta -> {
+                rawResponse.append(delta);
+                String sanitized = sanitizeCommitResponse(rawResponse.toString());
+                if (isAcceptableCommitMessage(sanitized)) {
+                    emitSanitizedDelta(sanitized, emittedResponse, onDelta);
+                }
+            });
+        } catch (IOException | RuntimeException streamException) {
+            if (!shouldFallbackFromStreaming(streamException)) {
+                throw streamException;
             }
-        });
-        emitSanitizedDelta(sanitizeCommitResponse(rawResponse.toString()), emittedResponse, onDelta);
+            String fallbackResponse = chatSanitizedWithQualityRetry(profile, llmSettings, systemPrompt, userPrompt);
+            LlmCapabilityCache.markStreamingUnsupported(profile);
+            onDelta.accept(fallbackResponse);
+            return;
+        }
+
+        String finalResponse = sanitizeCommitResponse(rawResponse.toString());
+        if (isLowQualityCommitMessage(finalResponse) && emittedResponse.length() == 0) {
+            finalResponse = chatSanitizedWithQualityRetry(profile, llmSettings, systemPrompt, userPrompt);
+        }
+        emitSanitizedDelta(finalResponse, emittedResponse, onDelta);
+    }
+
+    @NotNull
+    private String completeTemplatedCommitMessage(@NotNull GitCommitMessageHelperSettings settings,
+                                                 @NotNull LlmProfile profile,
+                                                 @NotNull LlmSettings llmSettings,
+                                                 @NotNull String systemPrompt,
+                                                 @NotNull String userPrompt) throws IOException {
+        CommitTemplate commitTemplate = requestCommitTemplate(profile, llmSettings, systemPrompt, userPrompt);
+        String rendered = renderCommitTemplate(settings, commitTemplate);
+        if (!isLowQualityCommitMessage(rendered) && isBodyFormatAcceptable(commitTemplate)) {
+            return rendered;
+        }
+
+        String retryPrompt = buildQualityRetryPrompt(userPrompt, rendered);
+        CommitTemplate retryTemplate = requestCommitTemplate(profile, llmSettings, systemPrompt, retryPrompt);
+        String retryRendered = renderCommitTemplate(settings, retryTemplate);
+        return retryRendered.isEmpty() ? rendered : retryRendered;
+    }
+
+    @NotNull
+    private CommitTemplate requestCommitTemplate(@NotNull LlmProfile profile,
+                                                @NotNull LlmSettings llmSettings,
+                                                @NotNull String systemPrompt,
+                                                @NotNull String userPrompt) throws IOException {
+        String response;
+        if (isStreamingResponseEnabled(llmSettings) && !LlmCapabilityCache.shouldSkipStreaming(profile)) {
+            StringBuilder rawResponse = new StringBuilder();
+            try {
+                llmClient.streamChat(profile, llmSettings, systemPrompt, userPrompt, rawResponse::append);
+                response = rawResponse.toString();
+            } catch (IOException | RuntimeException streamException) {
+                if (!shouldFallbackFromStreaming(streamException)) {
+                    throw streamException;
+                }
+                LlmCapabilityCache.markStreamingUnsupported(profile);
+                response = llmClient.chat(profile, llmSettings, systemPrompt, userPrompt);
+            }
+        } else {
+            response = llmClient.chat(profile, llmSettings, systemPrompt, userPrompt);
+        }
+        return parseTemplateResponse(response);
+    }
+
+    @NotNull
+    private String chatSanitizedWithQualityRetry(@NotNull LlmProfile profile,
+                                                @NotNull LlmSettings llmSettings,
+                                                @NotNull String systemPrompt,
+                                                @NotNull String userPrompt) throws IOException {
+        String sanitized = sanitizeCommitResponse(llmClient.chat(profile, llmSettings, systemPrompt, userPrompt));
+        if (!isLowQualityCommitMessage(sanitized)) {
+            return sanitized;
+        }
+        String retryPrompt = buildQualityRetryPrompt(userPrompt, sanitized);
+        String retryResponse = sanitizeCommitResponse(llmClient.chat(profile, llmSettings, systemPrompt, retryPrompt));
+        return retryResponse.isEmpty() ? sanitized : retryResponse;
     }
 
     private static void emitSanitizedDelta(@NotNull String sanitized,
@@ -118,14 +191,13 @@ public class LlmCommitService {
     private static String buildGeneratePrompt(@NotNull GitCommitMessageHelperSettings settings,
                                               @NotNull LlmSettings llmSettings,
                                               @NotNull GitContextService.GitContext gitContext) {
-        return "Generate a git commit message for this project.\n\n"
-                + "Requirements:\n"
-                + "1. Follow the project's commit template strictly.\n"
-                + "2. Prefer one concise subject line and only include body/breaking/closes/skip ci sections when needed.\n"
-                + "3. Choose the most suitable type from the allowed types.\n"
-                + "4. Write the commit message in " + getResponseLanguage(llmSettings) + ".\n"
-                + "5. Return commit message text only, no markdown fences, no explanation.\n\n"
+        return "Generate git commit template fields for this project.\n\n"
+                + buildInternalAnalysisInstructions()
+                + "\n\n"
+                + buildTemplateJsonOutputContract(llmSettings)
+                + "\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
+                + "Commit Template Velocity Source:\n" + settings.getDateSettings().getTemplate() + "\n\n"
                 + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
     }
@@ -135,14 +207,17 @@ public class LlmCommitService {
                                             @NotNull LlmSettings llmSettings,
                                             @NotNull GitContextService.GitContext gitContext,
                                             @NotNull String currentMessage) {
-        return "Format the current git commit message to match the project's template.\n\n"
-                + "Requirements:\n"
-                + "1. Preserve the original intent.\n"
-                + "2. Follow the project's commit template strictly.\n"
-                + "3. Choose the closest valid type from the allowed types.\n"
-                + "4. Rewrite the commit message in " + getResponseLanguage(llmSettings) + ".\n"
-                + "5. Return commit message text only, no markdown fences, no explanation.\n\n"
+        return "Format the current git commit message into the project's commit template fields.\n\n"
+                + buildInternalAnalysisInstructions()
+                + "\n\n"
+                + "Formatting Instructions:\n"
+                + "1. Preserve the original intent when it matches the selected changes.\n"
+                + "2. If the current message conflicts with the diff, trust the diff and rewrite the message.\n"
+                + "3. Choose the closest valid type from the allowed types.\n\n"
+                + buildTemplateJsonOutputContract(llmSettings)
+                + "\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
+                + "Commit Template Velocity Source:\n" + settings.getDateSettings().getTemplate() + "\n\n"
                 + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
                 + "Current Commit Message:\n" + currentMessage + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
@@ -153,18 +228,76 @@ public class LlmCommitService {
                                            @NotNull GitContextService.GitContext gitContext,
                                            @NotNull String currentMessage) {
         return "Parse the current git commit message into the project's commit template fields.\n\n"
-                + "Requirements:\n"
-                + "1. Preserve the original intent.\n"
-                + "2. Map the message into these fields only: type, scope, subject, body, changes, closes, skipCi.\n"
-                + "3. Choose the closest valid type from the allowed types.\n"
-                + "4. Return valid JSON only, without markdown fences or extra explanation.\n"
-                + "5. Use empty strings for missing fields.\n\n"
+                + buildInternalAnalysisInstructions()
+                + "\n\n"
+                + "JSON Output Contract:\n"
+                + "1. Preserve the original intent when it matches the selected changes.\n"
+                + "2. If the current message conflicts with the diff, trust the diff.\n"
+                + "3. Map the message into these fields only: type, scope, subject, body, changes, closes, skipCi.\n"
+                + "4. Choose the closest valid type from the allowed types.\n"
+                + "5. Return valid JSON only, without markdown fences or extra explanation.\n"
+                + "6. Use empty strings for missing fields.\n"
+                + "7. If body contains multiple details, format it as Markdown bullet lines that each start with \"- \".\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
                 + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
                 + "Expected JSON Shape:\n"
                 + "{\"type\":\"\",\"scope\":\"\",\"subject\":\"\",\"body\":\"\",\"changes\":\"\",\"closes\":\"\",\"skipCi\":\"\"}\n\n"
                 + "Current Commit Message:\n" + currentMessage + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
+    }
+
+    @NotNull
+    private static String buildInternalAnalysisInstructions() {
+        return "Internal Analysis Instructions (do not output this analysis):\n"
+                + "1. Inspect selected file status, diff hunks, tests, and recent commit style.\n"
+                + "2. Identify the primary user-visible or technical intent, not just the changed filenames.\n"
+                + "3. Separate the main change from incidental formatting, generated files, lockfiles, and mechanical churn.\n"
+                + "4. Determine whether the change is a feature, bug fix, refactor, test, docs, build, ci, chore, perf, style, or revert.\n"
+                + "5. Use recent commits only for style and scope hints; never copy their content.";
+    }
+
+    @NotNull
+    private static String buildQualityRetryPrompt(@NotNull String userPrompt, @NotNull String previousOutput) {
+        return userPrompt
+                + "\n\nQuality Correction:\n"
+                + "The previous output was too vague or invalid:\n"
+                + previousOutput
+                + "\n\nRewrite the JSON fields once. Use a concrete subject that names the actual code or behavior change. "
+                + "If body has more than one detail, return body as Markdown bullet lines starting with \"- \". "
+                + "Return valid JSON only.";
+    }
+
+    @NotNull
+    private static String buildCommitOutputContract(@NotNull LlmSettings llmSettings) {
+        return "Commit Message Output Contract:\n"
+                + "1. Return commit message text only; no markdown fences, no JSON, no labels, no explanation, no analysis.\n"
+                + "2. Follow the project template exactly.\n"
+                + "3. The first line must be a concrete Conventional Commit subject using one allowed type.\n"
+                + "4. Keep type and scope as lowercase English identifiers; write subject and body in "
+                + getResponseLanguage(llmSettings) + ".\n"
+                + "5. Use a scope only when the changed area is clear from paths or symbols; otherwise omit it.\n"
+                + "6. Prefer an imperative, specific subject under 72 characters, without a trailing period.\n"
+                + "7. Do not use vague subjects like \"update files\", \"modify code\", \"change logic\", \"adjust configuration\", or filenames alone.\n"
+                + "8. Include a body only when it adds important why, impact, migration, or testing details not obvious from the subject.\n"
+                + "9. Include BREAKING CHANGE or closing issue lines only when the selected changes clearly require them.";
+    }
+
+    @NotNull
+    private static String buildTemplateJsonOutputContract(@NotNull LlmSettings llmSettings) {
+        return "JSON Output Contract:\n"
+                + "1. Return valid JSON only; no markdown fences, labels, explanation, or analysis.\n"
+                + "2. Use this exact shape: {\"type\":\"\",\"scope\":\"\",\"subject\":\"\",\"body\":\"\",\"changes\":\"\",\"closes\":\"\",\"skipCi\":\"\"}.\n"
+                + "3. The plugin will render these fields with the Velocity template; do not include template syntax like <body> or ${body}.\n"
+                + "4. Keep type and scope as lowercase English identifiers; write subject and body in "
+                + getResponseLanguage(llmSettings) + ".\n"
+                + "5. Subject must be concrete, imperative, under 72 characters, and must not end with punctuation.\n"
+                + "6. Do not use vague subjects like \"update files\", \"modify code\", \"change logic\", \"adjust configuration\", or filenames alone.\n"
+                + "7. Body is the detailed description field. Use empty string only when the subject is sufficient.\n"
+                + "8. When body includes more than one detail, format body as Markdown bullet lines. Each bullet must start with \"- \".\n"
+                + "9. Put one changed area, behavior, or impact per body bullet; do not write a long paragraph body.\n"
+                + "10. changes contains only breaking-change text without the \"BREAKING CHANGE:\" prefix.\n"
+                + "11. closes contains only issue references without the \"Closes\" prefix.\n"
+                + "12. skipCi is empty unless the selected changes clearly require a skip-ci marker.";
     }
 
     @NotNull
@@ -203,6 +336,149 @@ public class LlmCommitService {
             cleaned = cleaned.substring(commitSubjectMatcher.start()).trim();
         }
         return cleaned;
+    }
+
+    @NotNull
+    static String renderCommitTemplate(@NotNull GitCommitMessageHelperSettings settings,
+                                       @NotNull CommitTemplate commitTemplate) {
+        normalizeCommitTemplate(commitTemplate);
+        try {
+            return sanitizeCommitResponse(VelocityUtils.convert(settings.getDateSettings().getTemplate(), commitTemplate));
+        } catch (RuntimeException ignored) {
+            return sanitizeCommitResponse(buildFallbackCommitMessage(commitTemplate));
+        }
+    }
+
+    private static void normalizeCommitTemplate(@NotNull CommitTemplate commitTemplate) {
+        String type = normalizeIdentifier(commitTemplate.getType());
+        commitTemplate.setType(type.isEmpty() ? "chore" : type);
+        commitTemplate.setScope(emptyToNull(normalizeIdentifier(commitTemplate.getScope())));
+        commitTemplate.setSubject(emptyToNull(trimTrailingPunctuation(safe(commitTemplate.getSubject()).trim())));
+        commitTemplate.setBody(emptyToNull(normalizeBody(commitTemplate.getBody())));
+        commitTemplate.setChanges(emptyToNull(stripPrefix(safe(commitTemplate.getChanges()).trim(), "BREAKING CHANGE:")));
+        commitTemplate.setCloses(emptyToNull(stripPrefix(safe(commitTemplate.getCloses()).trim(), "Closes ")));
+        commitTemplate.setSkipCi(emptyToNull(safe(commitTemplate.getSkipCi()).trim()));
+    }
+
+    @NotNull
+    static String normalizeBody(String body) {
+        String value = safe(body).trim();
+        if (value.isEmpty() || BULLET_LINE_PATTERN.matcher(value).find()) {
+            return value;
+        }
+        String[] parts = value.split("(?<=[。.!?])\\s*|[；;]\\s*");
+        List<String> details = java.util.Arrays.stream(parts)
+                .map(String::trim)
+                .filter(part -> !part.isEmpty())
+                .collect(Collectors.toList());
+        if (details.size() <= 1) {
+            return value;
+        }
+        return details.stream()
+                .map(detail -> "- " + trimTrailingPunctuation(detail))
+                .collect(Collectors.joining("\n"));
+    }
+
+    private static boolean isBodyFormatAcceptable(@NotNull CommitTemplate commitTemplate) {
+        String body = safe(commitTemplate.getBody()).trim();
+        return body.isEmpty() || !body.contains("\n") || BULLET_LINE_PATTERN.matcher(body).find();
+    }
+
+    @NotNull
+    private static String buildFallbackCommitMessage(@NotNull CommitTemplate commitTemplate) {
+        StringBuilder builder = new StringBuilder();
+        String type = safe(commitTemplate.getType()).trim();
+        String scope = safe(commitTemplate.getScope()).trim();
+        String subject = safe(commitTemplate.getSubject()).trim();
+        builder.append(type.isEmpty() ? "chore" : type);
+        if (!scope.isEmpty()) {
+            builder.append('(').append(scope).append(')');
+        }
+        builder.append(": ").append(subject.isEmpty() ? "update project changes" : subject);
+        appendSection(builder, safe(commitTemplate.getBody()).trim());
+        String changes = safe(commitTemplate.getChanges()).trim();
+        if (!changes.isEmpty()) {
+            appendSection(builder, "BREAKING CHANGE: " + changes);
+        }
+        String closes = safe(commitTemplate.getCloses()).trim();
+        if (!closes.isEmpty()) {
+            appendSection(builder, "Closes " + closes);
+        }
+        appendSection(builder, safe(commitTemplate.getSkipCi()).trim());
+        return builder.toString();
+    }
+
+    private static void appendSection(@NotNull StringBuilder builder, @NotNull String section) {
+        if (!section.isEmpty()) {
+            builder.append("\n\n").append(section);
+        }
+    }
+
+    @NotNull
+    private static String normalizeIdentifier(String value) {
+        return safe(value)
+                .trim()
+                .toLowerCase()
+                .replaceAll("[^a-z0-9_.-]+", "-")
+                .replaceAll("^-+|-+$", "");
+    }
+
+    @NotNull
+    private static String trimTrailingPunctuation(@NotNull String value) {
+        return value.trim().replaceAll("[。.!?；;，,\\s]+$", "");
+    }
+
+    @NotNull
+    private static String stripPrefix(@NotNull String value, @NotNull String prefix) {
+        return value.regionMatches(true, 0, prefix, 0, prefix.length())
+                ? value.substring(prefix.length()).trim()
+                : value;
+    }
+
+    private static String emptyToNull(String value) {
+        return value == null || value.trim().isEmpty() ? null : value;
+    }
+
+    static boolean isLowQualityCommitMessage(@NotNull String message) {
+        String sanitized = sanitizeCommitResponse(message);
+        Matcher matcher = COMMIT_SUBJECT_PATTERN.matcher(sanitized);
+        if (!matcher.find()) {
+            return true;
+        }
+        String subjectLine = sanitized.substring(matcher.start(), matcher.end()).trim();
+        int separator = subjectLine.indexOf(": ");
+        if (separator < 0 || separator + 2 >= subjectLine.length()) {
+            return true;
+        }
+        String subject = subjectLine.substring(separator + 2).trim().toLowerCase();
+        return subject.length() < 12
+                || subject.matches("^(update|modify|change|adjust|fix|improve|enhance)( files?| code| logic| project| implementation| stuff| things?)?$")
+                || subject.matches("^(fix issue|bug fixes?|misc changes?|various changes?|code cleanup|minor changes?)$")
+                || subject.matches("^[\\w./-]+$");
+    }
+
+    private static boolean isAcceptableCommitMessage(@NotNull String message) {
+        return COMMIT_SUBJECT_PATTERN.matcher(message).find() && !isLowQualityCommitMessage(message);
+    }
+
+    private static boolean shouldFallbackFromStreaming(@NotNull Throwable throwable) {
+        if (throwable instanceof RuntimeException) {
+            return true;
+        }
+        String message = throwable.getMessage();
+        if (message == null) {
+            return false;
+        }
+        String lower = message.toLowerCase();
+        return lower.contains("stream")
+                || lower.contains("sse")
+                || lower.contains("event")
+                || lower.contains("data:")
+                || lower.contains("json")
+                || lower.contains("malformed")
+                || lower.contains("unexpected")
+                || lower.contains("not support")
+                || lower.contains("unsupported");
     }
 
     @NotNull
@@ -267,6 +543,11 @@ public class LlmCommitService {
     }
 
     @NotNull
+    private static String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    @NotNull
     static CommitTemplate parseTemplateResponse(@NotNull String response) {
         String normalized = normalizeJson(response);
         JsonObject jsonObject = JsonParser.parseString(normalized).getAsJsonObject();
@@ -303,8 +584,23 @@ public class LlmCommitService {
 
     @NotNull
     private static String getString(@NotNull JsonObject jsonObject, @NotNull String field) {
-        return jsonObject.has(field) && !jsonObject.get(field).isJsonNull()
-                ? GSON.fromJson(jsonObject.get(field), String.class)
-                : "";
+        if (!jsonObject.has(field) || jsonObject.get(field).isJsonNull()) {
+            return "";
+        }
+        JsonElement element = jsonObject.get(field);
+        if (element.isJsonArray()) {
+            return java.util.stream.StreamSupport.stream(element.getAsJsonArray().spliterator(), false)
+                    .map(LlmCommitService::jsonElementToString)
+                    .map(String::trim)
+                    .filter(value -> !value.isEmpty())
+                    .map(value -> "body".equals(field) && !value.startsWith("- ") ? "- " + value : value)
+                    .collect(Collectors.joining("body".equals(field) ? "\n" : ", "));
+        }
+        return element.isJsonPrimitive() ? GSON.fromJson(element, String.class) : element.toString();
+    }
+
+    @NotNull
+    private static String jsonElementToString(@NotNull JsonElement element) {
+        return element.isJsonPrimitive() ? element.getAsString() : element.toString();
     }
 }

@@ -26,8 +26,25 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                        @NotNull LlmSettings settings,
                        @NotNull String systemPrompt,
                        @NotNull String userPrompt) throws IOException {
+        return chat(profile, settings, systemPrompt, userPrompt, new LlmRequestDiagnostics());
+    }
+
+    @Override
+    @NotNull
+    public String chat(@NotNull LlmProfile profile,
+                       @NotNull LlmSettings settings,
+                       @NotNull String systemPrompt,
+                       @NotNull String userPrompt,
+                       @NotNull LlmRequestDiagnostics diagnostics) throws IOException {
+        boolean compatibilityRequested = isReasoningCompatibilityEnabled(profile);
+        boolean compatibilitySkippedByCache = compatibilityRequested
+                && LlmCapabilityCache.shouldSkipReasoningCompatibility(profile);
+        boolean compatibilityEnabled = compatibilityRequested && !compatibilitySkippedByCache;
         HttpURLConnection connection = createConnection(profile);
-        JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, false);
+        JsonObject requestBody = createRequestBody(
+                profile, settings, systemPrompt, userPrompt, false,
+                compatibilityEnabled, compatibilityRequested, compatibilitySkippedByCache, diagnostics
+        );
         write(connection, GSON.toJson(requestBody));
 
         int responseCode = connection.getResponseCode();
@@ -35,7 +52,29 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                 ? connection.getInputStream()
                 : connection.getErrorStream();
         if (responseCode < 200 || responseCode >= 300) {
-            throw new IOException(extractErrorMessage(readAll(inputStream)));
+            String errorBody = readAll(inputStream);
+            connection.disconnect();
+            if (compatibilityEnabled && shouldRetryWithoutReasoningCompatibility(errorBody)) {
+                LlmCapabilityCache.markReasoningCompatibilityUnsupported(profile);
+                diagnostics.markCompatibilityFallbackUsed();
+                connection = createConnection(profile);
+                requestBody = createRequestBody(
+                        profile, settings, systemPrompt, userPrompt, false,
+                        false, compatibilityRequested, false, diagnostics
+                );
+                write(connection, GSON.toJson(requestBody));
+                responseCode = connection.getResponseCode();
+                inputStream = responseCode >= 200 && responseCode < 300
+                        ? connection.getInputStream()
+                        : connection.getErrorStream();
+                if (responseCode < 200 || responseCode >= 300) {
+                    String retryErrorBody = readAll(inputStream);
+                    connection.disconnect();
+                    throw new IOException(extractErrorMessage(retryErrorBody));
+                }
+            } else {
+                throw new IOException(extractErrorMessage(errorBody));
+            }
         }
 
         try {
@@ -51,8 +90,25 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                            @NotNull String systemPrompt,
                            @NotNull String userPrompt,
                            @NotNull Consumer<String> onDelta) throws IOException {
+        streamChat(profile, settings, systemPrompt, userPrompt, onDelta, new LlmRequestDiagnostics());
+    }
+
+    @Override
+    public void streamChat(@NotNull LlmProfile profile,
+                           @NotNull LlmSettings settings,
+                           @NotNull String systemPrompt,
+                           @NotNull String userPrompt,
+                           @NotNull Consumer<String> onDelta,
+                           @NotNull LlmRequestDiagnostics diagnostics) throws IOException {
+        boolean compatibilityRequested = isReasoningCompatibilityEnabled(profile);
+        boolean compatibilitySkippedByCache = compatibilityRequested
+                && LlmCapabilityCache.shouldSkipReasoningCompatibility(profile);
+        boolean compatibilityEnabled = compatibilityRequested && !compatibilitySkippedByCache;
         HttpURLConnection connection = createConnection(profile);
-        JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, true);
+        JsonObject requestBody = createRequestBody(
+                profile, settings, systemPrompt, userPrompt, true,
+                compatibilityEnabled, compatibilityRequested, compatibilitySkippedByCache, diagnostics
+        );
         write(connection, GSON.toJson(requestBody));
 
         int responseCode = connection.getResponseCode();
@@ -60,7 +116,29 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                 ? connection.getInputStream()
                 : connection.getErrorStream();
         if (responseCode < 200 || responseCode >= 300) {
-            throw new IOException(extractErrorMessage(readAll(inputStream)));
+            String errorBody = readAll(inputStream);
+            connection.disconnect();
+            if (compatibilityEnabled && shouldRetryWithoutReasoningCompatibility(errorBody)) {
+                LlmCapabilityCache.markReasoningCompatibilityUnsupported(profile);
+                diagnostics.markCompatibilityFallbackUsed();
+                connection = createConnection(profile);
+                requestBody = createRequestBody(
+                        profile, settings, systemPrompt, userPrompt, true,
+                        false, compatibilityRequested, false, diagnostics
+                );
+                write(connection, GSON.toJson(requestBody));
+                responseCode = connection.getResponseCode();
+                inputStream = responseCode >= 200 && responseCode < 300
+                        ? connection.getInputStream()
+                        : connection.getErrorStream();
+                if (responseCode < 200 || responseCode >= 300) {
+                    String retryErrorBody = readAll(inputStream);
+                    connection.disconnect();
+                    throw new IOException(extractErrorMessage(retryErrorBody));
+                }
+            } else {
+                throw new IOException(extractErrorMessage(errorBody));
+            }
         }
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
@@ -92,9 +170,21 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                                         @NotNull String systemPrompt,
                                         @NotNull String userPrompt,
                                         boolean stream) {
+        return createRequestBody(profile, settings, systemPrompt, userPrompt, stream, isReasoningCompatibilityEnabled(profile));
+    }
+
+    @NotNull
+    private static JsonObject createRequestBody(@NotNull LlmProfile profile,
+                                                @NotNull LlmSettings settings,
+                                                @NotNull String systemPrompt,
+                                                @NotNull String userPrompt,
+                                                boolean stream,
+                                                boolean compatibilityEnabled) {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", profile.getModel().trim());
         requestBody.addProperty("stream", stream);
+        applyTokenLimitParameter(requestBody, profile, compatibilityEnabled);
+        applyReasoningCompatibility(requestBody, profile, compatibilityEnabled);
         if (settings.getTemperature() != null) {
             requestBody.addProperty("temperature", settings.getTemperature());
         }
@@ -103,6 +193,33 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         messages.add(createMessage("user", userPrompt));
         requestBody.add("messages", messages);
         return requestBody;
+    }
+
+    @NotNull
+    private static JsonObject createRequestBody(@NotNull LlmProfile profile,
+                                                @NotNull LlmSettings settings,
+                                                @NotNull String systemPrompt,
+                                                @NotNull String userPrompt,
+                                                boolean stream,
+                                                boolean compatibilityEnabled,
+                                                boolean compatibilityRequested,
+                                                boolean compatibilitySkippedByCache,
+                                                @NotNull LlmRequestDiagnostics diagnostics) {
+        JsonObject requestBody = createRequestBody(
+                profile, settings, systemPrompt, userPrompt, stream, compatibilityEnabled
+        );
+        diagnostics.recordRequest(profile, stream, compatibilityRequested, compatibilitySkippedByCache, requestBody);
+        return requestBody;
+    }
+
+    private static void applyTokenLimitParameter(@NotNull JsonObject requestBody,
+                                                 @NotNull LlmProfile profile,
+                                                 boolean compatibilityEnabled) {
+        if (compatibilityEnabled && shouldUseCompletionTokenLimit(profile)) {
+            requestBody.addProperty("max_completion_tokens", MAX_RESPONSE_TOKENS);
+        } else {
+            requestBody.addProperty("max_tokens", MAX_RESPONSE_TOKENS);
+        }
     }
 
     @NotNull

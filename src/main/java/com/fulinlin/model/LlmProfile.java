@@ -18,6 +18,8 @@ public class LlmProfile {
 
     private LlmProvider provider;
 
+    private Boolean reasoningCompatibilityEnabled;
+
     public String getId() {
         return id;
     }
@@ -66,6 +68,14 @@ public class LlmProfile {
         this.provider = provider;
     }
 
+    public Boolean getReasoningCompatibilityEnabled() {
+        return reasoningCompatibilityEnabled;
+    }
+
+    public void setReasoningCompatibilityEnabled(Boolean reasoningCompatibilityEnabled) {
+        this.reasoningCompatibilityEnabled = reasoningCompatibilityEnabled;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -76,11 +86,12 @@ public class LlmProfile {
                 && Objects.equals(baseUrl, that.baseUrl)
                 && Objects.equals(apiKey, that.apiKey)
                 && Objects.equals(model, that.model)
-                && provider == that.provider;
+                && provider == that.provider
+                && Objects.equals(reasoningCompatibilityEnabled, that.reasoningCompatibilityEnabled);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, baseUrl, apiKey, model, provider);
+        return Objects.hash(id, name, baseUrl, apiKey, model, provider, reasoningCompatibilityEnabled);
     }
 }

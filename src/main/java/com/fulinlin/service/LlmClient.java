@@ -27,12 +27,30 @@ public class LlmClient {
         return getClient(profile).chat(profile, settings, systemPrompt, userPrompt);
     }
 
+    @NotNull
+    public String chat(@NotNull LlmProfile profile,
+                       @NotNull LlmSettings settings,
+                       @NotNull String systemPrompt,
+                       @NotNull String userPrompt,
+                       @NotNull LlmRequestDiagnostics diagnostics) throws IOException {
+        return getClient(profile).chat(profile, settings, systemPrompt, userPrompt, diagnostics);
+    }
+
     public void streamChat(@NotNull LlmProfile profile,
                            @NotNull LlmSettings settings,
                            @NotNull String systemPrompt,
                            @NotNull String userPrompt,
                            @NotNull Consumer<String> onDelta) throws IOException {
         getClient(profile).streamChat(profile, settings, systemPrompt, userPrompt, onDelta);
+    }
+
+    public void streamChat(@NotNull LlmProfile profile,
+                           @NotNull LlmSettings settings,
+                           @NotNull String systemPrompt,
+                           @NotNull String userPrompt,
+                           @NotNull Consumer<String> onDelta,
+                           @NotNull LlmRequestDiagnostics diagnostics) throws IOException {
+        getClient(profile).streamChat(profile, settings, systemPrompt, userPrompt, onDelta, diagnostics);
     }
 
     @NotNull

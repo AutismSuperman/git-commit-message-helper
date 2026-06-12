@@ -25,6 +25,8 @@ public class GitContextService {
 
     private static final int MAX_DIFF_LENGTH = 12000;
     private static final int MAX_UNVERSIONED_FILE_LENGTH = 4000;
+    private static final int MAX_CHANGED_LINES_PER_HUNK = 24;
+    private static final int MAX_CONTEXT_LINES_PER_HUNK = 4;
 
     @NotNull
     public GitContext collect(@NotNull Project project,
@@ -41,10 +43,11 @@ public class GitContextService {
         String selectedDiff = buildSelectedDiff(project, selectedChanges, workDir.toPath());
         String unversionedSnapshot = buildUnversionedSnapshot(selectedChanges, selectedFiles, workDir);
         String recentCommits = execute(workDir, "git", "log", "-5", "--pretty=format:%h %s");
+        String promptDiff = trimDiffForPrompt(combine(selectedDiff, unversionedSnapshot), MAX_DIFF_LENGTH);
         return new GitContext(
                 workDir.getAbsolutePath(),
                 trim(status, 4000),
-                trim(combine(selectedDiff, unversionedSnapshot), MAX_DIFF_LENGTH),
+                promptDiff,
                 "",
                 trim(recentCommits, 2000)
         );
@@ -160,6 +163,65 @@ public class GitContextService {
             return value;
         }
         return value.substring(0, maxLength) + "\n...[truncated]";
+    }
+
+    @NotNull
+    static String trimDiffForPrompt(@NotNull String diff, int maxLength) {
+        if (diff.length() <= maxLength) {
+            return diff;
+        }
+        StringBuilder builder = new StringBuilder();
+        int changedLinesInHunk = 0;
+        int contextLinesInHunk = 0;
+        int omittedLines = 0;
+        for (String line : diff.split("\\R")) {
+            boolean hunkHeader = line.startsWith("@@");
+            if (hunkHeader) {
+                changedLinesInHunk = 0;
+                contextLinesInHunk = 0;
+            }
+
+            boolean include = isDiffHeaderLine(line) || hunkHeader;
+            if (!include && (line.startsWith("+") || line.startsWith("-"))) {
+                include = changedLinesInHunk < MAX_CHANGED_LINES_PER_HUNK;
+                changedLinesInHunk++;
+            } else if (!include && line.startsWith(" ")) {
+                include = contextLinesInHunk < MAX_CONTEXT_LINES_PER_HUNK;
+                contextLinesInHunk++;
+            }
+
+            if (!include) {
+                omittedLines++;
+                continue;
+            }
+            if (builder.length() + line.length() + 1 > maxLength) {
+                omittedLines++;
+                break;
+            }
+            if (builder.length() > 0) {
+                builder.append('\n');
+            }
+            builder.append(line);
+        }
+        if (omittedLines > 0 && builder.length() + 48 < maxLength) {
+            builder.append("\n...[diff summarized: omitted ")
+                    .append(omittedLines)
+                    .append(" lines]");
+        }
+        return builder.toString();
+    }
+
+    private static boolean isDiffHeaderLine(@NotNull String line) {
+        return line.startsWith("diff --git ")
+                || line.startsWith("index ")
+                || line.startsWith("--- ")
+                || line.startsWith("+++ ")
+                || line.startsWith("new file mode ")
+                || line.startsWith("deleted file mode ")
+                || line.startsWith("rename from ")
+                || line.startsWith("rename to ")
+                || line.startsWith("Selected Unversioned Files:")
+                || line.startsWith("### ");
     }
 
     @NotNull

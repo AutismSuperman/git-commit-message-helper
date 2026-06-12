@@ -5,6 +5,7 @@ import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.enums.LlmProvider;
 import com.fulinlin.service.LlmClient;
+import com.fulinlin.service.LlmRequestDiagnostics;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.icons.AllIcons;
 import com.intellij.notification.Notification;
@@ -38,12 +39,14 @@ public class LlmSettingPanel {
     private final JTextField responseLanguageField;
     private final JCheckBox smartEchoEnabledCheckBox;
     private final JCheckBox streamingResponseEnabledCheckBox;
+    private final JCheckBox reasoningCompatibilityEnabledCheckBox;
     private final JButton testButton;
     private final JLabel testStatusLabel;
     private final LlmProfileTable profileTable;
 
     private GitCommitMessageHelperSettings settings;
     private boolean loading;
+    private LlmProfile displayedProfile;
 
     public LlmSettingPanel(@NotNull GitCommitMessageHelperSettings settings) {
         this.settings = settings.clone();
@@ -57,6 +60,8 @@ public class LlmSettingPanel {
         responseLanguageField = new JTextField();
         smartEchoEnabledCheckBox = new JCheckBox(PluginBundle.get("setting.central.llm.smart.echo"));
         streamingResponseEnabledCheckBox = new JCheckBox(PluginBundle.get("setting.llm.streaming.response"));
+        reasoningCompatibilityEnabledCheckBox = new JCheckBox(PluginBundle.get("setting.llm.reasoning.compatibility"));
+        reasoningCompatibilityEnabledCheckBox.setToolTipText(PluginBundle.get("setting.llm.reasoning.compatibility.tooltip"));
         testButton = new JButton(PluginBundle.get("setting.llm.test.connection"));
         testStatusLabel = new JLabel();
         profileTable = new LlmProfileTable();
@@ -150,6 +155,7 @@ public class LlmSettingPanel {
         JPanel checkboxPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, JBUI.scale(12), 0));
         checkboxPanel.add(smartEchoEnabledCheckBox);
         checkboxPanel.add(streamingResponseEnabledCheckBox);
+        checkboxPanel.add(reasoningCompatibilityEnabledCheckBox);
         checkboxPanel.add(testButton);
         checkboxPanel.add(testStatusLabel);
         JPanel checkboxWrapper = new JPanel(new BorderLayout());
@@ -188,6 +194,8 @@ public class LlmSettingPanel {
             LlmProfile selectedProfile = (LlmProfile) activeProfileComboBox.getSelectedItem();
             if (selectedProfile != null) {
                 settings.getCentralSettings().getLlmSettings().setActiveProfileId(selectedProfile.getId());
+                displayedProfile = selectedProfile;
+                loadDisplayedProfileSettings(selectedProfile);
                 profileTable.selectProfile(selectedProfile);
             }
         });
@@ -211,6 +219,8 @@ public class LlmSettingPanel {
             activeProfileComboBox.setSelectedItem(activeProfile);
             profileTable.selectProfile(activeProfile);
         }
+        displayedProfile = activeProfile;
+        loadDisplayedProfileSettings(activeProfile);
         loading = false;
     }
 
@@ -224,6 +234,15 @@ public class LlmSettingPanel {
         llmSettings.setResponseLanguage(responseLanguageField.getText().trim());
         llmSettings.setSmartEchoEnabled(smartEchoEnabledCheckBox.isSelected());
         llmSettings.setStreamingResponseEnabled(streamingResponseEnabledCheckBox.isSelected());
+        if (displayedProfile != null) {
+            displayedProfile.setReasoningCompatibilityEnabled(reasoningCompatibilityEnabledCheckBox.isSelected());
+        }
+    }
+
+    private void loadDisplayedProfileSettings(LlmProfile profile) {
+        reasoningCompatibilityEnabledCheckBox.setSelected(
+                profile != null && Boolean.TRUE.equals(profile.getReasoningCompatibilityEnabled())
+        );
     }
 
     private void testActiveProfile() {
@@ -244,20 +263,22 @@ public class LlmSettingPanel {
         testButton.setEnabled(false);
         testStatusLabel.setText(PluginBundle.get("setting.llm.test.testing"));
         testStatusLabel.setForeground(UIUtil.getContextHelpForeground());
+        LlmRequestDiagnostics diagnostics = new LlmRequestDiagnostics();
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 new LlmClient().chat(
                         selectedProfile,
                         llmSettings,
                         "You are a connectivity test assistant.",
-                        "Reply with OK only."
+                        "Reply with OK only.",
+                        diagnostics
                 );
                 ApplicationManager.getApplication().invokeLater(() -> {
                     testButton.setEnabled(true);
                     testStatusLabel.setText(PluginBundle.get("setting.llm.test.success"));
                     testStatusLabel.setForeground(JBColor.GREEN);
                     notifyTestResult(
-                            PluginBundle.get("setting.llm.test.success"),
+                            PluginBundle.get("setting.llm.test.success") + "\n\n" + diagnostics.toUserSummary(),
                             NotificationType.INFORMATION
                     );
                 }, ModalityState.any());
@@ -267,7 +288,8 @@ public class LlmSettingPanel {
                     testStatusLabel.setText(PluginBundle.get("setting.llm.test.failed"));
                     testStatusLabel.setForeground(JBColor.RED);
                     notifyTestResult(
-                            ex.getMessage(),
+                            (ex.getMessage() == null ? PluginBundle.get("setting.llm.test.failed") : ex.getMessage())
+                                    + "\n\n" + diagnostics.toUserSummary(),
                             NotificationType.ERROR
                     );
                 }, ModalityState.any());
@@ -353,6 +375,7 @@ public class LlmSettingPanel {
         profile.setApiKey(source.getApiKey());
         profile.setModel(source.getModel());
         profile.setProvider(source.getProvider());
+        profile.setReasoningCompatibilityEnabled(source.getReasoningCompatibilityEnabled());
         return profile;
     }
 

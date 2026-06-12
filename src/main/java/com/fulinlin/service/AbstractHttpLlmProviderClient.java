@@ -1,6 +1,7 @@
 package com.fulinlin.service;
 
 import com.fulinlin.model.LlmProfile;
+import com.fulinlin.model.enums.LlmProvider;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.NotNull;
@@ -13,8 +14,11 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
+
+    protected static final int MAX_RESPONSE_TOKENS = 512;
 
     @NotNull
     protected HttpURLConnection openPostConnection(@NotNull String endpoint) throws IOException {
@@ -81,5 +85,90 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
             }
         }
         return builder.toString();
+    }
+
+    protected static boolean isReasoningCompatibilityEnabled(@NotNull LlmProfile profile) {
+        return Boolean.TRUE.equals(profile.getReasoningCompatibilityEnabled());
+    }
+
+    protected static boolean shouldUseCompletionTokenLimit(@NotNull LlmProfile profile) {
+        return isReasoningCompatibilityEnabled(profile)
+                && (isOpenAiReasoningModel(profile) || containsProfileText(profile, "mimo", "xiaomimimo", "token-plan"));
+    }
+
+    protected static void applyReasoningCompatibility(@NotNull JsonObject requestBody, @NotNull LlmProfile profile) {
+        applyReasoningCompatibility(requestBody, profile, isReasoningCompatibilityEnabled(profile));
+    }
+
+    protected static void applyReasoningCompatibility(@NotNull JsonObject requestBody,
+                                                      @NotNull LlmProfile profile,
+                                                      boolean enabled) {
+        if (!enabled) {
+            return;
+        }
+        if (isQwenCompatible(profile)) {
+            requestBody.addProperty("enable_thinking", false);
+            return;
+        }
+        if (isOpenAiReasoningModel(profile)) {
+            requestBody.addProperty("reasoning_effort", "low");
+            return;
+        }
+        if (isThinkingObjectCompatible(profile)) {
+            requestBody.add("thinking", createThinkingDisabled());
+        }
+    }
+
+    protected static boolean shouldRetryWithoutReasoningCompatibility(@NotNull String responseBody) {
+        String lower = responseBody.toLowerCase(Locale.ROOT);
+        return lower.contains("unsupported")
+                || lower.contains("unknown parameter")
+                || lower.contains("unrecognized")
+                || lower.contains("invalid parameter")
+                || lower.contains("extra_forbidden")
+                || lower.contains("not support")
+                || lower.contains("not_supported");
+    }
+
+    @NotNull
+    private static JsonObject createThinkingDisabled() {
+        JsonObject thinking = new JsonObject();
+        thinking.addProperty("type", "disabled");
+        return thinking;
+    }
+
+    private static boolean isOpenAiReasoningModel(@NotNull LlmProfile profile) {
+        String model = normalize(profile.getModel());
+        return model.startsWith("o1")
+                || model.startsWith("o3")
+                || model.startsWith("o4")
+                || model.startsWith("o5")
+                || model.startsWith("gpt-5");
+    }
+
+    private static boolean isQwenCompatible(@NotNull LlmProfile profile) {
+        return containsProfileText(profile, "qwen", "dashscope", "aliyuncs", "alibabacloud");
+    }
+
+    private static boolean isThinkingObjectCompatible(@NotNull LlmProfile profile) {
+        if (LlmProvider.ANTHROPIC == LlmProvider.fromNullable(profile.getProvider())) {
+            return !containsProfileText(profile, "api.anthropic.com");
+        }
+        return containsProfileText(profile, "mimo", "xiaomimimo", "token-plan", "zhipu", "bigmodel", "glm", "moonshot", "kimi");
+    }
+
+    private static boolean containsProfileText(@NotNull LlmProfile profile, @NotNull String... needles) {
+        String text = normalize(profile.getBaseUrl()) + " " + normalize(profile.getModel());
+        for (String needle : needles) {
+            if (text.contains(needle)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @NotNull
+    private static String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 }

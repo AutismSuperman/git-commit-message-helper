@@ -20,6 +20,7 @@ public class LlmProfileEditor extends DialogWrapper {
     private final JPasswordField apiKeyField;
     private final JTextField modelField;
     private final JComboBox<LlmProvider> providerComboBox;
+    private final JCheckBox reasoningCompatibilityCheckBox;
     private final String profileId;
     private LlmProvider previousProvider;
 
@@ -33,6 +34,8 @@ public class LlmProfileEditor extends DialogWrapper {
         apiKeyField = new JPasswordField(profile.getApiKey());
         modelField = new JTextField(profile.getModel());
         providerComboBox = new JComboBox<>(LlmProvider.values());
+        reasoningCompatibilityCheckBox = new JCheckBox(PluginBundle.get("setting.llm.reasoning.compatibility"));
+        reasoningCompatibilityCheckBox.setToolTipText(PluginBundle.get("setting.llm.reasoning.compatibility.tooltip"));
         providerComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
@@ -42,6 +45,7 @@ public class LlmProfileEditor extends DialogWrapper {
         });
         previousProvider = LlmProvider.fromNullable(profile.getProvider());
         providerComboBox.setSelectedItem(previousProvider);
+        reasoningCompatibilityCheckBox.setSelected(Boolean.TRUE.equals(profile.getReasoningCompatibilityEnabled()));
         buildPanel();
         bindListeners();
         init();
@@ -56,6 +60,7 @@ public class LlmProfileEditor extends DialogWrapper {
         profile.setApiKey(new String(apiKeyField.getPassword()).trim());
         profile.setModel(modelField.getText().trim());
         profile.setProvider((LlmProvider) providerComboBox.getSelectedItem());
+        profile.setReasoningCompatibilityEnabled(reasoningCompatibilityCheckBox.isSelected());
         GitCommitMessageHelperSettings.checkDefaultLlmProfile(profile);
         return profile;
     }
@@ -74,25 +79,38 @@ public class LlmProfileEditor extends DialogWrapper {
         gbc.weightx = 1;
 
         int row = 0;
-        row = addField(PluginBundle.get("setting.llm.profile.name"), nameField, gbc, row);
-        row = addField(PluginBundle.get("setting.llm.profile.provider"), providerComboBox, gbc, row);
-        row = addField(PluginBundle.get("setting.central.llm.base.url"), baseUrlField, gbc, row);
-        row = addField(PluginBundle.get("setting.central.llm.api.key"), apiKeyField, gbc, row);
-        addField(PluginBundle.get("setting.central.llm.model"), modelField, gbc, row);
+        row = addField(mainPanel, PluginBundle.get("setting.llm.profile.name"), nameField, gbc, row);
+        row = addField(mainPanel, PluginBundle.get("setting.llm.profile.provider"), providerComboBox, gbc, row);
+        row = addField(mainPanel, PluginBundle.get("setting.central.llm.base.url"), baseUrlField, gbc, row);
+        row = addField(mainPanel, PluginBundle.get("setting.central.llm.api.key"), apiKeyField, gbc, row);
+        row = addField(mainPanel, PluginBundle.get("setting.central.llm.model"), modelField, gbc, row);
+        addCheckBox(reasoningCompatibilityCheckBox, gbc, row);
     }
 
-    private int addField(String labelText, JComponent component, GridBagConstraints gbc, int row) {
+    private int addField(@NotNull JPanel panel, String labelText, JComponent component, GridBagConstraints gbc, int row) {
+        gbc.gridwidth = 1;
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.weightx = 0;
-        mainPanel.add(new JLabel(labelText), gbc);
+        panel.add(new JLabel(labelText), gbc);
 
         gbc.gridx = 1;
         gbc.gridy = row;
         gbc.weightx = 1;
         component.setPreferredSize(new Dimension(JBUI.scale(420), component.getPreferredSize().height));
-        mainPanel.add(component, gbc);
+        panel.add(component, gbc);
         return row + 1;
+    }
+
+    private void addCheckBox(@NotNull JCheckBox checkBox, GridBagConstraints gbc, int row) {
+        JPanel checkBoxPanel = new JPanel(new BorderLayout());
+        checkBoxPanel.add(checkBox, BorderLayout.WEST);
+        gbc.gridx = 1;
+        gbc.gridy = row;
+        gbc.gridwidth = 1;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        mainPanel.add(checkBoxPanel, gbc);
     }
 
     private void bindListeners() {

@@ -267,6 +267,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         profile.setBaseUrl(profile.getProvider().getDefaultBaseUrl());
         profile.setApiKey("");
         profile.setModel("");
+        profile.setReasoningCompatibilityEnabled(Boolean.FALSE);
         return profile;
     }
 
@@ -314,6 +315,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             profile.setName("Default");
         }
         profile.setProvider(LlmProvider.fromNullable(profile.getProvider()));
+        profile.setReasoningCompatibilityEnabled(defaultBoolean(profile.getReasoningCompatibilityEnabled(), Boolean.FALSE));
         if (profile.getBaseUrl() == null) {
             profile.setBaseUrl(profile.getProvider().getDefaultBaseUrl());
         }
