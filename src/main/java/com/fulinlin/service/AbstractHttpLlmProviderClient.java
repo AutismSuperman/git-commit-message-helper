@@ -18,7 +18,7 @@ import java.util.Locale;
 
 abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
 
-    protected static final int MAX_RESPONSE_TOKENS = 512;
+    protected static final int MAX_RESPONSE_TOKENS = 4096;
 
     @NotNull
     protected HttpURLConnection openPostConnection(@NotNull String endpoint) throws IOException {

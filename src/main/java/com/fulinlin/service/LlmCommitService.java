@@ -30,6 +30,7 @@ public class LlmCommitService {
     private static final Pattern FENCED_BLOCK_PATTERN = Pattern.compile("(?s)```[^\\r\\n`]*\\R(.*?)```");
     private static final Pattern FENCE_LINE_PATTERN = Pattern.compile("(?m)^\\s*```[^\\r\\n`]*\\s*$\\R?");
     private static final Pattern COMMIT_SUBJECT_PATTERN = Pattern.compile("(?m)^[a-zA-Z][\\w-]*(?:\\([^\\r\\n()]+\\))?!?:\\s+\\S.*$");
+    private static final Pattern COMMIT_SUBJECT_PARTS_PATTERN = Pattern.compile("^([a-zA-Z][\\w-]*)(?:\\(([^\\r\\n()]+)\\))?!?:\\s+(.+)$");
     private static final Pattern BULLET_LINE_PATTERN = Pattern.compile("(?m)^\\s*[-*+]\\s+\\S.*$");
     private static final String GENERATE_SYSTEM_PROMPT = "You are a senior engineer and Git maintainer. "
             + "Analyze the selected changes carefully, identify the primary intent, and fill commit template fields. "
@@ -84,7 +85,7 @@ public class LlmCommitService {
                 PARSE_SYSTEM_PROMPT,
                 buildParsePrompt(settings, gitContext, currentMessage)
         );
-        return parseTemplateResponse(response);
+        return parseTemplateResponseWithRetry(profile, llmSettings, PARSE_SYSTEM_PROMPT, buildParsePrompt(settings, gitContext, currentMessage), response);
     }
 
     private void streamSanitized(@NotNull LlmProfile profile,
@@ -148,17 +149,62 @@ public class LlmCommitService {
             try {
                 llmClient.streamChat(profile, llmSettings, systemPrompt, userPrompt, rawResponse::append);
                 response = rawResponse.toString();
+                if (isIncompleteTemplateJson(response)) {
+                    LlmCapabilityCache.markStreamingUnsupported(profile);
+                    return requestCommitTemplateWithoutStreaming(profile, llmSettings, systemPrompt, userPrompt, response);
+                }
             } catch (IOException | RuntimeException streamException) {
                 if (!shouldFallbackFromStreaming(streamException)) {
                     throw streamException;
                 }
                 LlmCapabilityCache.markStreamingUnsupported(profile);
-                response = llmClient.chat(profile, llmSettings, systemPrompt, userPrompt);
+                return requestCommitTemplateWithoutStreaming(profile, llmSettings, systemPrompt, userPrompt, rawResponse.toString());
             }
         } else {
-            response = llmClient.chat(profile, llmSettings, systemPrompt, userPrompt);
+            return requestCommitTemplateWithoutStreaming(profile, llmSettings, systemPrompt, userPrompt, "");
         }
-        return parseTemplateResponse(response);
+        return parseTemplateResponseWithRetry(profile, llmSettings, systemPrompt, userPrompt, response);
+    }
+
+    @NotNull
+    private CommitTemplate requestCommitTemplateWithoutStreaming(@NotNull LlmProfile profile,
+                                                                 @NotNull LlmSettings llmSettings,
+                                                                 @NotNull String systemPrompt,
+                                                                 @NotNull String userPrompt,
+                                                                 @NotNull String previousInvalidResponse) throws IOException {
+        String prompt = previousInvalidResponse.trim().isEmpty()
+                ? userPrompt
+                : buildJsonRepairPrompt(userPrompt, previousInvalidResponse, "stream response was incomplete");
+        String response = llmClient.chat(profile, llmSettings, systemPrompt, prompt);
+        return parseTemplateResponseWithRetry(profile, llmSettings, systemPrompt, userPrompt, response);
+    }
+
+    @NotNull
+    private CommitTemplate parseTemplateResponseWithRetry(@NotNull LlmProfile profile,
+                                                         @NotNull LlmSettings llmSettings,
+                                                         @NotNull String systemPrompt,
+                                                         @NotNull String userPrompt,
+                                                         @NotNull String response) throws IOException {
+        try {
+            if (!isIncompleteTemplateJson(response)) {
+                return parseTemplateResponse(response);
+            }
+        } catch (RuntimeException ignored) {
+            // Retry once below with a stricter repair prompt.
+        }
+
+        String retryPrompt = buildJsonRepairPrompt(userPrompt, response, "response was not a complete JSON object");
+        String retryResponse = llmClient.chat(profile, llmSettings, systemPrompt, retryPrompt);
+        try {
+            return parseTemplateResponse(retryResponse);
+        } catch (RuntimeException retryException) {
+            try {
+                return parseTemplateResponseLenient(response);
+            } catch (RuntimeException ignored) {
+                throw new IOException("LLM returned invalid commit template JSON after retry. "
+                        + "Try testing the model connection, increasing model output stability, or disabling streaming.");
+            }
+        }
     }
 
     @NotNull
@@ -265,6 +311,20 @@ public class LlmCommitService {
                 + "\n\nRewrite the JSON fields once. Use a concrete subject that names the actual code or behavior change. "
                 + "If body has more than one detail, return body as Markdown bullet lines starting with \"- \". "
                 + "Return valid JSON only.";
+    }
+
+    @NotNull
+    private static String buildJsonRepairPrompt(@NotNull String userPrompt,
+                                                @NotNull String previousOutput,
+                                                @NotNull String reason) {
+        return userPrompt
+                + "\n\nJSON Repair Required:\n"
+                + "The previous model response could not be used because " + reason + ".\n"
+                + "Previous response:\n"
+                + previousOutput
+                + "\n\nReturn one complete valid JSON object only, using exactly this shape:\n"
+                + "{\"type\":\"\",\"scope\":\"\",\"subject\":\"\",\"body\":\"\",\"changes\":\"\",\"closes\":\"\",\"skipCi\":\"\"}\n"
+                + "Do not truncate strings. Escape newlines inside JSON strings as \\n. Do not output markdown fences.";
     }
 
     @NotNull
@@ -550,7 +610,19 @@ public class LlmCommitService {
     @NotNull
     static CommitTemplate parseTemplateResponse(@NotNull String response) {
         String normalized = normalizeJson(response);
-        JsonObject jsonObject = JsonParser.parseString(normalized).getAsJsonObject();
+        try {
+            JsonElement element = JsonParser.parseString(normalized);
+            if (element == null || !element.isJsonObject()) {
+                return parseTemplateResponseLenient(response);
+            }
+            return parseTemplateJsonObject(element.getAsJsonObject());
+        } catch (RuntimeException ignored) {
+            return parseTemplateResponseLenient(response);
+        }
+    }
+
+    @NotNull
+    private static CommitTemplate parseTemplateJsonObject(@NotNull JsonObject jsonObject) {
         CommitTemplate commitTemplate = new CommitTemplate();
         commitTemplate.setType(getString(jsonObject, "type"));
         commitTemplate.setScope(getString(jsonObject, "scope"));
@@ -560,6 +632,20 @@ public class LlmCommitService {
         commitTemplate.setCloses(getString(jsonObject, "closes"));
         commitTemplate.setSkipCi(getString(jsonObject, "skipCi"));
         return commitTemplate;
+    }
+
+    @NotNull
+    private static CommitTemplate parseTemplateResponseLenient(@NotNull String response) {
+        String normalized = normalizeJson(response);
+        CommitTemplate partial = parsePartialTemplateFields(normalized);
+        if (hasTemplateSignal(partial)) {
+            return partial;
+        }
+        CommitTemplate fromText = parseCommitTextFallback(response);
+        if (hasTemplateSignal(fromText)) {
+            return fromText;
+        }
+        throw new IllegalArgumentException("LLM response is not a commit template JSON object");
     }
 
     @NotNull
@@ -580,6 +666,99 @@ public class LlmCommitService {
             return trimmed.substring(start, end + 1);
         }
         return trimmed;
+    }
+
+    private static boolean isIncompleteTemplateJson(@NotNull String response) {
+        String normalized = normalizeJson(response);
+        String trimmed = normalized.trim();
+        if (trimmed.isEmpty() || "null".equalsIgnoreCase(trimmed)) {
+            return true;
+        }
+        if (!trimmed.startsWith("{")) {
+            return false;
+        }
+        try {
+            JsonElement element = JsonParser.parseString(trimmed);
+            return element == null || !element.isJsonObject();
+        } catch (RuntimeException ignored) {
+            return true;
+        }
+    }
+
+    @NotNull
+    private static CommitTemplate parsePartialTemplateFields(@NotNull String response) {
+        CommitTemplate commitTemplate = new CommitTemplate();
+        commitTemplate.setType(extractJsonStringField(response, "type"));
+        commitTemplate.setScope(extractJsonStringField(response, "scope"));
+        commitTemplate.setSubject(extractJsonStringField(response, "subject"));
+        commitTemplate.setBody(extractJsonStringField(response, "body"));
+        commitTemplate.setChanges(extractJsonStringField(response, "changes"));
+        commitTemplate.setCloses(extractJsonStringField(response, "closes"));
+        commitTemplate.setSkipCi(extractJsonStringField(response, "skipCi"));
+        return commitTemplate;
+    }
+
+    @NotNull
+    private static String extractJsonStringField(@NotNull String response, @NotNull String field) {
+        String quotedField = Pattern.quote("\"" + field + "\"");
+        Pattern closedString = Pattern.compile(quotedField + "\\s*:\\s*\"((?:\\\\.|[^\"\\\\])*)\"", Pattern.DOTALL);
+        Matcher closedStringMatcher = closedString.matcher(response);
+        if (closedStringMatcher.find()) {
+            return unescapeJsonString(closedStringMatcher.group(1));
+        }
+        Pattern array = Pattern.compile(quotedField + "\\s*:\\s*\\[(.*?)]", Pattern.DOTALL);
+        Matcher arrayMatcher = array.matcher(response);
+        if (arrayMatcher.find()) {
+            return java.util.Arrays.stream(arrayMatcher.group(1).split(","))
+                    .map(String::trim)
+                    .map(value -> value.replaceAll("^\"|\"$", ""))
+                    .map(LlmCommitService::unescapeJsonString)
+                    .filter(value -> !value.isEmpty())
+                    .map(value -> "body".equals(field) && !value.startsWith("- ") ? "- " + value : value)
+                    .collect(Collectors.joining("body".equals(field) ? "\n" : ", "));
+        }
+        Pattern openString = Pattern.compile(quotedField + "\\s*:\\s*\"((?:\\\\.|[^\"\\\\])*)$", Pattern.DOTALL);
+        Matcher openStringMatcher = openString.matcher(response);
+        if (openStringMatcher.find()) {
+            return unescapeJsonString(openStringMatcher.group(1));
+        }
+        return "";
+    }
+
+    @NotNull
+    private static String unescapeJsonString(@NotNull String value) {
+        try {
+            return JsonParser.parseString("\"" + value + "\"").getAsString();
+        } catch (RuntimeException ignored) {
+            return value.replace("\\n", "\n")
+                    .replace("\\\"", "\"")
+                    .replace("\\\\", "\\");
+        }
+    }
+
+    @NotNull
+    private static CommitTemplate parseCommitTextFallback(@NotNull String response) {
+        String sanitized = sanitizeCommitResponse(response);
+        Matcher subjectMatcher = COMMIT_SUBJECT_PATTERN.matcher(sanitized);
+        if (!subjectMatcher.find()) {
+            return new CommitTemplate();
+        }
+        String subjectLine = sanitized.substring(subjectMatcher.start(), subjectMatcher.end()).trim();
+        Matcher partsMatcher = COMMIT_SUBJECT_PARTS_PATTERN.matcher(subjectLine);
+        CommitTemplate commitTemplate = new CommitTemplate();
+        if (partsMatcher.find()) {
+            commitTemplate.setType(partsMatcher.group(1));
+            commitTemplate.setScope(partsMatcher.group(2));
+            commitTemplate.setSubject(partsMatcher.group(3));
+            String body = sanitized.substring(subjectMatcher.end()).trim();
+            commitTemplate.setBody(body);
+        }
+        return commitTemplate;
+    }
+
+    private static boolean hasTemplateSignal(@NotNull CommitTemplate commitTemplate) {
+        return notBlank(commitTemplate.getSubject())
+                || notBlank(commitTemplate.getBody());
     }
 
     @NotNull

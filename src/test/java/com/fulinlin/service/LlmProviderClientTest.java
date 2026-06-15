@@ -29,7 +29,7 @@ public class LlmProviderClientTest {
 
         assertEquals("gpt-4.1", requestBody.get("model").getAsString());
         assertTrue(requestBody.get("stream").getAsBoolean());
-        assertEquals(512, requestBody.get("max_tokens").getAsInt());
+        assertEquals(4096, requestBody.get("max_tokens").getAsInt());
         assertFalse(requestBody.has("max_completion_tokens"));
         assertFalse(requestBody.has("thinking"));
         assertEquals(0.6D, requestBody.get("temperature").getAsDouble(), 0.0D);
@@ -53,7 +53,7 @@ public class LlmProviderClientTest {
         );
 
         assertEquals("o3-mini", requestBody.get("model").getAsString());
-        assertEquals(512, requestBody.get("max_completion_tokens").getAsInt());
+        assertEquals(4096, requestBody.get("max_completion_tokens").getAsInt());
         assertFalse(requestBody.has("max_tokens"));
         assertEquals("low", requestBody.get("reasoning_effort").getAsString());
     }
@@ -70,7 +70,7 @@ public class LlmProviderClientTest {
                 profile, settings, "system prompt", "user prompt", false
         );
 
-        assertEquals(512, requestBody.get("max_tokens").getAsInt());
+        assertEquals(4096, requestBody.get("max_tokens").getAsInt());
         assertFalse(requestBody.has("max_completion_tokens"));
         assertFalse(requestBody.get("enable_thinking").getAsBoolean());
     }
@@ -87,7 +87,7 @@ public class LlmProviderClientTest {
                 profile, settings, "system prompt", "user prompt", false
         );
 
-        assertEquals(512, requestBody.get("max_tokens").getAsInt());
+        assertEquals(4096, requestBody.get("max_tokens").getAsInt());
         assertFalse(requestBody.has("max_completion_tokens"));
         assertFalse(requestBody.has("enable_thinking"));
         assertFalse(requestBody.has("reasoning_effort"));
@@ -106,7 +106,7 @@ public class LlmProviderClientTest {
                 profile, settings, "system prompt", "user prompt", false
         );
 
-        assertEquals(512, requestBody.get("max_completion_tokens").getAsInt());
+        assertEquals(4096, requestBody.get("max_completion_tokens").getAsInt());
         assertEquals("disabled", requestBody.getAsJsonObject("thinking").get("type").getAsString());
     }
 
@@ -124,7 +124,7 @@ public class LlmProviderClientTest {
 
         assertEquals("claude-3-7-sonnet-latest", requestBody.get("model").getAsString());
         assertEquals("system prompt", requestBody.get("system").getAsString());
-        assertEquals(512, requestBody.get("max_tokens").getAsInt());
+        assertEquals(4096, requestBody.get("max_tokens").getAsInt());
         assertFalse(requestBody.has("thinking"));
         JsonArray messages = requestBody.getAsJsonArray("messages");
         assertEquals(1, messages.size());
@@ -146,7 +146,7 @@ public class LlmProviderClientTest {
                 profile, settings, "system prompt", "user prompt", false
         );
 
-        assertEquals(512, requestBody.get("max_tokens").getAsInt());
+        assertEquals(4096, requestBody.get("max_tokens").getAsInt());
         assertEquals("disabled", requestBody.getAsJsonObject("thinking").get("type").getAsString());
     }
 
@@ -361,6 +361,41 @@ public class LlmProviderClientTest {
         CommitTemplate commitTemplate = LlmCommitService.parseTemplateResponse(response);
 
         assertEquals("- 更新 README 文档\n- 新增监督检查报告相关常量", commitTemplate.getBody());
+    }
+
+    @Test
+    public void templateResponseParserSalvagesUnterminatedBodyString() {
+        String response = "{\"type\":\"docs\",\"scope\":\"readme\",\"subject\":\"补充仓库说明\","
+                + "\"body\":\"更新 README 文档，补充结构说明和快速开始指南";
+
+        CommitTemplate commitTemplate = LlmCommitService.parseTemplateResponse(response);
+
+        assertEquals("docs", commitTemplate.getType());
+        assertEquals("readme", commitTemplate.getScope());
+        assertEquals("补充仓库说明", commitTemplate.getSubject());
+        assertEquals("更新 README 文档，补充结构说明和快速开始指南", commitTemplate.getBody());
+    }
+
+    @Test
+    public void templateResponseParserReportsNullJsonAsFriendlyParseFailure() {
+        try {
+            LlmCommitService.parseTemplateResponse("null");
+        } catch (IllegalArgumentException ex) {
+            assertEquals("LLM response is not a commit template JSON object", ex.getMessage());
+            return;
+        }
+        throw new AssertionError("Expected null response to fail with a friendly parse error");
+    }
+
+    @Test
+    public void templateResponseParserRejectsTypeOnlyPartialJson() {
+        try {
+            LlmCommitService.parseTemplateResponse("{\"type\":\"docs\"");
+        } catch (IllegalArgumentException ex) {
+            assertEquals("LLM response is not a commit template JSON object", ex.getMessage());
+            return;
+        }
+        throw new AssertionError("Expected type-only partial JSON to fail");
     }
 
     @Test
