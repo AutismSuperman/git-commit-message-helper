@@ -15,6 +15,7 @@ import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.EditorSettings;
 import com.intellij.openapi.editor.event.DocumentEvent;
 import com.intellij.openapi.editor.event.DocumentListener;
+import com.intellij.openapi.editor.ex.EditorEx;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.*;
@@ -76,7 +77,7 @@ public class TemplateEditPanel implements Disposable {
         myDescriptionComponent.setOpaque(false);
         myDescriptionComponent.addHyperlinkListener(new BrowserHyperlinkListener());
         myDescriptionComponent.setCaretPosition(0);
-        descriptionPanel.add(createAutoHeightDescriptionPanel(), BorderLayout.CENTER);
+        descriptionPanel.add(createDescriptionScrollPane(), BorderLayout.CENTER);
 
         // Init  templatePanel
         String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
@@ -88,11 +89,14 @@ public class TemplateEditPanel implements Disposable {
         EditorSettings templateEditorSettings = templateEditor.getSettings();
         templateEditorSettings.setAdditionalLinesCount(0);
         templateEditorSettings.setAdditionalColumnsCount(0);
-        templateEditorSettings.setLineMarkerAreaShown(false);
+        templateEditorSettings.setLineMarkerAreaShown(true);
+        templateEditorSettings.setLineNumbersShown(true);
+        templateEditorSettings.setUseSoftWraps(true);
         templateEditorSettings.setVirtualSpace(false);
-        templateEditor.getComponent().setBorder(JBUI.Borders.empty(4));
-        JBScrollPane templateScrollPane = new JBScrollPane(templateEditor.getComponent());
-        templatePanel.add(templateScrollPane, BorderLayout.CENTER);
+        if (templateEditor instanceof EditorEx) {
+            ((EditorEx) templateEditor).setHorizontalScrollbarVisible(false);
+        }
+        templatePanel.add(templateEditor.getComponent(), BorderLayout.CENTER);
 
         // Init previewPanel
         previewEditor = new EditorTextField();
@@ -230,18 +234,26 @@ public class TemplateEditPanel implements Disposable {
         description.setForeground(UIUtil.getContextHelpForeground());
         description.setBorder(JBUI.Borders.emptyBottom(4));
 
-        JPanel contentPanel = new JPanel();
+        JPanel contentPanel = new JPanel() {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension preferredSize = super.getPreferredSize();
+                Container parent = getParent();
+                if (parent instanceof JViewport && parent.getWidth() > 0) {
+                    preferredSize.width = Math.max(preferredSize.width, parent.getWidth());
+                }
+                return preferredSize;
+            }
+        };
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setOpaque(false);
-        contentPanel.setBorder(JBUI.Borders.empty(12));
+        contentPanel.setBorder(JBUI.Borders.empty(12, 16, 16, 16));
 
         contentPanel.add(description);
         contentPanel.add(Box.createVerticalStrut(JBUI.scale(8)));
-        contentPanel.add(createSectionPanel(descriptionLabel, descriptionPanel, null, 0));
+        contentPanel.add(createTemplateWorkspacePanel());
         contentPanel.add(Box.createVerticalStrut(JBUI.scale(12)));
-        contentPanel.add(createSectionPanel(templateLabel, templatePanel, restoreDefaultsButton, JBUI.scale(320)));
-        contentPanel.add(Box.createVerticalStrut(JBUI.scale(12)));
-        contentPanel.add(createPreviewSection());
+        contentPanel.add(createSectionPanel(descriptionLabel, descriptionPanel, null, JBUI.scale(270)));
 
         JBScrollPane scrollPane = new JBScrollPane(contentPanel);
         scrollPane.setBorder(JBUI.Borders.empty());
@@ -254,10 +266,29 @@ public class TemplateEditPanel implements Disposable {
         templateTab.repaint();
     }
 
+    private JComponent createTemplateWorkspacePanel() {
+        JPanel templateSection = createSectionPanel(templateLabel, templatePanel, restoreDefaultsButton, 0);
+        JPanel previewSection = createPreviewSection();
+        templateSection.setMinimumSize(new Dimension(JBUI.scale(480), JBUI.scale(260)));
+        previewSection.setMinimumSize(new Dimension(JBUI.scale(280), JBUI.scale(260)));
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, templateSection, previewSection);
+        splitPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+        splitPane.setBorder(JBUI.Borders.empty());
+        splitPane.setContinuousLayout(true);
+        splitPane.setResizeWeight(0.62);
+        splitPane.setDividerSize(JBUI.scale(7));
+        splitPane.setOpaque(false);
+        splitPane.setPreferredSize(new Dimension(0, JBUI.scale(460)));
+        splitPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, JBUI.scale(460)));
+        SwingUtilities.invokeLater(() -> splitPane.setDividerLocation(0.62));
+        return splitPane;
+    }
+
     private JPanel createPreviewSection() {
-        JPanel previewOptions = new JPanel(new FlowLayout(FlowLayout.LEFT, JBUI.scale(12), JBUI.scale(8)));
+        JPanel previewOptions = new JPanel(new FlowLayout(FlowLayout.LEFT, JBUI.scale(8), JBUI.scale(3)));
         previewOptions.setOpaque(false);
-        previewOptions.setBorder(JBUI.Borders.emptyBottom(8));
+        previewOptions.setBorder(JBUI.Borders.emptyBottom(6));
         addPreviewCheckBox(previewOptions, typeCheckBox);
         addPreviewCheckBox(previewOptions, scopeCheckBox);
         addPreviewCheckBox(previewOptions, subjectCheckBox);
@@ -265,35 +296,18 @@ public class TemplateEditPanel implements Disposable {
         addPreviewCheckBox(previewOptions, changesCheckBox);
         addPreviewCheckBox(previewOptions, closedCheckBox);
         addPreviewCheckBox(previewOptions, skipCiCheckBox);
-        return createSectionPanel(previewLabel, previewPanel, previewOptions, JBUI.scale(280));
+        return createSectionPanel(previewLabel, previewPanel, previewOptions, 0);
     }
 
-    private JComponent createAutoHeightDescriptionPanel() {
-        JPanel autoHeightPanel = new JPanel(new BorderLayout()) {
-            @Override
-            public Dimension getPreferredSize() {
-                int width = resolveDescriptionWidth();
-                myDescriptionComponent.setSize(new Dimension(width, Integer.MAX_VALUE));
-                Dimension preferredSize = myDescriptionComponent.getPreferredSize();
-                Insets insets = getInsets();
-                return new Dimension(width, preferredSize.height + insets.top + insets.bottom);
-            }
-        };
-        autoHeightPanel.setOpaque(false);
-        autoHeightPanel.add(myDescriptionComponent, BorderLayout.CENTER);
-        return autoHeightPanel;
-    }
-
-    private int resolveDescriptionWidth() {
-        JViewport viewport = (JViewport) SwingUtilities.getAncestorOfClass(JViewport.class, myDescriptionComponent);
-        if (viewport != null && viewport.getWidth() > 0) {
-            return Math.max(JBUI.scale(480), viewport.getWidth());
-        }
-        int panelWidth = descriptionPanel.getWidth();
-        if (panelWidth > 0) {
-            return Math.max(JBUI.scale(480), panelWidth);
-        }
-        return JBUI.scale(680);
+    private JComponent createDescriptionScrollPane() {
+        JBScrollPane scrollPane = new JBScrollPane(myDescriptionComponent);
+        scrollPane.setBorder(JBUI.Borders.empty());
+        scrollPane.setViewportBorder(JBUI.Borders.empty());
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(JBUI.scale(16));
+        return scrollPane;
     }
 
     private void addPreviewCheckBox(JPanel container, JCheckBox checkBox) {
@@ -309,18 +323,16 @@ public class TemplateEditPanel implements Disposable {
             removeFromParent(trailingOrTopContent);
         }
 
-        JPanel sectionPanel = new JPanel(new BorderLayout(0, JBUI.scale(10)));
-        sectionPanel.setBorder(IdeBorderFactory.createRoundedBorder());
+        JPanel sectionPanel = new JPanel(new BorderLayout(0, JBUI.scale(8)));
+        sectionPanel.setBorder(IdeBorderFactory.createTitledBorder(titleLabel.getText(), false));
         sectionPanel.setOpaque(false);
 
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        titlePanel.setOpaque(false);
-        titlePanel.setBorder(JBUI.Borders.empty(12, 12, 0, 12));
-        titlePanel.add(titleLabel, BorderLayout.WEST);
         if (trailingOrTopContent instanceof JButton) {
-            titlePanel.add(trailingOrTopContent, BorderLayout.EAST);
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            buttonPanel.setOpaque(false);
+            buttonPanel.add(trailingOrTopContent);
+            sectionPanel.add(buttonPanel, BorderLayout.NORTH);
         }
-        sectionPanel.add(titlePanel, BorderLayout.NORTH);
 
         JComponent centerContent = content;
         if (trailingOrTopContent != null && !(trailingOrTopContent instanceof JButton)) {
@@ -331,12 +343,14 @@ public class TemplateEditPanel implements Disposable {
             centerContent = contentPanel;
         }
 
-        centerContent.setBorder(JBUI.Borders.empty(0, 12, 12, 12));
+        centerContent.setBorder(JBUI.Borders.empty(6, 8, 8, 8));
         sectionPanel.add(centerContent, BorderLayout.CENTER);
         sectionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        sectionPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         if (preferredHeight > 0) {
             sectionPanel.setPreferredSize(new Dimension(0, preferredHeight));
+            sectionPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, preferredHeight));
+        } else {
+            sectionPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         }
         return sectionPanel;
     }
