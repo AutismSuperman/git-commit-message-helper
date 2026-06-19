@@ -8,3 +8,4 @@ build/
 gradlew
 gradlew.bat
 .kotlintest
+.claude/settings.local.json

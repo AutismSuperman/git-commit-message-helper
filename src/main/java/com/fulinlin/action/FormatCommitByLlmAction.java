@@ -5,6 +5,7 @@ import com.fulinlin.service.LlmCommitService;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -13,6 +14,8 @@ import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vcs.CommitMessageI;
+import com.intellij.ui.AnimatedIcon;
+import icons.PluginIcons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,6 +23,7 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
 
     private final GitCommitMessageHelperSettings settings;
     private final LlmCommitService llmCommitService = new LlmCommitService();
+    private volatile boolean loading;
 
     public FormatCommitByLlmAction() {
         this.settings = GitCommitMessageHelperSettings.getInstance();
@@ -42,27 +46,59 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
             Messages.showWarningDialog(project, PluginBundle.get("action.format.empty.message"), PluginBundle.get("action.llm.error.title"));
             return;
         }
+        if (loading || CommitPanelActionSupport.isCommitMessageLoading(commitPanel)) {
+            return;
+        }
+
+        String editedCommitHash = commitContext.hasSelection() ? null : CommitPanelActionSupport.findEditedCommitHash(commitPanel);
+        loading = true;
+        updateLoadingPresentation(actionEvent, true);
+        CommitPanelActionSupport.CommitMessageLoadingState loadingState =
+                CommitPanelActionSupport.startCommitMessageLoading(commitPanel, PluginBundle.get("action.format.progress") + "...");
+        String historicalCommitHash = editedCommitHash;
         ProgressManager.getInstance().run(new Task.Backgroundable(project, PluginBundle.get("action.format.progress"), false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 StringBuilder builder = new StringBuilder();
-                CommitPanelActionSupport.setCommitMessage(commitPanel, "");
                 try {
-                    llmCommitService.formatCommitMessage(
-                            project,
-                            settings,
-                            commitContext.getSelectedChanges(),
-                            commitContext.getSelectedFiles(),
-                            currentMessage,
-                            delta -> {
-                                builder.append(delta);
-                                CommitPanelActionSupport.setCommitMessage(commitPanel, builder.toString());
-                            }
-                    );
+                    if (historicalCommitHash != null) {
+                        llmCommitService.formatCommitMessageForCommit(
+                                project,
+                                settings,
+                                historicalCommitHash,
+                                currentMessage,
+                                delta -> {
+                                    builder.append(delta);
+                                    CommitPanelActionSupport.setCommitMessage(commitPanel, builder.toString());
+                                }
+                        );
+                    } else {
+                        llmCommitService.formatCommitMessage(
+                                project,
+                                settings,
+                                commitContext.getSelectedChanges(),
+                                commitContext.getSelectedFiles(),
+                                currentMessage,
+                                delta -> {
+                                    builder.append(delta);
+                                    CommitPanelActionSupport.setCommitMessage(commitPanel, builder.toString());
+                                }
+                        );
+                    }
+                    if (builder.length() == 0) {
+                        CommitPanelActionSupport.setCommitMessage(commitPanel, currentMessage);
+                    }
                 } catch (Exception e) {
+                    if (builder.length() == 0) {
+                        CommitPanelActionSupport.setCommitMessage(commitPanel, currentMessage);
+                    }
                     ApplicationManager.getApplication().invokeLater(() ->
                             Messages.showErrorDialog(project, e.getMessage(), PluginBundle.get("action.llm.error.title"))
                     );
+                } finally {
+                    loading = false;
+                    loadingState.finish();
+                    ApplicationManager.getApplication().invokeLater(() -> updateLoadingPresentation(actionEvent, false));
                 }
             }
         });
@@ -72,5 +108,20 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
     public void update(@Nullable AnActionEvent e) {
         boolean visible = settings.getCentralSettings().getActionSettings().getFormatCommitActionVisible();
         CommitPanelActionSupport.updatePresentation(e, visible);
+        if (e != null) {
+            updateLoadingPresentation(e, loading);
+        }
+    }
+
+    private void updateLoadingPresentation(@Nullable AnActionEvent event, boolean loading) {
+        if (event == null) {
+            return;
+        }
+        Presentation presentation = event.getPresentation();
+        presentation.setIcon(loading ? AnimatedIcon.Default.INSTANCE : PluginIcons.COMMIT_FORMAT);
+        presentation.setDisabledIcon(loading ? AnimatedIcon.Default.INSTANCE : null);
+        boolean visible = settings.getCentralSettings().getActionSettings().getFormatCommitActionVisible();
+        CommitMessageI commitPanel = CommitPanelActionSupport.getCommitPanel(event);
+        presentation.setEnabled(!loading && visible && event.getProject() != null && !CommitPanelActionSupport.isCommitMessageLoading(commitPanel));
     }
 }

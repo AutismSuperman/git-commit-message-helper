@@ -76,14 +76,25 @@ public class CreateCommitAction extends AnAction implements DumbAware {
             return cachedCommitTemplate;
         }
         try {
+            String editedCommitHash = commitContext.hasSelection() ? null : CommitPanelActionSupport.findEditedCommitHash(commitPanel);
             return ProgressManager.getInstance().runProcessWithProgressSynchronously(
-                    () -> llmCommitService.parseCommitMessageToTemplate(
-                            project,
-                            settings,
-                            commitContext.getSelectedChanges(),
-                            commitContext.getSelectedFiles(),
-                            currentMessage
-                    ),
+                    () -> {
+                        if (editedCommitHash != null) {
+                            return llmCommitService.parseCommitMessageToTemplateForCommit(
+                                    project,
+                                    settings,
+                                    editedCommitHash,
+                                    currentMessage
+                            );
+                        }
+                        return llmCommitService.parseCommitMessageToTemplate(
+                                project,
+                                settings,
+                                commitContext.getSelectedChanges(),
+                                commitContext.getSelectedFiles(),
+                                currentMessage
+                        );
+                    },
                     PluginBundle.get("action.smart.echo.progress"),
                     false,
                     project

@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -51,6 +52,11 @@ public class LlmClient {
                            @NotNull Consumer<String> onDelta,
                            @NotNull LlmRequestDiagnostics diagnostics) throws IOException {
         getClient(profile).streamChat(profile, settings, systemPrompt, userPrompt, onDelta, diagnostics);
+    }
+
+    @NotNull
+    public List<String> listModels(@NotNull LlmProfile profile) throws IOException {
+        return getClient(profile).listModels(profile);
     }
 
     @NotNull

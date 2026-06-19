@@ -197,6 +197,36 @@ public class LlmProviderClientTest {
     }
 
     @Test
+    public void openAiModelListExtractsModelIds() {
+        String response = "{\"object\":\"list\",\"data\":["
+                + "{\"id\":\"gpt-4.1\",\"object\":\"model\"},"
+                + "{\"id\":\"gpt-4.1\",\"object\":\"model\"},"
+                + "{\"name\":\"custom-model\"},"
+                + "\"string-model\""
+                + "]}";
+
+        java.util.List<String> models = OpenAiCompatibleLlmProviderClient.extractModelIds(response);
+
+        assertEquals(3, models.size());
+        assertEquals("gpt-4.1", models.get(0));
+        assertEquals("custom-model", models.get(1));
+        assertEquals("string-model", models.get(2));
+    }
+
+    @Test
+    public void openAiModelsEndpointAcceptsBaseUrlOrFullChatCompletionsEndpoint() {
+        LlmProfile profile = new LlmProfile();
+        profile.setBaseUrl("https://api.openai.com/v1");
+        assertEquals("https://api.openai.com/v1/models", OpenAiCompatibleLlmProviderClient.resolveModelsEndpoint(profile));
+
+        profile.setBaseUrl("https://api.openai.com/v1/chat/completions");
+        assertEquals("https://api.openai.com/v1/models", OpenAiCompatibleLlmProviderClient.resolveModelsEndpoint(profile));
+
+        profile.setBaseUrl("https://api.openai.com/v1/models");
+        assertEquals("https://api.openai.com/v1/models", OpenAiCompatibleLlmProviderClient.resolveModelsEndpoint(profile));
+    }
+
+    @Test
     public void defaultProfileAndLegacyProfilesUseOpenAiProvider() {
         LlmProfile profile = new LlmProfile();
         profile.setId("legacy");
@@ -278,6 +308,22 @@ public class LlmProviderClientTest {
 
         profile.setBaseUrl("https://api.anthropic.com/v1/messages");
         assertEquals("https://api.anthropic.com/v1/messages", AnthropicLlmProviderClient.resolveMessagesEndpoint(profile));
+    }
+
+    @Test
+    public void anthropicModelsEndpointAcceptsBaseUrlWithOrWithoutMessagesPath() {
+        LlmProfile profile = new LlmProfile();
+        profile.setBaseUrl("https://api.anthropic.com");
+        assertEquals("https://api.anthropic.com/v1/models", AnthropicLlmProviderClient.resolveModelsEndpoint(profile));
+
+        profile.setBaseUrl("https://api.anthropic.com/v1");
+        assertEquals("https://api.anthropic.com/v1/models", AnthropicLlmProviderClient.resolveModelsEndpoint(profile));
+
+        profile.setBaseUrl("https://api.anthropic.com/v1/messages");
+        assertEquals("https://api.anthropic.com/v1/models", AnthropicLlmProviderClient.resolveModelsEndpoint(profile));
+
+        profile.setBaseUrl("https://api.anthropic.com/v1/models");
+        assertEquals("https://api.anthropic.com/v1/models", AnthropicLlmProviderClient.resolveModelsEndpoint(profile));
     }
 
     @Test

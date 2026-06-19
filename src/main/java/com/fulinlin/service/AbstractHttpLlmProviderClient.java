@@ -31,6 +31,16 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
         return connection;
     }
 
+    @NotNull
+    protected HttpURLConnection openGetConnection(@NotNull String endpoint) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) URI.create(endpoint).toURL().openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(30000);
+        connection.setRequestProperty("Accept", "application/json");
+        return connection;
+    }
+
     protected void write(@NotNull HttpURLConnection connection, @NotNull String body) throws IOException {
         try (OutputStream outputStream = connection.getOutputStream()) {
             outputStream.write(body.getBytes(StandardCharsets.UTF_8));

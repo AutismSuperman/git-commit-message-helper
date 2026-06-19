@@ -14,10 +14,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
 
+    private static final String CHAT_COMPLETIONS_PATH = "/chat/completions";
     private static final Gson GSON = new Gson();
 
     @Override
@@ -164,6 +169,27 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         }
     }
 
+    @Override
+    @NotNull
+    public List<String> listModels(@NotNull LlmProfile profile) throws IOException {
+        HttpURLConnection connection = createModelListConnection(profile);
+        try {
+            int responseCode = connection.getResponseCode();
+            InputStream inputStream = responseCode >= 200 && responseCode < 300
+                    ? connection.getInputStream()
+                    : connection.getErrorStream();
+            String responseBody = readAll(inputStream);
+            if (responseCode < 200 || responseCode >= 300) {
+                throw new IOException(extractErrorMessage(responseBody));
+            }
+            return extractModelIds(responseBody);
+        } catch (RuntimeException ex) {
+            throw new IOException("Failed to parse model list response.", ex);
+        } finally {
+            connection.disconnect();
+        }
+    }
+
     @NotNull
     static JsonObject createRequestBody(@NotNull LlmProfile profile,
                                         @NotNull LlmSettings settings,
@@ -256,6 +282,17 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         return "";
     }
 
+    @NotNull
+    static List<String> extractModelIds(@NotNull String responseBody) {
+        JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
+        Set<String> modelIds = new LinkedHashSet<>();
+        collectModelIds(jsonObject.getAsJsonArray("data"), modelIds);
+        if (modelIds.isEmpty() && jsonObject.has("models") && jsonObject.get("models").isJsonArray()) {
+            collectModelIds(jsonObject.getAsJsonArray("models"), modelIds);
+        }
+        return new ArrayList<>(modelIds);
+    }
+
     @Override
     @NotNull
     public String extractErrorMessage(@NotNull String responseBody) {
@@ -281,6 +318,28 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
     }
 
     @NotNull
+    private HttpURLConnection createModelListConnection(@NotNull LlmProfile profile) throws IOException {
+        HttpURLConnection connection = openGetConnection(resolveModelsEndpoint(profile));
+        String apiKey = profile.getApiKey() == null ? "" : profile.getApiKey().trim();
+        if (!apiKey.isEmpty()) {
+            connection.setRequestProperty("Authorization", "Bearer " + apiKey);
+        }
+        return connection;
+    }
+
+    @NotNull
+    static String resolveModelsEndpoint(@NotNull LlmProfile profile) {
+        String baseUrl = new OpenAiCompatibleLlmProviderClient().stripTrailingSlash(profile.getBaseUrl().trim());
+        if (baseUrl.endsWith("/models")) {
+            return baseUrl;
+        }
+        if (baseUrl.endsWith(CHAT_COMPLETIONS_PATH)) {
+            return baseUrl.substring(0, baseUrl.length() - CHAT_COMPLETIONS_PATH.length()) + "/models";
+        }
+        return new OpenAiCompatibleLlmProviderClient().resolveEndpoint(profile, "/models");
+    }
+
+    @NotNull
     private static JsonObject createMessage(@NotNull String role, @NotNull String content) {
         JsonObject message = new JsonObject();
         message.addProperty("role", role);
@@ -293,5 +352,35 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         return message.get("content").isJsonPrimitive()
                 ? message.get("content").getAsString()
                 : new OpenAiCompatibleLlmProviderClient().extractTextParts(message.get("content"));
+    }
+
+    private static void collectModelIds(JsonArray models, @NotNull Set<String> modelIds) {
+        if (models == null) {
+            return;
+        }
+        for (int i = 0; i < models.size(); i++) {
+            String modelId = extractModelId(models.get(i));
+            if (!modelId.isEmpty()) {
+                modelIds.add(modelId);
+            }
+        }
+    }
+
+    @NotNull
+    private static String extractModelId(@NotNull com.google.gson.JsonElement modelElement) {
+        if (modelElement.isJsonPrimitive()) {
+            return modelElement.getAsString().trim();
+        }
+        if (!modelElement.isJsonObject()) {
+            return "";
+        }
+        JsonObject model = modelElement.getAsJsonObject();
+        if (model.has("id") && !model.get("id").isJsonNull()) {
+            return model.get("id").getAsString().trim();
+        }
+        if (model.has("name") && !model.get("name").isJsonNull()) {
+            return model.get("name").getAsString().trim();
+        }
+        return "";
     }
 }

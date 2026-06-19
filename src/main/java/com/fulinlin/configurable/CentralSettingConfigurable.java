@@ -1,5 +1,6 @@
 package com.fulinlin.configurable;
 
+import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.fulinlin.ui.central.CentralSettingPanel;
 import com.intellij.openapi.options.ConfigurationException;
@@ -57,6 +58,6 @@ public class CentralSettingConfigurable implements SearchableConfigurable {
     @Nls(capitalization = Nls.Capitalization.Title)
     @Override
     public String getDisplayName() {
-        return "GitCommitMessageHelper";
+        return PluginBundle.get("setting.configurable.main");
     }
 }

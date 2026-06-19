@@ -2,7 +2,7 @@
     <id>commit-message-helper-idea-plugin</id>
     <name>Git Commit Message Helper</name>
     <vendor email="fulinlin9527@outlook.com" url="https://github.com/AutismSuperman">FuLinLin</vendor>
-    <version>1.5.5</version>
+    <version>1.6.2</version>
 
 
     <description><![CDATA[<p>Description notes will be filled by gradle build</p>]]></description>
@@ -30,18 +30,23 @@
 
         <applicationConfigurable groupId="null"
                                  id="plugins.gitcommitmessagehelper"
-                                 displayName="GitCommitMessageHelper"
+                                 key="setting.configurable.main"
+                                 bundle="i18n.info"
                                  instance="com.fulinlin.configurable.CentralSettingConfigurable"/>
 
         <applicationConfigurable
                 instance="com.fulinlin.configurable.LlmSettingConfigurable"
                 id="plugins.gitcommitmessagehelper.llm"
-                groupId="plugins.gitcommitmessagehelper" displayName="LLM Settings"/>
+                groupId="plugins.gitcommitmessagehelper"
+                key="setting.configurable.llm"
+                bundle="i18n.info"/>
 
         <applicationConfigurable
                 instance="com.fulinlin.configurable.TemplateConfigurable"
                 id="plugins.gitcommitmessagehelper.template"
-                groupId="plugins.gitcommitmessagehelper" displayName="Commit Template"/>
+                groupId="plugins.gitcommitmessagehelper"
+                key="setting.configurable.template"
+                bundle="i18n.info"/>
 
     </extensions>
 

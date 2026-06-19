@@ -5,6 +5,7 @@ import com.fulinlin.model.LlmSettings;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Consumer;
 
 interface LlmProviderClient {
@@ -37,6 +38,11 @@ interface LlmProviderClient {
                             @NotNull Consumer<String> onDelta,
                             @NotNull LlmRequestDiagnostics diagnostics) throws IOException {
         streamChat(profile, settings, systemPrompt, userPrompt, onDelta);
+    }
+
+    @NotNull
+    default List<String> listModels(@NotNull LlmProfile profile) throws IOException {
+        throw new IOException("Model listing is not supported by this provider.");
     }
 
     @NotNull

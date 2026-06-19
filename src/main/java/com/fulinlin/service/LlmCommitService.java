@@ -49,6 +49,20 @@ public class LlmCommitService {
                                       @NotNull Collection<File> selectedFiles,
                                       @NotNull Consumer<String> onDelta) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
+        generateCommitMessage(settings, gitContext, onDelta);
+    }
+
+    public void generateCommitMessageForCommit(@NotNull Project project,
+                                               @NotNull GitCommitMessageHelperSettings settings,
+                                               @NotNull String commitHash,
+                                               @NotNull Consumer<String> onDelta) throws IOException {
+        GitContextService.GitContext gitContext = gitContextService.collectCommitted(project, commitHash);
+        generateCommitMessage(settings, gitContext, onDelta);
+    }
+
+    private void generateCommitMessage(@NotNull GitCommitMessageHelperSettings settings,
+                                       @NotNull GitContextService.GitContext gitContext,
+                                       @NotNull Consumer<String> onDelta) throws IOException {
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
         String systemPrompt = GENERATE_SYSTEM_PROMPT;
@@ -63,6 +77,22 @@ public class LlmCommitService {
                                     @NotNull String currentMessage,
                                     @NotNull Consumer<String> onDelta) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
+        formatCommitMessage(settings, gitContext, currentMessage, onDelta);
+    }
+
+    public void formatCommitMessageForCommit(@NotNull Project project,
+                                             @NotNull GitCommitMessageHelperSettings settings,
+                                             @NotNull String commitHash,
+                                             @NotNull String currentMessage,
+                                             @NotNull Consumer<String> onDelta) throws IOException {
+        GitContextService.GitContext gitContext = gitContextService.collectCommitted(project, commitHash);
+        formatCommitMessage(settings, gitContext, currentMessage, onDelta);
+    }
+
+    private void formatCommitMessage(@NotNull GitCommitMessageHelperSettings settings,
+                                     @NotNull GitContextService.GitContext gitContext,
+                                     @NotNull String currentMessage,
+                                     @NotNull Consumer<String> onDelta) throws IOException {
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
         String systemPrompt = FORMAT_SYSTEM_PROMPT;
@@ -77,6 +107,22 @@ public class LlmCommitService {
                                                        @NotNull Collection<File> selectedFiles,
                                                        @NotNull String currentMessage) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
+        return parseCommitMessageToTemplate(settings, gitContext, currentMessage);
+    }
+
+    @NotNull
+    public CommitTemplate parseCommitMessageToTemplateForCommit(@NotNull Project project,
+                                                                @NotNull GitCommitMessageHelperSettings settings,
+                                                                @NotNull String commitHash,
+                                                                @NotNull String currentMessage) throws IOException {
+        GitContextService.GitContext gitContext = gitContextService.collectCommitted(project, commitHash);
+        return parseCommitMessageToTemplate(settings, gitContext, currentMessage);
+    }
+
+    @NotNull
+    private CommitTemplate parseCommitMessageToTemplate(@NotNull GitCommitMessageHelperSettings settings,
+                                                       @NotNull GitContextService.GitContext gitContext,
+                                                       @NotNull String currentMessage) throws IOException {
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
         String response = llmClient.chat(

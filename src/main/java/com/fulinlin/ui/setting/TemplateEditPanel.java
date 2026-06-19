@@ -272,17 +272,16 @@ public class TemplateEditPanel implements Disposable {
         templateSection.setMinimumSize(new Dimension(JBUI.scale(480), JBUI.scale(260)));
         previewSection.setMinimumSize(new Dimension(JBUI.scale(280), JBUI.scale(260)));
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, templateSection, previewSection);
-        splitPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        splitPane.setBorder(JBUI.Borders.empty());
-        splitPane.setContinuousLayout(true);
-        splitPane.setResizeWeight(0.62);
-        splitPane.setDividerSize(JBUI.scale(7));
-        splitPane.setOpaque(false);
-        splitPane.setPreferredSize(new Dimension(0, JBUI.scale(460)));
-        splitPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, JBUI.scale(460)));
-        SwingUtilities.invokeLater(() -> splitPane.setDividerLocation(0.62));
-        return splitPane;
+        OnePixelSplitter splitter = new OnePixelSplitter(false, 0.62f);
+        splitter.setFirstComponent(templateSection);
+        splitter.setSecondComponent(previewSection);
+        splitter.setHonorComponentsMinimumSize(true);
+        splitter.setAlignmentX(Component.LEFT_ALIGNMENT);
+        splitter.setBorder(JBUI.Borders.empty());
+        splitter.setOpaque(false);
+        splitter.setPreferredSize(new Dimension(0, JBUI.scale(460)));
+        splitter.setMaximumSize(new Dimension(Integer.MAX_VALUE, JBUI.scale(460)));
+        return splitter;
     }
 
     private JPanel createPreviewSection() {

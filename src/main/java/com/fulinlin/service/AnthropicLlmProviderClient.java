@@ -14,10 +14,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.function.Consumer;
 
 class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
 
+    private static final String MESSAGES_PATH = "/v1/messages";
+    private static final String MODELS_PATH = "/v1/models";
     static final String ANTHROPIC_VERSION = "2023-06-01";
     private static final Gson GSON = new Gson();
 
@@ -183,6 +186,27 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
         }
     }
 
+    @Override
+    @NotNull
+    public List<String> listModels(@NotNull LlmProfile profile) throws IOException {
+        HttpURLConnection connection = createModelListConnection(profile);
+        try {
+            int responseCode = connection.getResponseCode();
+            InputStream inputStream = responseCode >= 200 && responseCode < 300
+                    ? connection.getInputStream()
+                    : connection.getErrorStream();
+            String responseBody = readAll(inputStream);
+            if (responseCode < 200 || responseCode >= 300) {
+                throw new IOException(extractErrorMessage(responseBody));
+            }
+            return OpenAiCompatibleLlmProviderClient.extractModelIds(responseBody);
+        } catch (RuntimeException ex) {
+            throw new IOException("Failed to parse model list response.", ex);
+        } finally {
+            connection.disconnect();
+        }
+    }
+
     @NotNull
     static JsonObject createRequestBody(@NotNull LlmProfile profile,
                                         @NotNull LlmSettings settings,
@@ -321,15 +345,42 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
     }
 
     @NotNull
+    private HttpURLConnection createModelListConnection(@NotNull LlmProfile profile) throws IOException {
+        HttpURLConnection connection = openGetConnection(resolveModelsEndpoint(profile));
+        String apiKey = profile.getApiKey() == null ? "" : profile.getApiKey().trim();
+        if (!apiKey.isEmpty()) {
+            connection.setRequestProperty("Authorization", "Bearer " + apiKey);
+            connection.setRequestProperty("x-api-key", apiKey);
+        }
+        connection.setRequestProperty("anthropic-version", ANTHROPIC_VERSION);
+        return connection;
+    }
+
+    @NotNull
     static String resolveMessagesEndpoint(@NotNull LlmProfile profile) {
         String baseUrl = profile.getBaseUrl().trim();
-        if (baseUrl.endsWith("/v1/messages")) {
+        if (baseUrl.endsWith(MESSAGES_PATH)) {
             return baseUrl;
         }
         if (baseUrl.endsWith("/v1")) {
             return baseUrl + "/messages";
         }
-        return new AnthropicLlmProviderClient().resolveEndpoint(profile, "/v1/messages");
+        return new AnthropicLlmProviderClient().resolveEndpoint(profile, MESSAGES_PATH);
+    }
+
+    @NotNull
+    static String resolveModelsEndpoint(@NotNull LlmProfile profile) {
+        String baseUrl = new AnthropicLlmProviderClient().stripTrailingSlash(profile.getBaseUrl().trim());
+        if (baseUrl.endsWith(MODELS_PATH)) {
+            return baseUrl;
+        }
+        if (baseUrl.endsWith(MESSAGES_PATH)) {
+            return baseUrl.substring(0, baseUrl.length() - MESSAGES_PATH.length()) + MODELS_PATH;
+        }
+        if (baseUrl.endsWith("/v1")) {
+            return baseUrl + "/models";
+        }
+        return new AnthropicLlmProviderClient().resolveEndpoint(profile, MODELS_PATH);
     }
 
     static boolean isEventStream(String contentType, @NotNull String responseBody) {

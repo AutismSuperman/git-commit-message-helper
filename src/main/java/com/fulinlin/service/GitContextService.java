@@ -4,6 +4,8 @@ import com.intellij.openapi.diff.impl.patch.FilePatch;
 import com.intellij.openapi.diff.impl.patch.IdeaTextPatchBuilder;
 import com.intellij.openapi.diff.impl.patch.UnifiedDiffWriter;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vcs.ProjectLevelVcsManager;
+import com.intellij.openapi.vcs.VcsRoot;
 import com.intellij.openapi.vcs.changes.Change;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,8 +20,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class GitContextService {
 
@@ -27,6 +31,7 @@ public class GitContextService {
     private static final int MAX_UNVERSIONED_FILE_LENGTH = 4000;
     private static final int MAX_CHANGED_LINES_PER_HUNK = 24;
     private static final int MAX_CONTEXT_LINES_PER_HUNK = 4;
+    private static final Pattern COMMIT_HASH_PATTERN = Pattern.compile("[0-9a-fA-F]{7,40}");
 
     @NotNull
     public GitContext collect(@NotNull Project project,
@@ -51,6 +56,90 @@ public class GitContextService {
                 "",
                 trim(recentCommits, 2000)
         );
+    }
+
+    @NotNull
+    public GitContext collectCommitted(@NotNull Project project, @NotNull String commitHash) throws IOException {
+        CommitReference commitReference = resolveCommitReference(project, commitHash);
+        File workDir = commitReference.workDir;
+        String fullHash = commitReference.fullHash;
+        String shortHash = execute(workDir, "git", "rev-parse", "--short", fullHash).trim();
+        String metadata = execute(workDir, "git", "show", "-s", "--format=%H%n%an <%ae>%n%ad%n%s", "--date=iso-strict", fullHash).trim();
+        String fileStatus = execute(workDir, "git", "diff-tree", "--root", "--no-commit-id", "--name-status", "-r", "--find-renames", fullHash).trim();
+        String historicalDiff = execute(workDir, "git", "show", "--format=", "--no-color", "--no-ext-diff",
+                "--find-renames", "--find-copies", "--unified=3", fullHash, "--").trim();
+        String recentCommits = execute(workDir, "git", "log", "-5", "--pretty=format:%h %s");
+        String status = buildCommittedStatus(shortHash, metadata, fileStatus);
+        return new GitContext(
+                workDir.getAbsolutePath(),
+                trim(status, 4000),
+                trimDiffForPrompt(historicalDiff, MAX_DIFF_LENGTH),
+                "",
+                trim(recentCommits, 2000)
+        );
+    }
+
+    @NotNull
+    private static String buildCommittedStatus(@NotNull String shortHash,
+                                               @NotNull String metadata,
+                                               @NotNull String fileStatus) {
+        List<String> lines = new ArrayList<>();
+        lines.add("COMMITTED " + shortHash);
+        if (!metadata.isEmpty()) {
+            lines.add(metadata);
+        }
+        if (!fileStatus.isEmpty()) {
+            lines.add("");
+            lines.add("Changed Files:");
+            lines.add(fileStatus);
+        }
+        return String.join("\n", lines);
+    }
+
+    @NotNull
+    private static CommitReference resolveCommitReference(@NotNull Project project, @NotNull String commitHash) throws IOException {
+        if (!COMMIT_HASH_PATTERN.matcher(commitHash).matches()) {
+            throw new IOException("Invalid Git commit hash: " + commitHash);
+        }
+        for (File candidate : getRepositoryCandidates(project)) {
+            String fullHash = execute(candidate, "git", "rev-parse", "--verify", commitHash + "^{commit}").trim();
+            if (!fullHash.isEmpty()) {
+                return new CommitReference(candidate, firstLine(fullHash));
+            }
+        }
+        throw new IOException("Unable to locate Git commit " + commitHash + " in the project repositories.");
+    }
+
+    @NotNull
+    private static List<File> getRepositoryCandidates(@NotNull Project project) {
+        Set<File> candidates = new LinkedHashSet<>();
+        String basePath = project.getBasePath();
+        if (basePath != null && !basePath.trim().isEmpty()) {
+            addRepositoryCandidate(candidates, new File(basePath));
+        }
+        try {
+            for (VcsRoot vcsRoot : ProjectLevelVcsManager.getInstance(project).getAllVcsRoots()) {
+                if (vcsRoot.getVcs() != null && !"Git".equalsIgnoreCase(vcsRoot.getVcs().getName())) {
+                    continue;
+                }
+                addRepositoryCandidate(candidates, new File(vcsRoot.getPath().getPath()));
+            }
+        } catch (Exception ignored) {
+        }
+        return new ArrayList<>(candidates);
+    }
+
+    private static void addRepositoryCandidate(@NotNull Set<File> candidates, @NotNull File directory) {
+        String repositoryRoot = execute(directory, "git", "rev-parse", "--show-toplevel").trim();
+        File candidate = repositoryRoot.isEmpty() ? directory : new File(firstLine(repositoryRoot));
+        candidates.add(candidate.getAbsoluteFile());
+    }
+
+    @NotNull
+    private static String firstLine(@NotNull String value) {
+        int lineBreak = value.indexOf('\n');
+        String line = lineBreak >= 0 ? value.substring(0, lineBreak) : value;
+        return line.trim();
     }
 
     @NotNull
@@ -248,6 +337,16 @@ public class GitContextService {
             outputStream.write(buffer, 0, length);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
+    }
+
+    private static class CommitReference {
+        private final File workDir;
+        private final String fullHash;
+
+        private CommitReference(@NotNull File workDir, @NotNull String fullHash) {
+            this.workDir = workDir;
+            this.fullHash = fullHash;
+        }
     }
 
     public static class GitContext {
