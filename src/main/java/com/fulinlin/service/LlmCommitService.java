@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.changes.Change;
 import org.jetbrains.annotations.NotNull;
@@ -568,6 +569,9 @@ public class LlmCommitService {
     }
 
     private static boolean shouldFallbackFromStreaming(@NotNull Throwable throwable) {
+        if (throwable instanceof ProcessCanceledException) {
+            return false;
+        }
         if (throwable instanceof RuntimeException) {
             return true;
         }

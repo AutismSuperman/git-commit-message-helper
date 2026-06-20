@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -14,7 +15,6 @@ import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vcs.CommitMessageI;
-import com.intellij.ui.AnimatedIcon;
 import icons.PluginIcons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -46,6 +46,10 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
             Messages.showWarningDialog(project, PluginBundle.get("action.format.empty.message"), PluginBundle.get("action.llm.error.title"));
             return;
         }
+        if (loading && CommitPanelActionSupport.isCommitMessageLoading(commitPanel)) {
+            CommitPanelActionSupport.cancelCommitMessageLoading(commitPanel);
+            return;
+        }
         if (loading || CommitPanelActionSupport.isCommitMessageLoading(commitPanel)) {
             return;
         }
@@ -56,11 +60,13 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
         CommitPanelActionSupport.CommitMessageLoadingState loadingState =
                 CommitPanelActionSupport.startCommitMessageLoading(commitPanel, PluginBundle.get("action.format.progress") + "...");
         String historicalCommitHash = editedCommitHash;
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, PluginBundle.get("action.format.progress"), false) {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, PluginBundle.get("action.format.progress"), true) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
+                CommitPanelActionSupport.setCommitMessageLoadingIndicator(commitPanel, indicator);
                 StringBuilder builder = new StringBuilder();
                 try {
+                    indicator.checkCanceled();
                     if (historicalCommitHash != null) {
                         llmCommitService.formatCommitMessageForCommit(
                                 project,
@@ -68,6 +74,7 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
                                 historicalCommitHash,
                                 currentMessage,
                                 delta -> {
+                                    indicator.checkCanceled();
                                     builder.append(delta);
                                     CommitPanelActionSupport.setCommitMessage(commitPanel, builder.toString());
                                 }
@@ -80,14 +87,18 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
                                 commitContext.getSelectedFiles(),
                                 currentMessage,
                                 delta -> {
+                                    indicator.checkCanceled();
                                     builder.append(delta);
                                     CommitPanelActionSupport.setCommitMessage(commitPanel, builder.toString());
                                 }
                         );
                     }
+                    indicator.checkCanceled();
                     if (builder.length() == 0) {
                         CommitPanelActionSupport.setCommitMessage(commitPanel, currentMessage);
                     }
+                } catch (ProcessCanceledException e) {
+                    CommitPanelActionSupport.setCommitMessage(commitPanel, currentMessage);
                 } catch (Exception e) {
                     if (builder.length() == 0) {
                         CommitPanelActionSupport.setCommitMessage(commitPanel, currentMessage);
@@ -118,10 +129,10 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
             return;
         }
         Presentation presentation = event.getPresentation();
-        presentation.setIcon(loading ? AnimatedIcon.Default.INSTANCE : PluginIcons.COMMIT_FORMAT);
-        presentation.setDisabledIcon(loading ? AnimatedIcon.Default.INSTANCE : null);
+        presentation.setIcon(loading ? PluginIcons.STOP : PluginIcons.COMMIT_FORMAT);
+        presentation.setDisabledIcon(null);
         boolean visible = settings.getCentralSettings().getActionSettings().getFormatCommitActionVisible();
         CommitMessageI commitPanel = CommitPanelActionSupport.getCommitPanel(event);
-        presentation.setEnabled(!loading && visible && event.getProject() != null && !CommitPanelActionSupport.isCommitMessageLoading(commitPanel));
+        presentation.setEnabled(loading || visible && event.getProject() != null && !CommitPanelActionSupport.isCommitMessageLoading(commitPanel));
     }
 }

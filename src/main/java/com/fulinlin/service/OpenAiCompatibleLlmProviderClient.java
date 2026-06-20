@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
@@ -52,7 +53,7 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         );
         write(connection, GSON.toJson(requestBody));
 
-        int responseCode = connection.getResponseCode();
+        int responseCode = getResponseCode(connection);
         InputStream inputStream = responseCode >= 200 && responseCode < 300
                 ? connection.getInputStream()
                 : connection.getErrorStream();
@@ -68,7 +69,7 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                         false, compatibilityRequested, false, diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
-                responseCode = connection.getResponseCode();
+                responseCode = getResponseCode(connection);
                 inputStream = responseCode >= 200 && responseCode < 300
                         ? connection.getInputStream()
                         : connection.getErrorStream();
@@ -116,7 +117,7 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         );
         write(connection, GSON.toJson(requestBody));
 
-        int responseCode = connection.getResponseCode();
+        int responseCode = getResponseCode(connection);
         InputStream inputStream = responseCode >= 200 && responseCode < 300
                 ? connection.getInputStream()
                 : connection.getErrorStream();
@@ -132,7 +133,7 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                         false, compatibilityRequested, false, diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
-                responseCode = connection.getResponseCode();
+                responseCode = getResponseCode(connection);
                 inputStream = responseCode >= 200 && responseCode < 300
                         ? connection.getInputStream()
                         : connection.getErrorStream();
@@ -148,7 +149,7 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
-            while ((line = reader.readLine()) != null) {
+            while ((line = readLine(reader)) != null) {
                 if (!line.startsWith("data:")) {
                     continue;
                 }
@@ -174,7 +175,7 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
     public List<String> listModels(@NotNull LlmProfile profile) throws IOException {
         HttpURLConnection connection = createModelListConnection(profile);
         try {
-            int responseCode = connection.getResponseCode();
+            int responseCode = getResponseCode(connection);
             InputStream inputStream = responseCode >= 200 && responseCode < 300
                     ? connection.getInputStream()
                     : connection.getErrorStream();
@@ -183,6 +184,8 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                 throw new IOException(extractErrorMessage(responseBody));
             }
             return extractModelIds(responseBody);
+        } catch (ProcessCanceledException ex) {
+            throw ex;
         } catch (RuntimeException ex) {
             throw new IOException("Failed to parse model list response.", ex);
         } finally {

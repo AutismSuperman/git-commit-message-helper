@@ -3,6 +3,7 @@ package com.fulinlin.action;
 import com.intellij.ide.ActivityTracker;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.vcs.CheckinProjectPanel;
 import com.intellij.openapi.vcs.CommitMessageI;
 import com.intellij.openapi.vcs.VcsDataKeys;
@@ -147,6 +148,20 @@ public final class CommitPanelActionSupport {
         return state[0] == null ? CommitMessageLoadingState.empty(commitPanel) : state[0];
     }
 
+    @NotNull
+    public static CommitMessageLoadingState startCommitMessageLoading(@NotNull CommitMessageI commitPanel) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            return startCommitMessageLoadingOnEdt(commitPanel, null);
+        }
+        CommitMessageLoadingState[] state = new CommitMessageLoadingState[1];
+        try {
+            SwingUtilities.invokeAndWait(() -> state[0] = startCommitMessageLoadingOnEdt(commitPanel, null));
+        } catch (Exception ignored) {
+            return CommitMessageLoadingState.empty(commitPanel);
+        }
+        return state[0] == null ? CommitMessageLoadingState.empty(commitPanel) : state[0];
+    }
+
     public static boolean isCommitMessageLoading(@Nullable CommitMessageI commitPanel) {
         if (commitPanel == null) {
             return false;
@@ -156,15 +171,40 @@ public final class CommitPanelActionSupport {
         }
     }
 
+    public static void setCommitMessageLoadingIndicator(@NotNull CommitMessageI commitPanel,
+                                                        @NotNull ProgressIndicator indicator) {
+        synchronized (LOADING_PANELS) {
+            CommitMessageLoadingState state = LOADING_PANELS.get(commitPanel);
+            if (state != null) {
+                state.setIndicator(indicator);
+            }
+        }
+    }
+
+    public static void cancelCommitMessageLoading(@Nullable CommitMessageI commitPanel) {
+        if (commitPanel == null) {
+            return;
+        }
+        synchronized (LOADING_PANELS) {
+            CommitMessageLoadingState state = LOADING_PANELS.get(commitPanel);
+            if (state != null) {
+                state.cancel();
+            }
+        }
+        ActivityTracker.getInstance().inc();
+    }
+
     @NotNull
     private static CommitMessageLoadingState startCommitMessageLoadingOnEdt(@NotNull CommitMessageI commitPanel,
-                                                                           @NotNull String placeholder) {
+                                                                           @Nullable String placeholder) {
         CommitMessageLoadingState state = createLoadingState(commitPanel);
         synchronized (LOADING_PANELS) {
             LOADING_PANELS.put(commitPanel, state);
         }
         ActivityTracker.getInstance().inc();
-        commitPanel.setCommitMessage(placeholder);
+        if (placeholder != null) {
+            commitPanel.setCommitMessage(placeholder);
+        }
         state.setReadOnly(true);
         return state;
     }
@@ -257,6 +297,8 @@ public final class CommitPanelActionSupport {
         private final CommitMessageI commitPanel;
         private final EditorTextField editorField;
         private final boolean previousViewer;
+        private volatile ProgressIndicator indicator;
+        private volatile boolean cancellationRequested;
 
         private CommitMessageLoadingState(@NotNull CommitMessageI commitPanel,
                                           @Nullable EditorTextField editorField,
@@ -274,6 +316,21 @@ public final class CommitPanelActionSupport {
         private void setReadOnly(boolean readOnly) {
             if (editorField != null) {
                 editorField.setViewer(readOnly);
+            }
+        }
+
+        private void setIndicator(@NotNull ProgressIndicator indicator) {
+            this.indicator = indicator;
+            if (cancellationRequested) {
+                indicator.cancel();
+            }
+        }
+
+        private void cancel() {
+            cancellationRequested = true;
+            ProgressIndicator currentIndicator = indicator;
+            if (currentIndicator != null) {
+                currentIndicator.cancel();
             }
         }
 

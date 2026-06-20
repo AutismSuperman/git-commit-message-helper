@@ -15,4 +15,6 @@ public interface PluginIcons {
     Icon AI_GENERATE = IconLoader.getIcon("/icons/ai_generate.svg", PluginIcons.class);
 
     Icon COMMIT_FORMAT = IconLoader.getIcon("/icons/commit_format.svg", PluginIcons.class);
+
+    Icon STOP = IconLoader.getIcon("/icons/stop.svg", PluginIcons.class);
 }

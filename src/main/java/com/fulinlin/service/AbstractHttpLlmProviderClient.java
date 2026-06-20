@@ -4,7 +4,10 @@ import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.enums.LlmProvider;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,12 +16,14 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
 
     protected static final int MAX_RESPONSE_TOKENS = 4096;
+    private static final int CANCELLABLE_READ_TIMEOUT_MS = 1000;
 
     @NotNull
     protected HttpURLConnection openPostConnection(@NotNull String endpoint) throws IOException {
@@ -47,6 +52,23 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
         }
     }
 
+    protected int getResponseCode(@NotNull HttpURLConnection connection) throws IOException {
+        if (isCancellationSupported()) {
+            connection.setReadTimeout(CANCELLABLE_READ_TIMEOUT_MS);
+        }
+        while (true) {
+            boolean cancellationSupported = checkCanceled();
+            try {
+                return connection.getResponseCode();
+            } catch (SocketTimeoutException ex) {
+                if (!cancellationSupported && !isCancellationSupported()) {
+                    throw ex;
+                }
+                checkCanceled();
+            }
+        }
+    }
+
     @NotNull
     protected String readAll(InputStream inputStream) throws IOException {
         if (inputStream == null) {
@@ -55,7 +77,7 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
         StringBuilder builder = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
-            while ((line = reader.readLine()) != null) {
+            while ((line = readLine(reader)) != null) {
                 if (builder.length() > 0) {
                     builder.append('\n');
                 }
@@ -63,6 +85,34 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
             }
         }
         return builder.toString();
+    }
+
+    @Nullable
+    protected String readLine(@NotNull BufferedReader reader) throws IOException {
+        while (true) {
+            boolean cancellationSupported = checkCanceled();
+            try {
+                return reader.readLine();
+            } catch (SocketTimeoutException ex) {
+                if (!cancellationSupported && !isCancellationSupported()) {
+                    throw ex;
+                }
+                checkCanceled();
+            }
+        }
+    }
+
+    protected boolean checkCanceled() {
+        ProgressIndicator indicator = ProgressManager.getInstance().getProgressIndicator();
+        if (indicator != null) {
+            indicator.checkCanceled();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isCancellationSupported() {
+        return ProgressManager.getInstance().getProgressIndicator() != null;
     }
 
     @NotNull
