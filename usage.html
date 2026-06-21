@@ -86,9 +86,11 @@
             <span role="cell">打开结构化编辑窗口，手动填写字段并生成最终提交信息。</span>
           </div>
         </div>
-        <figure class="guide-shot">
-          <img src="assets/screenshots/operation.gif" alt="在 IntelliJ 提交面板中使用 Git Commit Message Helper 的操作演示">
-          <figcaption>在提交面板中选择动作，生成、格式化或手动创建提交信息。</figcaption>
+        <figure class="article-figure guide-shot">
+          <button class="image-preview" type="button" data-preview="assets/screenshots/operation.gif" data-title="提交面板工作流">
+            <img src="assets/screenshots/operation.gif" alt="在 IntelliJ 提交面板中使用 Git Commit Message Helper 的操作演示">
+          </button>
+          <figcaption>在提交面板中选择动作，生成、格式化或手动创建提交信息。点击图片可以放大查看。</figcaption>
         </figure>
       </div>
     </section>
@@ -129,25 +131,35 @@ Closes issue
       <div class="guide-section__content">
         <h2 id="llm-setup-title">LLM Provider 设置</h2>
         <p>在 LLM 设置页配置 Provider、Base URL、API Key、Model、Temperature、Response Language 和 Smart Echo。</p>
-        <div class="provider-grid provider-grid--guide">
+        <div class="compat-stack provider-grid--guide">
           <article class="provider">
             <h3>OpenAI Compatible</h3>
-            <p>适用于提供 Chat Completions 接口的服务。Base URL 可以填写完整接口，也可以填写服务根路径。</p>
+            <p>这是 OpenAI 兼容模式，适用于任何实现 Chat Completions 协议的服务。它的关键点是：插件最终会向 <code>/chat/completions</code> 发送请求。</p>
             <ul>
-              <li>完整接口：<code>https://example.com/v1/chat/completions</code></li>
-              <li>服务根路径：<code>https://api.openai.com/v1</code></li>
+              <li>填写服务根路径：<code>https://api.openai.com/v1</code>，插件自动补成 <code>https://api.openai.com/v1/chat/completions</code>。</li>
+              <li>填写完整接口：<code>https://example.com/v1/chat/completions</code>，插件不会再追加路径。</li>
+              <li>鉴权 Header：<code>Authorization: Bearer &lt;API Key&gt;</code>。</li>
+              <li>请求体字段：<code>model</code>、<code>temperature</code>、<code>stream</code>、<code>messages</code>。</li>
             </ul>
+            <pre class="endpoint-sample"><code>Base URL: https://api.openai.com/v1
+Actual URL: https://api.openai.com/v1/chat/completions
+Header: Authorization: Bearer sk-...</code></pre>
           </article>
           <article class="provider">
             <h3>Anthropic</h3>
-            <p>适用于 Anthropic Messages API。Base URL 通常填写 <code>https://api.anthropic.com</code>。</p>
+            <p>这是 Anthropic 原生模式，适用于 Claude 官方 Messages API。它不走 OpenAI 兼容字段，Header 和请求体结构都按 Anthropic 协议组织。</p>
             <ul>
-              <li>插件会自动调用 <code>/v1/messages</code></li>
-              <li>请求会携带 <code>x-api-key</code> 和 <code>anthropic-version</code></li>
+              <li>填写服务根路径：<code>https://api.anthropic.com</code>，插件自动请求 <code>https://api.anthropic.com/v1/messages</code>。</li>
+              <li>鉴权 Header：<code>x-api-key: &lt;API Key&gt;</code>。</li>
+              <li>版本 Header：<code>anthropic-version: 2023-06-01</code>。</li>
+              <li>请求体字段：<code>model</code>、<code>system</code>、<code>messages</code>、<code>temperature</code>、<code>max_tokens</code>、<code>stream</code>。</li>
             </ul>
+            <pre class="endpoint-sample"><code>Base URL: https://api.anthropic.com
+Actual URL: https://api.anthropic.com/v1/messages
+Header: x-api-key: sk-ant-...</code></pre>
           </article>
         </div>
-        <p><strong>Smart Echo：</strong>当提交面板里已有内容时，打开手动编辑器可以让 LLM 把现有文本解析回 type、scope、subject、body、changes、closes 和 skipCi 等结构化字段。</p>
+        <p><strong>Smart Echo：</strong>当提交面板里已有内容时，打开手动编辑器可以让 LLM 把现有文本解析回 <code>type</code>、<code>scope</code>、<code>subject</code>、<code>body</code>、<code>changes</code>、<code>closes</code> 和 <code>skipCi</code> 等结构化字段。它主要用于“继续编辑已有草稿”，不是重新生成一条完全新的提交信息。</p>
       </div>
     </section>
 
@@ -155,24 +167,59 @@ Closes issue
       <div class="guide-section__label">05</div>
       <div class="guide-section__content">
         <h2 id="screenshots-guide-title">截图说明</h2>
-        <div class="manual-gallery">
-          <figure>
-            <img src="assets/screenshots/settings-0.png" alt="通用设置截图">
-            <figcaption><strong>通用设置：</strong>控制字段、动作和 Skip CI。</figcaption>
+        <p>这里把设置页截图按功能说明放在正文中，便于对照配置项查看。图片均可点击放大。</p>
+
+        <section class="article-block article-block--compact">
+          <div class="article-copy">
+            <h3>通用设置</h3>
+            <p>用于控制编辑器字段、提交动作按钮和 Skip CI。团队可以先决定哪些字段需要展示，再把无关项隐藏掉。</p>
+          </div>
+          <figure class="article-figure">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-0.png" data-title="通用设置">
+              <img src="assets/screenshots/settings-0.png" alt="通用设置截图">
+            </button>
+            <figcaption>通用设置负责编辑体验和按钮显示策略。</figcaption>
           </figure>
-          <figure>
-            <img src="assets/screenshots/settings-1.png" alt="提交模板设置截图">
-            <figcaption><strong>提交模板：</strong>编辑 Velocity 模板。</figcaption>
+        </section>
+
+        <section class="article-block article-block--compact">
+          <div class="article-copy">
+            <h3>提交模板</h3>
+            <p>Velocity 模板定义最终提交信息怎么拼接。你可以把字段顺序、空行、BREAKING CHANGE、issue 引用和 skip ci 放到团队约定的位置。</p>
+          </div>
+          <figure class="article-figure">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-1.png" data-title="提交模板">
+              <img src="assets/screenshots/settings-1.png" alt="提交模板设置截图">
+            </button>
+            <figcaption>模板决定最终写入 Git 的 commit message 文本。</figcaption>
           </figure>
-          <figure>
-            <img src="assets/screenshots/settings-2.png" alt="提交类型设置截图">
-            <figcaption><strong>提交类型：</strong>管理类型和说明。</figcaption>
+        </section>
+
+        <section class="article-block article-block--compact">
+          <div class="article-copy">
+            <h3>提交类型</h3>
+            <p>提交类型列表用于约束 type 字段。默认包含 feat、fix、docs、style、refactor、perf、test、build、ci、chore 和 revert，也可以按团队规范增删。</p>
+          </div>
+          <figure class="article-figure">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-2.png" data-title="提交类型">
+              <img src="assets/screenshots/settings-2.png" alt="提交类型设置截图">
+            </button>
+            <figcaption>类型说明会帮助使用者选择更准确的提交语义。</figcaption>
           </figure>
-          <figure>
-            <img src="assets/screenshots/settings-3.png" alt="LLM 设置截图">
-            <figcaption><strong>LLM 设置：</strong>配置模型、接口和 Smart Echo。</figcaption>
+        </section>
+
+        <section class="article-block article-block--compact">
+          <div class="article-copy">
+            <h3>LLM 设置</h3>
+            <p>LLM 设置负责 Provider、接口地址、API Key、模型参数和 Smart Echo。生成、格式化和解析已有草稿都会读取这里的配置。</p>
+          </div>
+          <figure class="article-figure">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-3.png" data-title="LLM 设置">
+              <img src="assets/screenshots/settings-3.png" alt="LLM 设置截图">
+            </button>
+            <figcaption>选择 Provider 后，再按对应协议填写 Base URL 和鉴权信息。</figcaption>
           </figure>
-        </div>
+        </section>
       </div>
     </section>
   </main>
@@ -182,6 +229,12 @@ Closes issue
     <span><a href="./">返回首页</a></span>
     <span>© <span data-year></span> FuLinLin</span>
   </footer>
+
+  <dialog class="preview-dialog" data-preview-dialog aria-label="截图预览">
+    <button class="dialog-close" type="button" aria-label="关闭预览" data-dialog-close>×</button>
+    <h2 data-dialog-title>截图预览</h2>
+    <img src="" alt="" data-dialog-image>
+  </dialog>
 
   <script src="app.js"></script>
 </body>
