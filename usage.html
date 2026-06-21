@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>使用引导 | Git Commit Message Helper</title>
+  <meta name="description" content="Git Commit Message Helper 的安装、配置、截图和 LLM 使用引导。">
+  <link rel="canonical" href="https://autismsuperman.github.io/git-commit-message-helper/usage.html">
+  <link rel="icon" href="assets/brand/pluginIcon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/brand/icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <header class="site-header site-header--solid" data-site-header>
+    <a class="brand" href="./" aria-label="Git Commit Message Helper 首页">
+      <img src="assets/brand/pluginIcon.svg" alt="" width="36" height="36">
+      <span>Git Commit Message Helper</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-label="打开导航" aria-expanded="false" data-nav-toggle>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav class="site-nav" aria-label="主导航" data-site-nav>
+      <a href="./#features">功能</a>
+      <a href="#screenshots">截图</a>
+      <a href="usage.html" aria-current="page">使用引导</a>
+      <a href="./#llm">LLM</a>
+      <a class="nav-pill" href="https://plugins.jetbrains.com/plugin/13477-git-commit-message-helper">Marketplace</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="guide-hero" aria-labelledby="guide-page-title">
+      <div class="guide-hero__copy">
+        <p class="eyebrow">Usage guide</p>
+        <h1 id="guide-page-title">安装、配置与日常使用</h1>
+        <p>这份引导覆盖插件安装、提交面板动作、模板配置、提交类型维护、LLM Provider 配置和 Smart Echo 使用方式。</p>
+      </div>
+      <nav class="guide-toc" aria-label="使用引导目录">
+        <a href="#install">安装</a>
+        <a href="#workflow">提交工作流</a>
+        <a href="#settings">配置入口</a>
+        <a href="#llm-setup">LLM 设置</a>
+        <a href="#screenshots">截图说明</a>
+      </nav>
+    </section>
+
+    <section class="guide-section" id="install" aria-labelledby="install-title">
+      <div class="guide-section__label">01</div>
+      <div class="guide-section__content">
+        <h2 id="install-title">安装插件</h2>
+        <p>在 JetBrains IDE 中进入插件市场安装：</p>
+        <ol class="steps">
+          <li>打开 <code>File</code> → <code>Settings</code> → <code>Plugins</code>。</li>
+          <li>进入 <code>Marketplace</code>，搜索 <code>Git Commit Message Helper</code>。</li>
+          <li>点击安装并按 IDE 提示重启。</li>
+        </ol>
+        <a class="button button--dark" href="https://plugins.jetbrains.com/plugin/13477-git-commit-message-helper">打开 JetBrains Marketplace</a>
+      </div>
+    </section>
+
+    <section class="guide-section" id="workflow" aria-labelledby="workflow-guide-title">
+      <div class="guide-section__label">02</div>
+      <div class="guide-section__content">
+        <h2 id="workflow-guide-title">提交面板工作流</h2>
+        <p>插件会在 VCS Commit Message 区域中加入三个动作。它们可以在设置页里单独控制显示或隐藏。</p>
+        <div class="action-table" role="table" aria-label="提交面板动作">
+          <div role="row">
+            <span role="columnheader">动作</span>
+            <span role="columnheader">用途</span>
+          </div>
+          <div role="row">
+            <span role="cell"><code>Generate Commit Message</code></span>
+            <span role="cell">根据当前选中的变更生成提交信息。</span>
+          </div>
+          <div role="row">
+            <span role="cell"><code>Format Commit Message</code></span>
+            <span role="cell">把已有提交草稿重写为符合模板的格式。</span>
+          </div>
+          <div role="row">
+            <span role="cell"><code>Create Commit Message</code></span>
+            <span role="cell">打开结构化编辑窗口，手动填写字段并生成最终提交信息。</span>
+          </div>
+        </div>
+        <figure class="guide-shot">
+          <img src="assets/screenshots/operation.gif" alt="在 IntelliJ 提交面板中使用 Git Commit Message Helper 的操作演示">
+          <figcaption>在提交面板中选择动作，生成、格式化或手动创建提交信息。</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="guide-section" id="settings" aria-labelledby="settings-title">
+      <div class="guide-section__label">03</div>
+      <div class="guide-section__content">
+        <h2 id="settings-title">配置入口</h2>
+        <p>设置入口为 <code>File</code> → <code>Settings</code> → <code>GitCommitMessageHelper</code>。</p>
+        <div class="settings-grid">
+          <article>
+            <h3>通用设置</h3>
+            <p>调整类型展示模式、内联展示数量、隐藏字段、Skip CI 默认值和三个提交动作的显示状态。</p>
+          </article>
+          <article>
+            <h3>提交模板</h3>
+            <p>模板由 Apache Velocity 驱动，可以完全控制最终提交信息的渲染格式。</p>
+          </article>
+          <article>
+            <h3>提交类型</h3>
+            <p>维护团队允许使用的提交类型和描述，例如 feat、fix、docs、style、refactor、test、chore。</p>
+          </article>
+        </div>
+        <pre class="template-sample"><code>type(scope): subject
+
+body
+
+BREAKING CHANGE: changes
+
+Closes issue
+
+[skip ci]</code></pre>
+      </div>
+    </section>
+
+    <section class="guide-section" id="llm-setup" aria-labelledby="llm-setup-title">
+      <div class="guide-section__label">04</div>
+      <div class="guide-section__content">
+        <h2 id="llm-setup-title">LLM Provider 设置</h2>
+        <p>在 LLM 设置页配置 Provider、Base URL、API Key、Model、Temperature、Response Language 和 Smart Echo。</p>
+        <div class="provider-grid provider-grid--guide">
+          <article class="provider">
+            <h3>OpenAI Compatible</h3>
+            <p>适用于提供 Chat Completions 接口的服务。Base URL 可以填写完整接口，也可以填写服务根路径。</p>
+            <ul>
+              <li>完整接口：<code>https://example.com/v1/chat/completions</code></li>
+              <li>服务根路径：<code>https://api.openai.com/v1</code></li>
+            </ul>
+          </article>
+          <article class="provider">
+            <h3>Anthropic</h3>
+            <p>适用于 Anthropic Messages API。Base URL 通常填写 <code>https://api.anthropic.com</code>。</p>
+            <ul>
+              <li>插件会自动调用 <code>/v1/messages</code></li>
+              <li>请求会携带 <code>x-api-key</code> 和 <code>anthropic-version</code></li>
+            </ul>
+          </article>
+        </div>
+        <p><strong>Smart Echo：</strong>当提交面板里已有内容时，打开手动编辑器可以让 LLM 把现有文本解析回 type、scope、subject、body、changes、closes 和 skipCi 等结构化字段。</p>
+      </div>
+    </section>
+
+    <section class="guide-section" id="screenshots" aria-labelledby="screenshots-guide-title">
+      <div class="guide-section__label">05</div>
+      <div class="guide-section__content">
+        <h2 id="screenshots-guide-title">截图说明</h2>
+        <div class="manual-gallery">
+          <figure>
+            <img src="assets/screenshots/settings-0.png" alt="通用设置截图">
+            <figcaption><strong>通用设置：</strong>控制字段、动作和 Skip CI。</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/screenshots/settings-1.png" alt="提交模板设置截图">
+            <figcaption><strong>提交模板：</strong>编辑 Velocity 模板。</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/screenshots/settings-2.png" alt="提交类型设置截图">
+            <figcaption><strong>提交类型：</strong>管理类型和说明。</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/screenshots/settings-3.png" alt="LLM 设置截图">
+            <figcaption><strong>LLM 设置：</strong>配置模型、接口和 Smart Echo。</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>Apache License 2.0</span>
+    <span><a href="./">返回首页</a></span>
+    <span>© <span data-year></span> FuLinLin</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
