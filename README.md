@@ -21,7 +21,7 @@ In the GitHub repository, enable Pages with:
 
 Expected site URL:
 
-`https://www.fulinlin.com/git-commit-message-helper/`
+`https://commit.wangfulin.com/`
 
 The GitHub Pages project URL also redirects from:
 
