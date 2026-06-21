@@ -22,16 +22,26 @@ syncHeader();
 window.addEventListener("scroll", syncHeader, { passive: true });
 
 if (navToggle && siteNav) {
+  const setNavState = (isOpen) => {
+    navToggle.setAttribute("aria-expanded", String(isOpen));
+    siteNav.classList.toggle("is-open", isOpen);
+    document.body.classList.toggle("nav-open", isOpen);
+  };
+
   navToggle.addEventListener("click", () => {
     const nextState = navToggle.getAttribute("aria-expanded") !== "true";
-    navToggle.setAttribute("aria-expanded", String(nextState));
-    siteNav.classList.toggle("is-open", nextState);
+    setNavState(nextState);
   });
 
   siteNav.addEventListener("click", (event) => {
     if (event.target instanceof HTMLAnchorElement) {
-      navToggle.setAttribute("aria-expanded", "false");
-      siteNav.classList.remove("is-open");
+      setNavState(false);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setNavState(false);
     }
   });
 }

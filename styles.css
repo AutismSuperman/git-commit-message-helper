@@ -17,6 +17,7 @@
 }
 
 html {
+  scroll-padding-top: 92px;
   scroll-behavior: smooth;
 }
 
@@ -28,6 +29,8 @@ body {
   font-size: 16px;
   line-height: 1.65;
   letter-spacing: 0;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
 }
 
 body::before {
@@ -59,6 +62,11 @@ code {
   padding: 0.05rem 0.34rem;
   font-family: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
   font-size: 0.92em;
+  overflow-wrap: anywhere;
+}
+
+section[id] {
+  scroll-margin-top: 92px;
 }
 
 .skip-link {
@@ -467,7 +475,7 @@ code {
 .workflow__step p,
 .guide-item p,
 .provider p,
-  .settings-grid p {
+.settings-grid p {
   margin: 0;
   color: rgba(32, 35, 33, 0.74);
 }
@@ -868,6 +876,7 @@ code {
   background: transparent;
   color: inherit;
   padding: 0;
+  white-space: pre-wrap;
 }
 
 .provider-grid--guide {
@@ -875,6 +884,10 @@ code {
 }
 
 @media (max-width: 980px) {
+  body.nav-open {
+    overflow: hidden;
+  }
+
   .site-header {
     padding: 14px 20px;
   }
@@ -894,6 +907,8 @@ code {
     background: rgba(251, 251, 247, 0.98);
     color: var(--ink);
     padding: 0.6rem;
+    max-height: calc(100svh - 92px);
+    overflow-y: auto;
     box-shadow: var(--shadow);
   }
 
@@ -946,21 +961,56 @@ code {
 }
 
 @media (max-width: 720px) {
+  html {
+    scroll-padding-top: 76px;
+  }
+
   body {
     font-size: 15px;
+  }
+
+  body::before {
+    background-size: 32px 32px;
+  }
+
+  section[id] {
+    scroll-margin-top: 76px;
   }
 
   .brand span {
     max-width: 230px;
   }
 
+  .brand img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .nav-toggle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .nav-toggle span:first-child {
+    top: 14px;
+  }
+
+  .nav-toggle span:last-child {
+    top: 23px;
+  }
+
   .hero {
-    min-height: 700px;
+    min-height: 660px;
+    min-height: min(700px, 92svh);
+  }
+
+  .hero__image {
+    object-position: 58% top;
   }
 
   .hero__content {
     width: min(100% - 32px, 1180px);
-    padding: 128px 0 54px;
+    padding: 112px 0 44px;
   }
 
   .hero h1,
@@ -968,10 +1018,28 @@ code {
   .cta h2,
   .guide-hero h1 {
     font-size: 2.6rem;
+    line-height: 1.02;
   }
 
   .hero__lead {
     font-size: 1.04rem;
+    line-height: 1.7;
+  }
+
+  .hero__kicker,
+  .eyebrow {
+    font-size: 0.76rem;
+    line-height: 1.25;
+  }
+
+  .signal-list {
+    gap: 0.48rem;
+    margin-top: 1.45rem;
+  }
+
+  .signal-list li {
+    padding: 0.36rem 0.58rem;
+    font-size: 0.88rem;
   }
 
   .intro-band {
@@ -996,12 +1064,12 @@ code {
   }
 
   .section {
-    padding: 72px 0;
+    padding: 58px 0;
   }
 
   .section--ink {
     width: 100%;
-    padding: 72px 16px;
+    padding: 58px 16px;
   }
 
   .section__heading--split {
@@ -1023,6 +1091,61 @@ code {
     min-height: auto;
   }
 
+  .feature-card,
+  .provider,
+  .settings-grid article {
+    padding: 1rem;
+  }
+
+  .screenshot-article {
+    gap: 2.5rem;
+  }
+
+  .article-block {
+    gap: 1rem;
+    padding-top: 1.35rem;
+  }
+
+  .article-block--compact {
+    margin-top: 1.5rem;
+  }
+
+  .article-copy h3 {
+    font-size: 1.12rem;
+  }
+
+  .article-copy p,
+  .article-lead,
+  .provider li {
+    font-size: 0.95rem;
+  }
+
+  .image-preview img {
+    border-radius: 5px;
+    box-shadow: 0 10px 26px rgba(32, 35, 33, 0.11);
+  }
+
+  .article-figure figcaption,
+  .guide-shot figcaption {
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+
+  .provider ul {
+    padding-left: 1rem;
+  }
+
+  .template-sample,
+  .endpoint-sample {
+    padding: 0.9rem;
+    font-size: 0.86rem;
+  }
+
+  .endpoint-sample code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
   .cta {
     flex-direction: column;
     align-items: flex-start;
@@ -1037,7 +1160,7 @@ code {
   }
 
   .guide-hero {
-    padding: 120px 0 48px;
+    padding: 104px 0 42px;
   }
 
   .guide-section {
@@ -1059,6 +1182,28 @@ code {
     border-right: 0;
     border-bottom: 1px solid rgba(32, 35, 33, 0.1);
   }
+
+  .preview-dialog {
+    width: calc(100% - 18px);
+    max-height: calc(100dvh - 18px);
+    padding: 0.75rem;
+  }
+
+  .preview-dialog h2 {
+    margin: 0 3rem 0.7rem 0;
+    font-size: 1rem;
+  }
+
+  .preview-dialog img {
+    max-height: calc(100dvh - 104px);
+  }
+
+  .dialog-close {
+    top: 0.58rem;
+    right: 0.58rem;
+    width: 34px;
+    height: 34px;
+  }
 }
 
 @media (max-width: 440px) {
@@ -1067,8 +1212,8 @@ code {
   }
 
   .brand span {
-    max-width: 184px;
-    font-size: 0.94rem;
+    max-width: 176px;
+    font-size: 0.9rem;
   }
 
   .hero h1,
@@ -1078,6 +1223,10 @@ code {
     font-size: 2.1rem;
   }
 
+  .guide-section h2 {
+    font-size: 1.86rem;
+  }
+
   .button {
     width: 100%;
   }
@@ -1085,6 +1234,26 @@ code {
   .hero__actions,
   .cta__actions {
     width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .brand span {
+    max-width: 145px;
+  }
+
+  .hero h1,
+  .section h2,
+  .cta h2,
+  .guide-hero h1 {
+    font-size: 1.92rem;
+  }
+
+  .hero__content,
+  .section,
+  .guide-hero,
+  .guide-section {
+    width: min(100% - 24px, 1180px);
   }
 }
 
