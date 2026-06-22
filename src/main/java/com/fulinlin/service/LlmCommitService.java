@@ -50,7 +50,7 @@ public class LlmCommitService {
                                       @NotNull Collection<File> selectedFiles,
                                       @NotNull Consumer<String> onDelta) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
-        generateCommitMessage(settings, gitContext, onDelta);
+        generateCommitMessage(project, settings, gitContext, onDelta);
     }
 
     public void generateCommitMessageForCommit(@NotNull Project project,
@@ -58,17 +58,19 @@ public class LlmCommitService {
                                                @NotNull String commitHash,
                                                @NotNull Consumer<String> onDelta) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collectCommitted(project, commitHash);
-        generateCommitMessage(settings, gitContext, onDelta);
+        generateCommitMessage(project, settings, gitContext, onDelta);
     }
 
-    private void generateCommitMessage(@NotNull GitCommitMessageHelperSettings settings,
+    private void generateCommitMessage(@NotNull Project project,
+                                       @NotNull GitCommitMessageHelperSettings settings,
                                        @NotNull GitContextService.GitContext gitContext,
                                        @NotNull Consumer<String> onDelta) throws IOException {
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
+        String template = settings.getActiveCommitTemplate(project);
         String systemPrompt = GENERATE_SYSTEM_PROMPT;
-        String userPrompt = buildGeneratePrompt(settings, llmSettings, gitContext);
-        onDelta.accept(completeTemplatedCommitMessage(settings, profile, llmSettings, systemPrompt, userPrompt));
+        String userPrompt = buildGeneratePrompt(settings, llmSettings, gitContext, template);
+        onDelta.accept(completeTemplatedCommitMessage(template, profile, llmSettings, systemPrompt, userPrompt));
     }
 
     public void formatCommitMessage(@NotNull Project project,
@@ -78,7 +80,7 @@ public class LlmCommitService {
                                     @NotNull String currentMessage,
                                     @NotNull Consumer<String> onDelta) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
-        formatCommitMessage(settings, gitContext, currentMessage, onDelta);
+        formatCommitMessage(project, settings, gitContext, currentMessage, onDelta);
     }
 
     public void formatCommitMessageForCommit(@NotNull Project project,
@@ -87,18 +89,20 @@ public class LlmCommitService {
                                              @NotNull String currentMessage,
                                              @NotNull Consumer<String> onDelta) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collectCommitted(project, commitHash);
-        formatCommitMessage(settings, gitContext, currentMessage, onDelta);
+        formatCommitMessage(project, settings, gitContext, currentMessage, onDelta);
     }
 
-    private void formatCommitMessage(@NotNull GitCommitMessageHelperSettings settings,
+    private void formatCommitMessage(@NotNull Project project,
+                                     @NotNull GitCommitMessageHelperSettings settings,
                                      @NotNull GitContextService.GitContext gitContext,
                                      @NotNull String currentMessage,
                                      @NotNull Consumer<String> onDelta) throws IOException {
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
+        String template = settings.getActiveCommitTemplate(project);
         String systemPrompt = FORMAT_SYSTEM_PROMPT;
-        String userPrompt = buildFormatPrompt(settings, llmSettings, gitContext, currentMessage);
-        onDelta.accept(completeTemplatedCommitMessage(settings, profile, llmSettings, systemPrompt, userPrompt));
+        String userPrompt = buildFormatPrompt(settings, llmSettings, gitContext, currentMessage, template);
+        onDelta.accept(completeTemplatedCommitMessage(template, profile, llmSettings, systemPrompt, userPrompt));
     }
 
     @NotNull
@@ -108,7 +112,7 @@ public class LlmCommitService {
                                                        @NotNull Collection<File> selectedFiles,
                                                        @NotNull String currentMessage) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
-        return parseCommitMessageToTemplate(settings, gitContext, currentMessage);
+        return parseCommitMessageToTemplate(project, settings, gitContext, currentMessage);
     }
 
     @NotNull
@@ -117,22 +121,25 @@ public class LlmCommitService {
                                                                 @NotNull String commitHash,
                                                                 @NotNull String currentMessage) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collectCommitted(project, commitHash);
-        return parseCommitMessageToTemplate(settings, gitContext, currentMessage);
+        return parseCommitMessageToTemplate(project, settings, gitContext, currentMessage);
     }
 
     @NotNull
-    private CommitTemplate parseCommitMessageToTemplate(@NotNull GitCommitMessageHelperSettings settings,
+    private CommitTemplate parseCommitMessageToTemplate(@NotNull Project project,
+                                                       @NotNull GitCommitMessageHelperSettings settings,
                                                        @NotNull GitContextService.GitContext gitContext,
                                                        @NotNull String currentMessage) throws IOException {
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
+        String template = settings.getActiveCommitTemplate(project);
+        String userPrompt = buildParsePrompt(settings, gitContext, currentMessage, template);
         String response = llmClient.chat(
                 profile,
                 llmSettings,
                 PARSE_SYSTEM_PROMPT,
-                buildParsePrompt(settings, gitContext, currentMessage)
+                userPrompt
         );
-        return parseTemplateResponseWithRetry(profile, llmSettings, PARSE_SYSTEM_PROMPT, buildParsePrompt(settings, gitContext, currentMessage), response);
+        return parseTemplateResponseWithRetry(profile, llmSettings, PARSE_SYSTEM_PROMPT, userPrompt, response);
     }
 
     private void streamSanitized(@NotNull LlmProfile profile,
@@ -168,20 +175,20 @@ public class LlmCommitService {
     }
 
     @NotNull
-    private String completeTemplatedCommitMessage(@NotNull GitCommitMessageHelperSettings settings,
+    private String completeTemplatedCommitMessage(@NotNull String template,
                                                  @NotNull LlmProfile profile,
                                                  @NotNull LlmSettings llmSettings,
                                                  @NotNull String systemPrompt,
                                                  @NotNull String userPrompt) throws IOException {
         CommitTemplate commitTemplate = requestCommitTemplate(profile, llmSettings, systemPrompt, userPrompt);
-        String rendered = renderCommitTemplate(settings, commitTemplate);
+        String rendered = renderCommitTemplate(template, commitTemplate);
         if (!isLowQualityCommitMessage(rendered) && isBodyFormatAcceptable(commitTemplate)) {
             return rendered;
         }
 
         String retryPrompt = buildQualityRetryPrompt(userPrompt, rendered);
         CommitTemplate retryTemplate = requestCommitTemplate(profile, llmSettings, systemPrompt, retryPrompt);
-        String retryRendered = renderCommitTemplate(settings, retryTemplate);
+        String retryRendered = renderCommitTemplate(template, retryTemplate);
         return retryRendered.isEmpty() ? rendered : retryRendered;
     }
 
@@ -283,15 +290,16 @@ public class LlmCommitService {
     @NotNull
     private static String buildGeneratePrompt(@NotNull GitCommitMessageHelperSettings settings,
                                               @NotNull LlmSettings llmSettings,
-                                              @NotNull GitContextService.GitContext gitContext) {
+                                              @NotNull GitContextService.GitContext gitContext,
+                                              @NotNull String template) {
         return "Generate git commit template fields for this project.\n\n"
                 + buildInternalAnalysisInstructions()
                 + "\n\n"
                 + buildTemplateJsonOutputContract(llmSettings)
                 + "\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
-                + "Commit Template Velocity Source:\n" + settings.getDateSettings().getTemplate() + "\n\n"
-                + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
+                + "Commit Template Velocity Source:\n" + template + "\n\n"
+                + "Commit Template Preview:\n" + buildTemplatePreview(template) + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
     }
 
@@ -299,7 +307,8 @@ public class LlmCommitService {
     private static String buildFormatPrompt(@NotNull GitCommitMessageHelperSettings settings,
                                             @NotNull LlmSettings llmSettings,
                                             @NotNull GitContextService.GitContext gitContext,
-                                            @NotNull String currentMessage) {
+                                            @NotNull String currentMessage,
+                                            @NotNull String template) {
         return "Format the current git commit message into the project's commit template fields.\n\n"
                 + buildInternalAnalysisInstructions()
                 + "\n\n"
@@ -310,8 +319,8 @@ public class LlmCommitService {
                 + buildTemplateJsonOutputContract(llmSettings)
                 + "\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
-                + "Commit Template Velocity Source:\n" + settings.getDateSettings().getTemplate() + "\n\n"
-                + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
+                + "Commit Template Velocity Source:\n" + template + "\n\n"
+                + "Commit Template Preview:\n" + buildTemplatePreview(template) + "\n\n"
                 + "Current Commit Message:\n" + currentMessage + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
     }
@@ -319,7 +328,8 @@ public class LlmCommitService {
     @NotNull
     private static String buildParsePrompt(@NotNull GitCommitMessageHelperSettings settings,
                                            @NotNull GitContextService.GitContext gitContext,
-                                           @NotNull String currentMessage) {
+                                           @NotNull String currentMessage,
+                                           @NotNull String template) {
         return "Parse the current git commit message into the project's commit template fields.\n\n"
                 + buildInternalAnalysisInstructions()
                 + "\n\n"
@@ -332,7 +342,7 @@ public class LlmCommitService {
                 + "6. Use empty strings for missing fields.\n"
                 + "7. If body contains multiple details, format it as Markdown bullet lines that each start with \"- \".\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
-                + "Commit Template Preview:\n" + buildTemplatePreview(settings) + "\n\n"
+                + "Commit Template Preview:\n" + buildTemplatePreview(template) + "\n\n"
                 + "Expected JSON Shape:\n"
                 + "{\"type\":\"\",\"scope\":\"\",\"subject\":\"\",\"body\":\"\",\"changes\":\"\",\"closes\":\"\",\"skipCi\":\"\"}\n\n"
                 + "Current Commit Message:\n" + currentMessage + "\n\n"
@@ -408,8 +418,7 @@ public class LlmCommitService {
     }
 
     @NotNull
-    private static String buildTemplatePreview(@NotNull GitCommitMessageHelperSettings settings) {
-        String template = settings.getDateSettings().getTemplate();
+    private static String buildTemplatePreview(@NotNull String template) {
         CommitTemplate commitTemplate = new CommitTemplate();
         commitTemplate.setType("<type>");
         commitTemplate.setScope("<scope>");
@@ -448,9 +457,15 @@ public class LlmCommitService {
     @NotNull
     static String renderCommitTemplate(@NotNull GitCommitMessageHelperSettings settings,
                                        @NotNull CommitTemplate commitTemplate) {
+        return renderCommitTemplate(settings.getActiveCommitTemplate(), commitTemplate);
+    }
+
+    @NotNull
+    static String renderCommitTemplate(@NotNull String template,
+                                       @NotNull CommitTemplate commitTemplate) {
         normalizeCommitTemplate(commitTemplate);
         try {
-            return sanitizeCommitResponse(VelocityUtils.convert(settings.getDateSettings().getTemplate(), commitTemplate));
+            return sanitizeCommitResponse(VelocityUtils.convert(template, commitTemplate));
         } catch (RuntimeException ignored) {
             return sanitizeCommitResponse(buildFallbackCommitMessage(commitTemplate));
         }

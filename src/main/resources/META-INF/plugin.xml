@@ -35,17 +35,19 @@
                                  instance="com.fulinlin.configurable.CentralSettingConfigurable"/>
 
         <applicationConfigurable
-                instance="com.fulinlin.configurable.LlmSettingConfigurable"
-                id="plugins.gitcommitmessagehelper.llm"
-                groupId="plugins.gitcommitmessagehelper"
-                key="setting.configurable.llm"
-                bundle="i18n.info"/>
-
-        <applicationConfigurable
                 instance="com.fulinlin.configurable.TemplateConfigurable"
                 id="plugins.gitcommitmessagehelper.template"
                 groupId="plugins.gitcommitmessagehelper"
+                groupWeight="20"
                 key="setting.configurable.template"
+                bundle="i18n.info"/>
+
+        <applicationConfigurable
+                instance="com.fulinlin.configurable.LlmSettingConfigurable"
+                id="plugins.gitcommitmessagehelper.llm"
+                groupId="plugins.gitcommitmessagehelper"
+                groupWeight="10"
+                key="setting.configurable.llm"
                 bundle="i18n.info"/>
 
     </extensions>

@@ -20,6 +20,7 @@ import java.util.Objects;
 
 public class CommitPanel {
     private final GitCommitMessageHelperSettings settings;
+    private final Project project;
     private JPanel mainPanel;
     private JComboBox<TypeAlias> changeType;
     private JTextField changeScope;
@@ -44,6 +45,7 @@ public class CommitPanel {
 
     public CommitPanel(Project project, GitCommitMessageHelperSettings settings, CommitTemplate commitMessageTemplate) {
         this.settings = settings;
+        this.project = project;
         // Personalized UI configuration
         typeDescriptionLabel.setText(PluginBundle.get("commit.panel.type.field"));
         scopeDescriptionLabel.setText(PluginBundle.get("commit.panel.scope.field"));
@@ -307,6 +309,7 @@ public class CommitPanel {
         }
         return new CommitMessage(
                 settings,
+                settings.getActiveCommitTemplate(project),
                 type,
                 changeScope.getText().trim(),
                 shortDescription.getText().trim(),

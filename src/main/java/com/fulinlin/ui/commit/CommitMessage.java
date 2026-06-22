@@ -15,6 +15,7 @@ public class CommitMessage {
     private final String content;
 
     public CommitMessage(GitCommitMessageHelperSettings settings,
+                         String template,
                          TypeAlias typeAlias,
                          String changeScope,
                          String shortDescription,
@@ -24,7 +25,7 @@ public class CommitMessage {
                          String skipCi
     ) {
         this.content = buildContent(
-                settings,
+                template,
                 typeAlias,
                 changeScope,
                 shortDescription,
@@ -35,7 +36,7 @@ public class CommitMessage {
         );
     }
 
-    private String buildContent(GitCommitMessageHelperSettings settings,
+    private String buildContent(String template,
                                 TypeAlias typeAlias,
                                 String changeScope,
                                 String shortDescription,
@@ -69,7 +70,6 @@ public class CommitMessage {
         if (StringUtils.isNotBlank(skipCi)) {
             commitTemplate.setSkipCi(skipCi);
         }
-        String template = settings.getDateSettings().getTemplate();
         return VelocityUtils.convert(template, commitTemplate);
     }
 

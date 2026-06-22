@@ -4,6 +4,7 @@ import com.fulinlin.constant.GitCommitConstants;
 import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.ActionSettings;
 import com.fulinlin.model.CentralSettings;
+import com.fulinlin.model.CommitTemplateProfile;
 import com.fulinlin.model.DataSettings;
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
@@ -15,6 +16,7 @@ import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 import com.rits.cloning.Cloner;
 import org.jetbrains.annotations.NotNull;
@@ -33,6 +35,8 @@ import java.util.List;
 public class GitCommitMessageHelperSettings implements PersistentStateComponent<GitCommitMessageHelperSettings> {
     private static final double MIN_TEMPERATURE = 0.0D;
     private static final double MAX_TEMPERATURE = 2.0D;
+    private static final String DEFAULT_TEMPLATE_ID = "default";
+    private static final String DEFAULT_TEMPLATE_NAME = "Default";
     private static final Logger log = Logger.getInstance(GitCommitMessageHelperSettings.class);
     private DataSettings dataSettings;
 
@@ -159,6 +163,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         dataSettings = new DataSettings();
         try {
             dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
+            dataSettings.setTemplates(createDefaultCommitTemplateProfiles(GitCommitConstants.DEFAULT_TEMPLATE));
+            dataSettings.setActiveTemplateId(DEFAULT_TEMPLATE_ID);
             List<TypeAlias> typeAliases = createDefaultTypeAliases();
             dataSettings.setTypeAliases(typeAliases);
             List<String> skipCis = getSkipCis();
@@ -172,6 +178,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         if (dataSettings.getTemplate() == null) {
             dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
         }
+        checkDefaultCommitTemplates(dataSettings);
         if (dataSettings.getTypeAliases() == null) {
             List<TypeAlias> typeAliases = createDefaultTypeAliases();
             dataSettings.setTypeAliases(typeAliases);
@@ -216,6 +223,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
 
 
     public void updateTemplate(String template) {
+        CommitTemplateProfile activeTemplate = getActiveCommitTemplateProfile();
+        activeTemplate.setTemplate(template);
         dataSettings.setTemplate(template);
     }
 
@@ -232,6 +241,60 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
 
     public void setCentralSettings(CentralSettings centralSettings) {
         this.centralSettings = centralSettings;
+    }
+
+    @NotNull
+    public CommitTemplateProfile getActiveCommitTemplateProfile() {
+        DataSettings dateSettings = getDateSettings();
+        CommitTemplateProfile activeTemplate = findCommitTemplateProfile(
+                dateSettings.getTemplates(),
+                dateSettings.getActiveTemplateId()
+        );
+        if (activeTemplate == null) {
+            activeTemplate = dateSettings.getTemplates().get(0);
+            dateSettings.setActiveTemplateId(activeTemplate.getId());
+        }
+        return activeTemplate;
+    }
+
+    @NotNull
+    public CommitTemplateProfile getActiveCommitTemplateProfile(@Nullable Project project) {
+        if (project != null) {
+            String projectTemplateId = getProjectTemplateId(project);
+            CommitTemplateProfile projectTemplate = getCommitTemplateProfile(projectTemplateId);
+            if (projectTemplate != null) {
+                return projectTemplate;
+            }
+            DataSettings dateSettings = getDateSettings();
+            if (dateSettings.getTemplates() != null && !dateSettings.getTemplates().isEmpty()) {
+                return dateSettings.getTemplates().get(0);
+            }
+        }
+        return getActiveCommitTemplateProfile();
+    }
+
+    @NotNull
+    public String getActiveCommitTemplate() {
+        return defaultString(getActiveCommitTemplateProfile().getTemplate(), GitCommitConstants.DEFAULT_TEMPLATE);
+    }
+
+    @NotNull
+    public String getActiveCommitTemplate(@Nullable Project project) {
+        return defaultString(getActiveCommitTemplateProfile(project).getTemplate(), GitCommitConstants.DEFAULT_TEMPLATE);
+    }
+
+    @Nullable
+    public CommitTemplateProfile getCommitTemplateProfile(String id) {
+        return findCommitTemplateProfile(getDateSettings().getTemplates(), id);
+    }
+
+    @Nullable
+    private String getProjectTemplateId(@NotNull Project project) {
+        GitCommitMessageStorage storage = project.getService(GitCommitMessageStorage.class);
+        if (storage == null || storage.getState() == null || storage.getState().getMessageStorage() == null) {
+            return null;
+        }
+        return storage.getState().getMessageStorage().getProjectTemplateId();
     }
 
     @Override
@@ -325,6 +388,106 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         if (profile.getModel() == null) {
             profile.setModel("");
         }
+    }
+
+    private void checkDefaultCommitTemplates(@NotNull DataSettings dataSettings) {
+        List<CommitTemplateProfile> templates = dataSettings.getTemplates();
+        if (templates == null || templates.isEmpty()) {
+            templates = createDefaultCommitTemplateProfiles(dataSettings.getTemplate());
+            dataSettings.setTemplates(templates);
+        } else {
+            CommitTemplateProfile defaultTemplate = templates.get(0);
+            if (defaultTemplate == null) {
+                defaultTemplate = createDefaultCommitTemplateProfile(dataSettings.getTemplate());
+                templates.set(0, defaultTemplate);
+            }
+            defaultTemplate.setId(DEFAULT_TEMPLATE_ID);
+            defaultTemplate.setName(DEFAULT_TEMPLATE_NAME);
+            defaultTemplate.setDefaultTemplate(Boolean.TRUE);
+            if (defaultTemplate.getTemplate() == null) {
+                defaultTemplate.setTemplate(defaultString(dataSettings.getTemplate(), GitCommitConstants.DEFAULT_TEMPLATE));
+            }
+            for (int i = 1; i < templates.size(); i++) {
+                CommitTemplateProfile profile = templates.get(i);
+                if (profile == null) {
+                    profile = createCommitTemplateProfile(
+                            createTemplateId(i),
+                            "Template " + (i + 1),
+                            GitCommitConstants.DEFAULT_TEMPLATE,
+                            false
+                    );
+                    templates.set(i, profile);
+                }
+                checkDefaultCommitTemplateProfile(profile, i);
+            }
+        }
+        CommitTemplateProfile activeTemplate = findCommitTemplateProfile(templates, dataSettings.getActiveTemplateId());
+        if (activeTemplate == null) {
+            activeTemplate = templates.get(0);
+            dataSettings.setActiveTemplateId(activeTemplate.getId());
+        }
+        dataSettings.setTemplate(defaultString(activeTemplate.getTemplate(), GitCommitConstants.DEFAULT_TEMPLATE));
+    }
+
+    private static void checkDefaultCommitTemplateProfile(@NotNull CommitTemplateProfile profile, int index) {
+        if (profile.getId() == null || profile.getId().trim().isEmpty() || DEFAULT_TEMPLATE_ID.equals(profile.getId())) {
+            profile.setId(createTemplateId(index));
+        }
+        if (profile.getName() == null || profile.getName().trim().isEmpty() || DEFAULT_TEMPLATE_NAME.equals(profile.getName())) {
+            profile.setName("Template " + (index + 1));
+        }
+        if (profile.getTemplate() == null) {
+            profile.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
+        }
+        profile.setDefaultTemplate(Boolean.FALSE);
+    }
+
+    @NotNull
+    private static List<CommitTemplateProfile> createDefaultCommitTemplateProfiles(String template) {
+        List<CommitTemplateProfile> templates = new LinkedList<>();
+        templates.add(createDefaultCommitTemplateProfile(template));
+        return templates;
+    }
+
+    @NotNull
+    private static CommitTemplateProfile createDefaultCommitTemplateProfile(String template) {
+        return createCommitTemplateProfile(
+                DEFAULT_TEMPLATE_ID,
+                DEFAULT_TEMPLATE_NAME,
+                defaultString(template, GitCommitConstants.DEFAULT_TEMPLATE),
+                true
+        );
+    }
+
+    @NotNull
+    public static CommitTemplateProfile createCommitTemplateProfile(@NotNull String id,
+                                                                    @NotNull String name,
+                                                                    @NotNull String template,
+                                                                    boolean defaultTemplate) {
+        CommitTemplateProfile profile = new CommitTemplateProfile();
+        profile.setId(id);
+        profile.setName(name);
+        profile.setTemplate(template);
+        profile.setDefaultTemplate(defaultTemplate);
+        return profile;
+    }
+
+    @NotNull
+    public static String createTemplateId(int index) {
+        return "template-" + System.currentTimeMillis() + "-" + index;
+    }
+
+    @Nullable
+    private static CommitTemplateProfile findCommitTemplateProfile(List<CommitTemplateProfile> templates, String id) {
+        if (templates == null || id == null) {
+            return null;
+        }
+        for (CommitTemplateProfile template : templates) {
+            if (template != null && id.equals(template.getId())) {
+                return template;
+            }
+        }
+        return null;
     }
 
     private static void syncLegacyLlmFields(@NotNull LlmSettings llmSettings, @NotNull LlmProfile profile) {

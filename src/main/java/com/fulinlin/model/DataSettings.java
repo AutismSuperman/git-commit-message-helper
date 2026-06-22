@@ -1,7 +1,5 @@
 package com.fulinlin.model;
 
-import b.j.S;
-
 import java.util.List;
 
 /**
@@ -11,6 +9,8 @@ import java.util.List;
  **/
 public class DataSettings {
     private String template;
+    private List<CommitTemplateProfile> templates;
+    private String activeTemplateId;
     private List<TypeAlias> typeAliases;
     private List<String> skipCis;
 
@@ -20,6 +20,22 @@ public class DataSettings {
 
     public void setTemplate(String template) {
         this.template = template;
+    }
+
+    public List<CommitTemplateProfile> getTemplates() {
+        return templates;
+    }
+
+    public void setTemplates(List<CommitTemplateProfile> templates) {
+        this.templates = templates;
+    }
+
+    public String getActiveTemplateId() {
+        return activeTemplateId;
+    }
+
+    public void setActiveTemplateId(String activeTemplateId) {
+        this.activeTemplateId = activeTemplateId;
     }
 
     public List<TypeAlias> getTypeAliases() {

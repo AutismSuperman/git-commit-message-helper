@@ -3,7 +3,9 @@ package com.fulinlin.ui.setting;
 import com.fulinlin.constant.GitCommitConstants;
 import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.CommitTemplate;
+import com.fulinlin.model.CommitTemplateProfile;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
+import com.fulinlin.storage.GitCommitMessageStorage;
 import com.fulinlin.ui.setting.description.DescriptionRead;
 import com.fulinlin.utils.VelocityUtils;
 import com.intellij.icons.AllIcons;
@@ -17,8 +19,11 @@ import com.intellij.openapi.editor.event.DocumentEvent;
 import com.intellij.openapi.editor.event.DocumentListener;
 import com.intellij.openapi.editor.ex.EditorEx;
 import com.intellij.openapi.fileTypes.FileTypeManager;
-import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.ui.*;
+import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.util.ui.JBHtmlEditorKit;
 import com.intellij.util.ui.JBUI;
@@ -28,15 +33,24 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.util.Optional;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 
 
 public class TemplateEditPanel implements Disposable {
     private final AliasTable aliasTable;
     private final Editor templateEditor;
-    private final EditorTextField previewEditor;
+    private final JTextArea previewTextArea;
     private final JEditorPane myDescriptionComponent;
+    private final DefaultListModel<CommitTemplateProfile> templateListModel;
+    private final JBList<CommitTemplateProfile> templateList;
+    private final JComboBox<CommitTemplateProfile> globalDefaultTemplateComboBox;
+    private final JComboBox<CommitTemplateProfile> projectDefaultTemplateComboBox;
+    private final Project currentProject;
     protected GitCommitMessageHelperSettings settings;
+    private CommitTemplateProfile displayedTemplate;
+    private boolean loadingTemplateSelection;
     private JPanel mainPanel;
     private JPanel templatePanel;
     private JPanel typeEditPanel;
@@ -60,6 +74,11 @@ public class TemplateEditPanel implements Disposable {
     public TemplateEditPanel(GitCommitMessageHelperSettings settings) {
         //Get setting
         this.settings = settings.clone();
+        templateListModel = new DefaultListModel<>();
+        templateList = new JBList<>(templateListModel);
+        globalDefaultTemplateComboBox = new JComboBox<>();
+        projectDefaultTemplateComboBox = new JComboBox<>();
+        currentProject = findCurrentProject();
 
         // Init  description 
         description.setText(PluginBundle.get("setting.description"));
@@ -78,9 +97,10 @@ public class TemplateEditPanel implements Disposable {
         myDescriptionComponent.addHyperlinkListener(new BrowserHyperlinkListener());
         myDescriptionComponent.setCaretPosition(0);
         descriptionPanel.add(createDescriptionScrollPane(), BorderLayout.CENTER);
+        configureTemplateList();
+        configureDefaultTemplateControls();
 
         // Init  templatePanel
-        String template = Optional.of(settings.getDateSettings().getTemplate()).orElse("");
         templateEditor = EditorFactory.getInstance().createEditor(
                 EditorFactory.getInstance().createDocument(""),
                 null,
@@ -99,19 +119,20 @@ public class TemplateEditPanel implements Disposable {
         templatePanel.add(templateEditor.getComponent(), BorderLayout.CENTER);
 
         // Init previewPanel
-        previewEditor = new EditorTextField();
-        previewEditor.setViewer(true);
-        previewEditor.setOneLineMode(false);
-        previewEditor.ensureWillComputePreferredSize();
-        previewEditor.addSettingsProvider(uEditor -> {
-            uEditor.setVerticalScrollbarVisible(false);
-            uEditor.setHorizontalScrollbarVisible(false);
-            uEditor.setBorder(null);
-            uEditor.getSettings().setUseSoftWraps(true);
-        });
-        JBScrollPane previewScrollPane = new JBScrollPane(previewEditor.getComponent());
+        previewTextArea = new JTextArea();
+        previewTextArea.setEditable(false);
+        previewTextArea.setFocusable(false);
+        previewTextArea.setLineWrap(true);
+        previewTextArea.setWrapStyleWord(false);
+        previewTextArea.setRows(9);
+        previewTextArea.setBorder(JBUI.Borders.empty(6, 8));
+        previewTextArea.setFont(templateEditor.getContentComponent().getFont());
+        JBScrollPane previewScrollPane = new JBScrollPane(previewTextArea);
+        previewScrollPane.setBorder(JBUI.Borders.empty());
+        previewScrollPane.setViewportBorder(JBUI.Borders.empty());
         previewScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         previewScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        previewScrollPane.getVerticalScrollBar().setUnitIncrement(JBUI.scale(16));
         previewPanel.add(previewScrollPane, BorderLayout.CENTER);
         templateEditor.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -145,9 +166,9 @@ public class TemplateEditPanel implements Disposable {
 
         // Init data
         ApplicationManager.getApplication().runWriteAction(() -> {
-            templateEditor.getDocument().setText(template);
             myDescriptionComponent.setText(DescriptionRead.readHtmlFile());
         });
+        reloadTemplateList();
         restoreDefaultsButton.addActionListener(e -> {
             ApplicationManager.getApplication().runWriteAction(() -> {
                 templateEditor.getDocument().setText(GitCommitConstants.DEFAULT_TEMPLATE);
@@ -161,6 +182,247 @@ public class TemplateEditPanel implements Disposable {
                 return aliasTable.editAlias();
             }
         }.installOn(aliasTable);
+        new DoubleClickListener() {
+            @Override
+            protected boolean onDoubleClick(@NotNull MouseEvent e) {
+                renameSelectedTemplate();
+                return true;
+            }
+        }.installOn(templateList);
+    }
+
+    private void configureTemplateList() {
+        templateList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        templateList.setCellRenderer(new TemplateListCellRenderer());
+        templateList.addListSelectionListener(e -> {
+            if (e.getValueIsAdjusting() || loadingTemplateSelection) {
+                return;
+            }
+            commitDisplayedTemplate();
+            loadSelectedTemplate();
+        });
+    }
+
+    private void configureDefaultTemplateControls() {
+        TemplateListCellRenderer renderer = new TemplateListCellRenderer();
+        globalDefaultTemplateComboBox.setRenderer(renderer);
+        projectDefaultTemplateComboBox.setRenderer(renderer);
+        projectDefaultTemplateComboBox.setEnabled(currentProject != null);
+    }
+
+    private void reloadTemplateList() {
+        loadingTemplateSelection = true;
+        templateListModel.clear();
+        List<CommitTemplateProfile> templates = settings.getDateSettings().getTemplates();
+        for (CommitTemplateProfile template : templates) {
+            templateListModel.addElement(template);
+        }
+        CommitTemplateProfile activeTemplate = settings.getActiveCommitTemplateProfile();
+        int activeIndex = 0;
+        for (int i = 0; i < templateListModel.size(); i++) {
+            if (Objects.equals(templateListModel.getElementAt(i).getId(), activeTemplate.getId())) {
+                activeIndex = i;
+                break;
+            }
+        }
+        if (!templateListModel.isEmpty()) {
+            templateList.setSelectedIndex(activeIndex);
+        }
+        loadingTemplateSelection = false;
+        refreshDefaultTemplateComboModels();
+        loadSelectedTemplate();
+    }
+
+    private void refreshDefaultTemplateComboModels() {
+        String globalTemplateId = getSelectedTemplateId(globalDefaultTemplateComboBox);
+        if (globalTemplateId == null) {
+            globalTemplateId = settings.getDateSettings().getActiveTemplateId();
+        }
+        String projectTemplateId = getSelectedTemplateId(projectDefaultTemplateComboBox);
+        if (projectTemplateId == null) {
+            projectTemplateId = getEffectiveProjectTemplateId();
+        }
+
+        globalDefaultTemplateComboBox.removeAllItems();
+        projectDefaultTemplateComboBox.removeAllItems();
+        for (int i = 0; i < templateListModel.size(); i++) {
+            CommitTemplateProfile template = templateListModel.getElementAt(i);
+            globalDefaultTemplateComboBox.addItem(template);
+            projectDefaultTemplateComboBox.addItem(template);
+        }
+
+        selectTemplate(globalDefaultTemplateComboBox, globalTemplateId);
+        selectTemplate(projectDefaultTemplateComboBox, projectTemplateId);
+    }
+
+    private String getSelectedTemplateId(JComboBox<CommitTemplateProfile> comboBox) {
+        CommitTemplateProfile selectedTemplate = (CommitTemplateProfile) comboBox.getSelectedItem();
+        return selectedTemplate == null ? null : selectedTemplate.getId();
+    }
+
+    private void selectTemplate(JComboBox<CommitTemplateProfile> comboBox, String templateId) {
+        if (templateId != null) {
+            for (int i = 0; i < comboBox.getItemCount(); i++) {
+                CommitTemplateProfile template = comboBox.getItemAt(i);
+                if (Objects.equals(templateId, template.getId())) {
+                    comboBox.setSelectedIndex(i);
+                    return;
+                }
+            }
+        }
+        if (comboBox.getItemCount() > 0) {
+            comboBox.setSelectedIndex(0);
+        }
+    }
+
+    private String getProjectTemplateId() {
+        GitCommitMessageStorage storage = getProjectStorage();
+        if (storage == null || storage.getState() == null || storage.getState().getMessageStorage() == null) {
+            return null;
+        }
+        return storage.getState().getMessageStorage().getProjectTemplateId();
+    }
+
+    private String getEffectiveProjectTemplateId() {
+        String projectTemplateId = getProjectTemplateId();
+        if (projectTemplateId != null && findTemplateInList(projectTemplateId) != null) {
+            return projectTemplateId;
+        }
+        return templateListModel.isEmpty() ? null : templateListModel.getElementAt(0).getId();
+    }
+
+    private CommitTemplateProfile findTemplateInList(String templateId) {
+        if (templateId == null) {
+            return null;
+        }
+        for (int i = 0; i < templateListModel.size(); i++) {
+            CommitTemplateProfile template = templateListModel.getElementAt(i);
+            if (Objects.equals(templateId, template.getId())) {
+                return template;
+            }
+        }
+        return null;
+    }
+
+    private GitCommitMessageStorage getProjectStorage() {
+        return currentProject == null ? null : currentProject.getService(GitCommitMessageStorage.class);
+    }
+
+    private Project findCurrentProject() {
+        Project[] openProjects = ProjectManager.getInstance().getOpenProjects();
+        return openProjects.length == 0 ? null : openProjects[0];
+    }
+
+    private void loadSelectedTemplate() {
+        CommitTemplateProfile selectedTemplate = templateList.getSelectedValue();
+        if (selectedTemplate == null) {
+            displayedTemplate = null;
+            return;
+        }
+        displayedTemplate = selectedTemplate;
+        settings.getDateSettings().setActiveTemplateId(selectedTemplate.getId());
+        ApplicationManager.getApplication().runWriteAction(() ->
+                templateEditor.getDocument().setText(defaultString(selectedTemplate.getTemplate()))
+        );
+        showPreview();
+    }
+
+    private void commitDisplayedTemplate() {
+        if (displayedTemplate != null) {
+            displayedTemplate.setTemplate(templateEditor.getDocument().getText());
+        }
+    }
+
+    private void addTemplate() {
+        commitDisplayedTemplate();
+        int index = templateListModel.size();
+        CommitTemplateProfile template = GitCommitMessageHelperSettings.createCommitTemplateProfile(
+                GitCommitMessageHelperSettings.createTemplateId(index),
+                createTemplateName(PluginBundle.get("setting.template.new.name")),
+                GitCommitConstants.DEFAULT_TEMPLATE,
+                false
+        );
+        templateListModel.addElement(template);
+        refreshDefaultTemplateComboModels();
+        templateList.setSelectedIndex(templateListModel.size() - 1);
+    }
+
+    private void removeSelectedTemplate() {
+        CommitTemplateProfile selectedTemplate = templateList.getSelectedValue();
+        if (selectedTemplate == null) {
+            return;
+        }
+        if (selectedTemplate.isDefaultTemplate()) {
+            Messages.showWarningDialog(
+                    mainPanel,
+                    PluginBundle.get("setting.template.default.remove.warning"),
+                    PluginBundle.get("setting.configurable.template")
+            );
+            return;
+        }
+        commitDisplayedTemplate();
+        int selectedIndex = templateList.getSelectedIndex();
+        loadingTemplateSelection = true;
+        templateListModel.remove(selectedIndex);
+        int nextIndex = Math.min(selectedIndex, templateListModel.size() - 1);
+        if (nextIndex >= 0) {
+            templateList.setSelectedIndex(nextIndex);
+        }
+        loadingTemplateSelection = false;
+        refreshDefaultTemplateComboModels();
+        loadSelectedTemplate();
+    }
+
+    private void renameSelectedTemplate() {
+        CommitTemplateProfile selectedTemplate = templateList.getSelectedValue();
+        if (selectedTemplate == null) {
+            return;
+        }
+        if (selectedTemplate.isDefaultTemplate()) {
+            Messages.showWarningDialog(
+                    mainPanel,
+                    PluginBundle.get("setting.template.default.rename.warning"),
+                    PluginBundle.get("setting.configurable.template")
+            );
+            return;
+        }
+        String name = Messages.showInputDialog(
+                mainPanel,
+                PluginBundle.get("setting.template.rename.message"),
+                PluginBundle.get("setting.template.rename.title"),
+                null,
+                selectedTemplate.getName(),
+                null
+        );
+        if (name == null || name.trim().isEmpty()) {
+            return;
+        }
+        selectedTemplate.setName(createTemplateName(name.trim(), selectedTemplate));
+        refreshDefaultTemplateComboModels();
+        templateList.repaint();
+    }
+
+    private String createTemplateName(String baseName) {
+        return createTemplateName(baseName, null);
+    }
+
+    private String createTemplateName(String baseName, CommitTemplateProfile ignoredTemplate) {
+        String name = baseName;
+        int counter = 2;
+        while (containsTemplateName(name, ignoredTemplate)) {
+            name = baseName + " " + counter++;
+        }
+        return name;
+    }
+
+    private boolean containsTemplateName(String name, CommitTemplateProfile ignoredTemplate) {
+        for (int i = 0; i < templateListModel.size(); i++) {
+            CommitTemplateProfile template = templateListModel.getElementAt(i);
+            if (template != ignoredTemplate && name.equals(template.getName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void showPreview() {
@@ -186,27 +448,25 @@ public class TemplateEditPanel implements Disposable {
         if (skipCiCheckBox.isSelected()) {
             commitTemplate.setSkipCi("<skipCi>");
         }
-        ApplicationManager.getApplication().runWriteAction(() -> {
-            String previewTemplate = templateEditor.getDocument().getText();
-            previewEditor.getDocument().setText(VelocityUtils.convert(previewTemplate, commitTemplate));
-        });
+        String previewTemplate = templateEditor.getDocument().getText();
+        String previewText = VelocityUtils.convert(previewTemplate, commitTemplate);
+        previewTextArea.setText(previewText);
+        previewTextArea.setCaretPosition(0);
+        previewPanel.revalidate();
     }
 
 
     public GitCommitMessageHelperSettings getSettings() {
         aliasTable.commit(settings);
-        settings.getDateSettings().setTemplate(templateEditor.getDocument().getText());
+        syncTemplateListToSettings(true);
         return settings;
     }
 
     public void reset(GitCommitMessageHelperSettings settings) {
         this.settings = settings.clone();
         aliasTable.reset(settings);
-        ApplicationManager.getApplication().runWriteAction(() ->
-                templateEditor.getDocument().setText(settings.getDateSettings().getTemplate())
-        );
         myDescriptionComponent.setText(DescriptionRead.readHtmlFile());
-        showPreview();
+        reloadTemplateList();
     }
 
     public boolean isSettingsModified(GitCommitMessageHelperSettings settings) {
@@ -215,14 +475,46 @@ public class TemplateEditPanel implements Disposable {
     }
 
     public boolean isModified(GitCommitMessageHelperSettings data) {
-        if (!StringUtil.equals(settings.getDateSettings().getTemplate(), templateEditor.getDocument().getText())) {
+        syncTemplateListToSettings(false);
+        if (!Objects.equals(settings.getDateSettings().getTemplates(), data.getDateSettings().getTemplates())) {
             return true;
         }
-        return settings.getDateSettings().getTypeAliases() == data.getDateSettings().getTypeAliases();
+        if (!Objects.equals(settings.getDateSettings().getActiveTemplateId(), data.getDateSettings().getActiveTemplateId())) {
+            return true;
+        }
+        return currentProject != null
+                && !Objects.equals(getSelectedTemplateId(projectDefaultTemplateComboBox), getEffectiveProjectTemplateId());
     }
 
     public JPanel getMainPanel() {
         return mainPanel;
+    }
+
+    private void syncTemplateListToSettings(boolean persistProjectDefault) {
+        commitDisplayedTemplate();
+        List<CommitTemplateProfile> templates = new LinkedList<>();
+        for (int i = 0; i < templateListModel.size(); i++) {
+            templates.add(templateListModel.getElementAt(i));
+        }
+        settings.getDateSettings().setTemplates(templates);
+        CommitTemplateProfile globalDefaultTemplate = (CommitTemplateProfile) globalDefaultTemplateComboBox.getSelectedItem();
+        if (globalDefaultTemplate == null && !templates.isEmpty()) {
+            globalDefaultTemplate = templates.get(0);
+        }
+        if (globalDefaultTemplate != null) {
+            settings.getDateSettings().setActiveTemplateId(globalDefaultTemplate.getId());
+            settings.getDateSettings().setTemplate(defaultString(globalDefaultTemplate.getTemplate()));
+        }
+        CommitTemplateProfile projectDefaultTemplate = (CommitTemplateProfile) projectDefaultTemplateComboBox.getSelectedItem();
+        GitCommitMessageStorage projectStorage = getProjectStorage();
+        if (persistProjectDefault && projectStorage != null && projectStorage.getState() != null && projectStorage.getState().getMessageStorage() != null) {
+            if (projectDefaultTemplate == null && !templates.isEmpty()) {
+                projectDefaultTemplate = templates.get(0);
+            }
+            projectStorage.getState().getMessageStorage().setProjectTemplateId(
+                    projectDefaultTemplate == null ? null : projectDefaultTemplate.getId()
+            );
+        }
     }
 
     private void relayoutTemplateTab() {
@@ -234,7 +526,7 @@ public class TemplateEditPanel implements Disposable {
         description.setForeground(UIUtil.getContextHelpForeground());
         description.setBorder(JBUI.Borders.emptyBottom(4));
 
-        JPanel contentPanel = new JPanel() {
+        JPanel contentPanel = new JPanel(new BorderLayout(0, JBUI.scale(8))) {
             @Override
             public Dimension getPreferredSize() {
                 Dimension preferredSize = super.getPreferredSize();
@@ -245,43 +537,135 @@ public class TemplateEditPanel implements Disposable {
                 return preferredSize;
             }
         };
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setOpaque(false);
         contentPanel.setBorder(JBUI.Borders.empty(12, 16, 16, 16));
-
-        contentPanel.add(description);
-        contentPanel.add(Box.createVerticalStrut(JBUI.scale(8)));
-        contentPanel.add(createTemplateWorkspacePanel());
-        contentPanel.add(Box.createVerticalStrut(JBUI.scale(12)));
-        contentPanel.add(createSectionPanel(descriptionLabel, descriptionPanel, null, JBUI.scale(270)));
+        contentPanel.add(createHeaderPanel(), BorderLayout.NORTH);
+        contentPanel.add(createTemplateWorkspacePanel(), BorderLayout.CENTER);
 
         JBScrollPane scrollPane = new JBScrollPane(contentPanel);
         scrollPane.setBorder(JBUI.Borders.empty());
+        scrollPane.setViewportBorder(JBUI.Borders.empty());
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getViewport().setOpaque(false);
         scrollPane.getVerticalScrollBar().setUnitIncrement(JBUI.scale(16));
-        scrollPane.getHorizontalScrollBar().setUnitIncrement(JBUI.scale(16));
-
         templateTab.add(scrollPane, BorderLayout.CENTER);
         templateTab.revalidate();
         templateTab.repaint();
     }
 
+    private JComponent createHeaderPanel() {
+        JPanel headerPanel = new JPanel(new BorderLayout(0, JBUI.scale(8)));
+        headerPanel.setOpaque(false);
+        headerPanel.add(description, BorderLayout.NORTH);
+        headerPanel.add(createDefaultTemplatePanel(), BorderLayout.CENTER);
+        return headerPanel;
+    }
+
+    private JComponent createDefaultTemplatePanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = JBUI.insets(0, 0, 8, 8);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel(PluginBundle.get("setting.template.global.default")), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0.5;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(globalDefaultTemplateComboBox, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel(PluginBundle.get("setting.template.project.default")), gbc);
+
+        gbc.gridx = 3;
+        gbc.weightx = 0.5;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(projectDefaultTemplateComboBox, gbc);
+
+        gbc.gridx = 4;
+        gbc.weightx = 1;
+        panel.add(Box.createHorizontalGlue(), gbc);
+        return panel;
+    }
+
     private JComponent createTemplateWorkspacePanel() {
+        JPanel templateDirectorySection = createTemplateDirectorySection();
         JPanel templateSection = createSectionPanel(templateLabel, templatePanel, restoreDefaultsButton, 0);
         JPanel previewSection = createPreviewSection();
+        JPanel descriptionSection = createSectionPanel(descriptionLabel, descriptionPanel, null, 0);
+        int leftWidth = JBUI.scale(320);
+        templateDirectorySection.setMinimumSize(new Dimension(leftWidth, JBUI.scale(320)));
+        templateDirectorySection.setPreferredSize(new Dimension(leftWidth, JBUI.scale(760)));
         templateSection.setMinimumSize(new Dimension(JBUI.scale(480), JBUI.scale(260)));
-        previewSection.setMinimumSize(new Dimension(JBUI.scale(280), JBUI.scale(260)));
+        previewSection.setMinimumSize(new Dimension(JBUI.scale(320), JBUI.scale(320)));
+        descriptionSection.setMinimumSize(new Dimension(JBUI.scale(320), JBUI.scale(260)));
 
-        OnePixelSplitter splitter = new OnePixelSplitter(false, 0.62f);
-        splitter.setFirstComponent(templateSection);
-        splitter.setSecondComponent(previewSection);
-        splitter.setHonorComponentsMinimumSize(true);
-        splitter.setAlignmentX(Component.LEFT_ALIGNMENT);
-        splitter.setBorder(JBUI.Borders.empty());
-        splitter.setOpaque(false);
-        splitter.setPreferredSize(new Dimension(0, JBUI.scale(460)));
-        splitter.setMaximumSize(new Dimension(Integer.MAX_VALUE, JBUI.scale(460)));
-        return splitter;
+        JPanel rightPanel = new JPanel(new GridBagLayout());
+        rightPanel.setOpaque(false);
+        GridBagConstraints rightGbc = new GridBagConstraints();
+        rightGbc.gridx = 0;
+        rightGbc.fill = GridBagConstraints.BOTH;
+        rightGbc.weightx = 1;
+        rightGbc.insets = JBUI.insets(0);
+
+        rightGbc.gridy = 0;
+        rightGbc.weighty = 0.35;
+        rightPanel.add(templateSection, rightGbc);
+
+        rightGbc.gridy = 1;
+        rightGbc.weighty = 0.42;
+        rightGbc.insets = JBUI.insetsTop(14);
+        rightPanel.add(previewSection, rightGbc);
+
+        rightGbc.gridy = 2;
+        rightGbc.weighty = 0.23;
+        rightGbc.insets = JBUI.insetsTop(10);
+        rightPanel.add(descriptionSection, rightGbc);
+
+        JPanel workspacePanel = new JPanel(new GridBagLayout());
+        workspacePanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.BOTH;
+
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        gbc.weighty = 1;
+        gbc.insets = JBUI.insets(0);
+        workspacePanel.add(templateDirectorySection, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        gbc.insets = JBUI.insetsLeft(16);
+        workspacePanel.add(rightPanel, gbc);
+
+        workspacePanel.setPreferredSize(new Dimension(0, JBUI.scale(980)));
+        return workspacePanel;
+    }
+
+    private JPanel createTemplateDirectorySection() {
+        JComponent templateListPanel = ToolbarDecorator.createDecorator(templateList)
+                .setAddAction(button -> addTemplate())
+                .setRemoveAction(button -> removeSelectedTemplate())
+                .setEditAction(button -> renameSelectedTemplate())
+                .disableUpDownActions()
+                .createPanel();
+
+        JPanel sectionPanel = new JPanel(new BorderLayout(0, JBUI.scale(8)));
+        sectionPanel.setOpaque(false);
+        JLabel titleLabel = new JLabel(PluginBundle.get("setting.template.list"));
+        titleLabel.setBorder(JBUI.Borders.emptyBottom(4));
+        sectionPanel.add(titleLabel, BorderLayout.NORTH);
+        sectionPanel.add(templateListPanel, BorderLayout.CENTER);
+        return sectionPanel;
     }
 
     private JPanel createPreviewSection() {
@@ -322,27 +706,34 @@ public class TemplateEditPanel implements Disposable {
             removeFromParent(trailingOrTopContent);
         }
 
-        JPanel sectionPanel = new JPanel(new BorderLayout(0, JBUI.scale(8)));
-        sectionPanel.setBorder(IdeBorderFactory.createTitledBorder(titleLabel.getText(), false));
+        JPanel sectionPanel = new JPanel(new BorderLayout(0, JBUI.scale(4)));
         sectionPanel.setOpaque(false);
 
+        JPanel titlePanel = new JPanel(new BorderLayout(JBUI.scale(8), 0));
+        titlePanel.setOpaque(false);
+        titlePanel.add(titleLabel, BorderLayout.WEST);
         if (trailingOrTopContent instanceof JButton) {
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
             buttonPanel.setOpaque(false);
             buttonPanel.add(trailingOrTopContent);
-            sectionPanel.add(buttonPanel, BorderLayout.NORTH);
+            titlePanel.add(buttonPanel, BorderLayout.EAST);
         }
+        sectionPanel.add(titlePanel, BorderLayout.NORTH);
 
-        JComponent centerContent = content;
+        JPanel contentBox = new JPanel(new BorderLayout());
+        contentBox.setOpaque(false);
+        contentBox.setBorder(IdeBorderFactory.createBorder());
+        contentBox.add(content, BorderLayout.CENTER);
+
+        JComponent centerContent = contentBox;
         if (trailingOrTopContent != null && !(trailingOrTopContent instanceof JButton)) {
             JPanel contentPanel = new JPanel(new BorderLayout(0, JBUI.scale(4)));
             contentPanel.setOpaque(false);
             contentPanel.add(trailingOrTopContent, BorderLayout.NORTH);
-            contentPanel.add(content, BorderLayout.CENTER);
+            contentPanel.add(contentBox, BorderLayout.CENTER);
             centerContent = contentPanel;
         }
 
-        centerContent.setBorder(JBUI.Borders.empty(6, 8, 8, 8));
         sectionPanel.add(centerContent, BorderLayout.CENTER);
         sectionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         if (preferredHeight > 0) {
@@ -358,6 +749,25 @@ public class TemplateEditPanel implements Disposable {
         Container parent = component.getParent();
         if (parent != null) {
             parent.remove(component);
+        }
+    }
+
+    private static String defaultString(String value) {
+        return value == null ? "" : value;
+    }
+
+    private static class TemplateListCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list,
+                                                      Object value,
+                                                      int index,
+                                                      boolean isSelected,
+                                                      boolean cellHasFocus) {
+            Object displayValue = value;
+            if (value instanceof CommitTemplateProfile) {
+                displayValue = ((CommitTemplateProfile) value).getName();
+            }
+            return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
         }
     }
 
