@@ -601,9 +601,8 @@ public class TemplateEditPanel implements Disposable {
         JPanel templateSection = createSectionPanel(templateLabel, templatePanel, restoreDefaultsButton, 0);
         JPanel previewSection = createPreviewSection();
         JPanel descriptionSection = createSectionPanel(descriptionLabel, descriptionPanel, null, 0);
-        int leftWidth = JBUI.scale(320);
-        templateDirectorySection.setMinimumSize(new Dimension(leftWidth, JBUI.scale(320)));
-        templateDirectorySection.setPreferredSize(new Dimension(leftWidth, JBUI.scale(760)));
+        templateDirectorySection.setMinimumSize(new Dimension(JBUI.scale(220), JBUI.scale(320)));
+        templateDirectorySection.setPreferredSize(new Dimension(JBUI.scale(320), JBUI.scale(760)));
         templateSection.setMinimumSize(new Dimension(JBUI.scale(480), JBUI.scale(260)));
         previewSection.setMinimumSize(new Dimension(JBUI.scale(320), JBUI.scale(320)));
         descriptionSection.setMinimumSize(new Dimension(JBUI.scale(320), JBUI.scale(260)));
@@ -630,25 +629,18 @@ public class TemplateEditPanel implements Disposable {
         rightGbc.insets = JBUI.insetsTop(10);
         rightPanel.add(descriptionSection, rightGbc);
 
-        JPanel workspacePanel = new JPanel(new GridBagLayout());
-        workspacePanel.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridy = 0;
-        gbc.fill = GridBagConstraints.BOTH;
+        JPanel rightWrapper = new JPanel(new BorderLayout());
+        rightWrapper.setOpaque(false);
+        rightWrapper.setBorder(JBUI.Borders.emptyLeft(16));
+        rightWrapper.add(rightPanel, BorderLayout.CENTER);
 
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.weighty = 1;
-        gbc.insets = JBUI.insets(0);
-        workspacePanel.add(templateDirectorySection, gbc);
-
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        gbc.insets = JBUI.insetsLeft(16);
-        workspacePanel.add(rightPanel, gbc);
-
-        workspacePanel.setPreferredSize(new Dimension(0, JBUI.scale(980)));
-        return workspacePanel;
+        OnePixelSplitter workspaceSplitter = new OnePixelSplitter(false, 0.29f, 0.18f, 0.55f);
+        workspaceSplitter.setOpaque(false);
+        workspaceSplitter.setSplitterProportionKey("GitCommitMessageHelper.TemplateSettings.Splitter");
+        workspaceSplitter.setFirstComponent(templateDirectorySection);
+        workspaceSplitter.setSecondComponent(rightWrapper);
+        workspaceSplitter.setPreferredSize(new Dimension(0, JBUI.scale(980)));
+        return workspaceSplitter;
     }
 
     private JPanel createTemplateDirectorySection() {
