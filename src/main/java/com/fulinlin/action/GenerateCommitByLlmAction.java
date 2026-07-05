@@ -19,9 +19,11 @@ import icons.PluginIcons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.*;
+
 public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
 
-    private final GitCommitMessageHelperSettings settings;
+    protected final GitCommitMessageHelperSettings settings;
     private final LlmCommitService llmCommitService = new LlmCommitService();
     private volatile boolean loading;
 
@@ -55,6 +57,11 @@ public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
             return;
         }
 
+        String additionalContext = getAdditionalContext(project, commitPanel);
+        if (additionalContext == null) {
+            return;
+        }
+
         String originalMessage = CommitPanelActionSupport.getCurrentCommitMessage(commitPanel);
         loading = true;
         updateLoadingPresentation(actionEvent, true);
@@ -73,6 +80,7 @@ public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
                                 project,
                                 settings,
                                 historicalCommitHash,
+                                additionalContext,
                                 delta -> {
                                     indicator.checkCanceled();
                                     builder.append(delta);
@@ -85,6 +93,7 @@ public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
                                 settings,
                                 commitContext.getSelectedChanges(),
                                 commitContext.getSelectedFiles(),
+                                additionalContext,
                                 delta -> {
                                     indicator.checkCanceled();
                                     builder.append(delta);
@@ -114,13 +123,31 @@ public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
         });
     }
 
+    /**
+     * @return additional user context to include in the generation prompt, an empty string for none,
+     * or {@code null} when generation should be cancelled before it starts.
+     */
+    @Nullable
+    protected String getAdditionalContext(@NotNull Project project, @NotNull CommitMessageI commitPanel) {
+        return "";
+    }
+
     @Override
     public void update(@Nullable AnActionEvent e) {
-        boolean visible = settings.getCentralSettings().getActionSettings().getGenerateCommitActionVisible();
+        boolean visible = isActionVisible();
         CommitPanelActionSupport.updatePresentation(e, visible);
         if (e != null) {
             updateLoadingPresentation(e, loading);
         }
+    }
+
+    protected boolean isActionVisible() {
+        return settings.getCentralSettings().getActionSettings().getGenerateCommitActionVisible();
+    }
+
+    @NotNull
+    protected Icon getActionIcon() {
+        return PluginIcons.AI_GENERATE;
     }
 
     private void updateLoadingPresentation(@Nullable AnActionEvent event, boolean loading) {
@@ -128,9 +155,9 @@ public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
             return;
         }
         Presentation presentation = event.getPresentation();
-        presentation.setIcon(loading ? PluginIcons.STOP : PluginIcons.AI_GENERATE);
+        presentation.setIcon(loading ? PluginIcons.STOP : getActionIcon());
         presentation.setDisabledIcon(null);
-        boolean visible = settings.getCentralSettings().getActionSettings().getGenerateCommitActionVisible();
+        boolean visible = isActionVisible();
         CommitMessageI commitPanel = CommitPanelActionSupport.getCommitPanel(event);
         presentation.setEnabled(loading || visible && event.getProject() != null && !CommitPanelActionSupport.isCommitMessageLoading(commitPanel));
     }

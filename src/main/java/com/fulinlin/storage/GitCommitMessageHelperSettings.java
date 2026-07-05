@@ -115,7 +115,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             ActionSettings actionSettings = new ActionSettings();
             actionSettings.setCreateCommitActionVisible(Boolean.TRUE);
             actionSettings.setGenerateCommitActionVisible(Boolean.TRUE);
-            actionSettings.setFormatCommitActionVisible(Boolean.TRUE);
+            actionSettings.setGenerateCommitWithAdditionalContextActionVisible(Boolean.TRUE);
+            actionSettings.setFormatCommitActionVisible(Boolean.FALSE);
             centralSettings.setActionSettings(actionSettings);
         } catch (Exception e) {
             log.error("loadDefaultCentralSettings failed", e);
@@ -143,7 +144,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             ActionSettings actionSettings = new ActionSettings();
             actionSettings.setCreateCommitActionVisible(Boolean.TRUE);
             actionSettings.setGenerateCommitActionVisible(Boolean.TRUE);
-            actionSettings.setFormatCommitActionVisible(Boolean.TRUE);
+            actionSettings.setGenerateCommitWithAdditionalContextActionVisible(Boolean.TRUE);
+            actionSettings.setFormatCommitActionVisible(Boolean.FALSE);
             settings.setActionSettings(actionSettings);
         } else {
             if (settings.getActionSettings().getCreateCommitActionVisible() == null) {
@@ -152,8 +154,12 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             if (settings.getActionSettings().getGenerateCommitActionVisible() == null) {
                 settings.getActionSettings().setGenerateCommitActionVisible(Boolean.TRUE);
             }
+            if (settings.getActionSettings().getGenerateCommitWithAdditionalContextActionVisible() == null) {
+                settings.getActionSettings().setGenerateCommitWithAdditionalContextActionVisible(Boolean.TRUE);
+                settings.getActionSettings().setFormatCommitActionVisible(Boolean.FALSE);
+            }
             if (settings.getActionSettings().getFormatCommitActionVisible() == null) {
-                settings.getActionSettings().setFormatCommitActionVisible(Boolean.TRUE);
+                settings.getActionSettings().setFormatCommitActionVisible(Boolean.FALSE);
             }
         }
     }

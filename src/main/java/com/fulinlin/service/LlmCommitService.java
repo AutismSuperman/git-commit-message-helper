@@ -49,27 +49,45 @@ public class LlmCommitService {
                                       @NotNull Collection<Change> selectedChanges,
                                       @NotNull Collection<File> selectedFiles,
                                       @NotNull Consumer<String> onDelta) throws IOException {
+        generateCommitMessage(project, settings, selectedChanges, selectedFiles, "", onDelta);
+    }
+
+    public void generateCommitMessage(@NotNull Project project,
+                                      @NotNull GitCommitMessageHelperSettings settings,
+                                      @NotNull Collection<Change> selectedChanges,
+                                      @NotNull Collection<File> selectedFiles,
+                                      @NotNull String additionalContext,
+                                      @NotNull Consumer<String> onDelta) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
-        generateCommitMessage(project, settings, gitContext, onDelta);
+        generateCommitMessage(project, settings, gitContext, additionalContext, onDelta);
     }
 
     public void generateCommitMessageForCommit(@NotNull Project project,
                                                @NotNull GitCommitMessageHelperSettings settings,
                                                @NotNull String commitHash,
                                                @NotNull Consumer<String> onDelta) throws IOException {
+        generateCommitMessageForCommit(project, settings, commitHash, "", onDelta);
+    }
+
+    public void generateCommitMessageForCommit(@NotNull Project project,
+                                               @NotNull GitCommitMessageHelperSettings settings,
+                                               @NotNull String commitHash,
+                                               @NotNull String additionalContext,
+                                               @NotNull Consumer<String> onDelta) throws IOException {
         GitContextService.GitContext gitContext = gitContextService.collectCommitted(project, commitHash);
-        generateCommitMessage(project, settings, gitContext, onDelta);
+        generateCommitMessage(project, settings, gitContext, additionalContext, onDelta);
     }
 
     private void generateCommitMessage(@NotNull Project project,
                                        @NotNull GitCommitMessageHelperSettings settings,
                                        @NotNull GitContextService.GitContext gitContext,
+                                       @NotNull String additionalContext,
                                        @NotNull Consumer<String> onDelta) throws IOException {
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
         String template = settings.getActiveCommitTemplate(project);
         String systemPrompt = GENERATE_SYSTEM_PROMPT;
-        String userPrompt = buildGeneratePrompt(settings, llmSettings, gitContext, template);
+        String userPrompt = buildGeneratePrompt(settings, llmSettings, gitContext, template, additionalContext);
         onDelta.accept(completeTemplatedCommitMessage(template, profile, llmSettings, systemPrompt, userPrompt));
     }
 
@@ -291,16 +309,33 @@ public class LlmCommitService {
     private static String buildGeneratePrompt(@NotNull GitCommitMessageHelperSettings settings,
                                               @NotNull LlmSettings llmSettings,
                                               @NotNull GitContextService.GitContext gitContext,
-                                              @NotNull String template) {
+                                              @NotNull String template,
+                                              @NotNull String additionalContext) {
         return "Generate git commit template fields for this project.\n\n"
                 + buildInternalAnalysisInstructions()
                 + "\n\n"
                 + buildTemplateJsonOutputContract(llmSettings)
+                + buildAdditionalContextInstructions(additionalContext)
                 + "\n\n"
                 + "Allowed Types:\n" + formatTypes(settings.getDateSettings().getTypeAliases()) + "\n\n"
                 + "Commit Template Velocity Source:\n" + template + "\n\n"
                 + "Commit Template Preview:\n" + buildTemplatePreview(template) + "\n\n"
                 + "Git Context:\n" + gitContext.toPromptText();
+    }
+
+    @NotNull
+    private static String buildAdditionalContextInstructions(@NotNull String additionalContext) {
+        String value = safe(additionalContext).trim();
+        if (value.isEmpty()) {
+            return "";
+        }
+        return "\n\nAdditional User Context:\n"
+                + value
+                + "\n\nAdditional Context Rules:\n"
+                + "1. Treat the additional user context as explicit commit-message requirements and honor it unless it clearly conflicts with the git diff.\n"
+                + "2. If it mentions fixed/closed issues, bug IDs, Jira keys, or references like #123, put those references in the closes field without the Closes prefix.\n"
+                + "3. If it asks to skip CI or includes a skip-ci marker such as [skip ci], put the marker in the skipCi field.\n"
+                + "4. Use any other notes to refine subject, body, changes, or scope, but do not invent information not present in the diff or this context.";
     }
 
     @NotNull

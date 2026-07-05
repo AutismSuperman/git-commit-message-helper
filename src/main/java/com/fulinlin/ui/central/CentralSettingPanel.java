@@ -53,6 +53,7 @@ public class CentralSettingPanel {
     private JCheckBox llmSmartEchoEnabledCheckBox;
     private JCheckBox createCommitActionVisibleCheckBox;
     private JCheckBox generateCommitActionVisibleCheckBox;
+    private JCheckBox generateCommitWithAdditionalContextActionVisibleCheckBox;
     private JCheckBox formatCommitActionVisibleCheckBox;
 
 
@@ -85,6 +86,7 @@ public class CentralSettingPanel {
         skipCiDefaultApproveCheckedBox.setText(PluginBundle.get("setting.central.skip.ci.default.checked.checkbox"));
         createCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.create.visible"));
         generateCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.generate.visible"));
+        generateCommitWithAdditionalContextActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.generate.additional.visible"));
         formatCommitActionVisibleCheckBox.setText(PluginBundle.get("setting.central.action.format.visible"));
         DataSettings dateSettings = settings.getDateSettings();
         List<String> skipCis = dateSettings.getSkipCis();
@@ -131,6 +133,7 @@ public class CentralSettingPanel {
         settings.getCentralSettings().setSkipCiComboboxEnable(skipCiEnableCheckBox.isSelected());
         settings.getCentralSettings().getActionSettings().setCreateCommitActionVisible(createCommitActionVisibleCheckBox.isSelected());
         settings.getCentralSettings().getActionSettings().setGenerateCommitActionVisible(generateCommitActionVisibleCheckBox.isSelected());
+        settings.getCentralSettings().getActionSettings().setGenerateCommitWithAdditionalContextActionVisible(generateCommitWithAdditionalContextActionVisibleCheckBox.isSelected());
         settings.getCentralSettings().getActionSettings().setFormatCommitActionVisible(formatCommitActionVisibleCheckBox.isSelected());
         // Hidden Option
         // settings.getCentralSettings().getHidden().setSubject(subjectCheckBox.isSelected());
@@ -167,6 +170,7 @@ public class CentralSettingPanel {
         skipCiEnableCheckBox.setSelected(settings.getCentralSettings().getSkipCiComboboxEnable());
         createCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getCreateCommitActionVisible());
         generateCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getGenerateCommitActionVisible());
+        generateCommitWithAdditionalContextActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getGenerateCommitWithAdditionalContextActionVisible());
         formatCommitActionVisibleCheckBox.setSelected(settings.getCentralSettings().getActionSettings().getFormatCommitActionVisible());
         // Hidden Option
         typeCheckBox.setSelected(settings.getCentralSettings().getHidden().getType());
@@ -208,6 +212,8 @@ public class CentralSettingPanel {
         else if (createCommitActionVisibleCheckBox.isSelected() != data.getCentralSettings().getActionSettings().getCreateCommitActionVisible()) {
             isModified = true;
         } else if (generateCommitActionVisibleCheckBox.isSelected() != data.getCentralSettings().getActionSettings().getGenerateCommitActionVisible()) {
+            isModified = true;
+        } else if (generateCommitWithAdditionalContextActionVisibleCheckBox.isSelected() != data.getCentralSettings().getActionSettings().getGenerateCommitWithAdditionalContextActionVisible()) {
             isModified = true;
         } else if (formatCommitActionVisibleCheckBox.isSelected() != data.getCentralSettings().getActionSettings().getFormatCommitActionVisible()) {
             isModified = true;

@@ -8,6 +8,8 @@ public class ActionSettings {
 
     private Boolean formatCommitActionVisible;
 
+    private Boolean generateCommitWithAdditionalContextActionVisible;
+
     public Boolean getCreateCommitActionVisible() {
         return createCommitActionVisible;
     }
@@ -30,5 +32,13 @@ public class ActionSettings {
 
     public void setFormatCommitActionVisible(Boolean formatCommitActionVisible) {
         this.formatCommitActionVisible = formatCommitActionVisible;
+    }
+
+    public Boolean getGenerateCommitWithAdditionalContextActionVisible() {
+        return generateCommitWithAdditionalContextActionVisible;
+    }
+
+    public void setGenerateCommitWithAdditionalContextActionVisible(Boolean generateCommitWithAdditionalContextActionVisible) {
+        this.generateCommitWithAdditionalContextActionVisible = generateCommitWithAdditionalContextActionVisible;
     }
 }

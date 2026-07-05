@@ -2,7 +2,7 @@
     <id>commit-message-helper-idea-plugin</id>
     <name>Git Commit Message Helper</name>
     <vendor email="fulinlin9527@outlook.com" url="https://github.com/AutismSuperman">FuLinLin</vendor>
-    <version>1.6.3</version>
+    <version>1.6.4</version>
 
 
     <description><![CDATA[<p>Description notes will be filled by gradle build</p>]]></description>
@@ -63,11 +63,17 @@
                 icon="PluginIcons.AI_GENERATE">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
         </action>
+        <action id="Commit.GenerateWithAdditionalContext.Button" class="com.fulinlin.action.GenerateCommitWithAdditionalContextAction"
+                text="Generate Commit Message With Additional Context"
+                description="Input additional context and generate commit message by LLM"
+                icon="PluginIcons.AI_GENERATE_CONTEXT">
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="after" relative-to-action="Commit.GenerateByLlm.Button"/>
+        </action>
         <action id="Commit.FormatByLlm.Button" class="com.fulinlin.action.FormatCommitByLlmAction"
                 text="Format Commit Message"
                 description="Format commit message by LLM"
                 icon="PluginIcons.COMMIT_FORMAT">
-            <add-to-group group-id="Vcs.MessageActionGroup" anchor="after" relative-to-action="Commit.GenerateByLlm.Button"/>
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="after" relative-to-action="Commit.GenerateWithAdditionalContext.Button"/>
         </action>
         <action id="Commit.Button" class="com.fulinlin.action.CreateCommitAction"
                 text="Create Commit Message"
