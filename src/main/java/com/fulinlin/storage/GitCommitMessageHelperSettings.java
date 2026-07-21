@@ -6,6 +6,7 @@ import com.fulinlin.model.ActionSettings;
 import com.fulinlin.model.CentralSettings;
 import com.fulinlin.model.CommitTemplateProfile;
 import com.fulinlin.model.DataSettings;
+import com.fulinlin.model.PromptProfile;
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.TypeAlias;
@@ -37,6 +38,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     private static final double MAX_TEMPERATURE = 2.0D;
     private static final String DEFAULT_TEMPLATE_ID = "default";
     private static final String DEFAULT_TEMPLATE_NAME = "Default";
+    private static final String DEFAULT_PROMPT_ID = "default-prompt";
     private static final Logger log = Logger.getInstance(GitCommitMessageHelperSettings.class);
     private DataSettings dataSettings;
 
@@ -171,6 +173,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
             dataSettings.setTemplates(createDefaultCommitTemplateProfiles(GitCommitConstants.DEFAULT_TEMPLATE));
             dataSettings.setActiveTemplateId(DEFAULT_TEMPLATE_ID);
+            dataSettings.setPrompts(createDefaultPromptProfiles());
+            dataSettings.setActivePromptId(DEFAULT_PROMPT_ID);
             List<TypeAlias> typeAliases = createDefaultTypeAliases();
             dataSettings.setTypeAliases(typeAliases);
             List<String> skipCis = getSkipCis();
@@ -185,6 +189,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             dataSettings.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
         }
         checkDefaultCommitTemplates(dataSettings);
+        checkDefaultPromptProfiles(dataSettings);
         if (dataSettings.getTypeAliases() == null) {
             List<TypeAlias> typeAliases = createDefaultTypeAliases();
             dataSettings.setTypeAliases(typeAliases);
@@ -277,6 +282,27 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             }
         }
         return getActiveCommitTemplateProfile();
+    }
+
+    @NotNull
+    public PromptProfile getActivePromptProfile() {
+        checkDefaultPromptProfiles(getDateSettings());
+        PromptProfile active = findPromptProfile(getDateSettings().getPrompts(), getDateSettings().getActivePromptId());
+        return active == null ? getDateSettings().getPrompts().get(0) : active;
+    }
+
+    @NotNull
+    public PromptProfile getActivePromptProfile(@Nullable Project project) {
+        PromptProfile projectPrompt = findPromptProfile(getDateSettings().getPrompts(), getProjectPromptId(project));
+        return projectPrompt == null ? getActivePromptProfile() : projectPrompt;
+    }
+
+    @Nullable
+    private String getProjectPromptId(@Nullable Project project) {
+        if (project == null) return null;
+        GitCommitMessageStorage storage = project.getService(GitCommitMessageStorage.class);
+        if (storage == null || storage.getState() == null || storage.getState().getMessageStorage() == null) return null;
+        return storage.getState().getMessageStorage().getProjectPromptId();
     }
 
     @NotNull
@@ -446,6 +472,75 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             profile.setTemplate(GitCommitConstants.DEFAULT_TEMPLATE);
         }
         profile.setDefaultTemplate(Boolean.FALSE);
+    }
+
+    private static void checkDefaultPromptProfiles(@NotNull DataSettings dataSettings) {
+        List<PromptProfile> prompts = dataSettings.getPrompts();
+        if (prompts == null || prompts.isEmpty()) {
+            prompts = createDefaultPromptProfiles();
+            dataSettings.setPrompts(prompts);
+        }
+        PromptProfile first = prompts.get(0);
+        if (first == null) {
+            first = createDefaultPromptProfile();
+            prompts.set(0, first);
+        }
+        first.setId(DEFAULT_PROMPT_ID);
+        first.setName("Default");
+        first.setDefaultPrompt(Boolean.TRUE);
+        if (first.getPrompt() == null) first.setPrompt("");
+        for (int i = 1; i < prompts.size(); i++) {
+            PromptProfile prompt = prompts.get(i);
+            if (prompt == null) {
+                prompt = createPromptProfile(createPromptId(i), "Prompt " + (i + 1), "", false);
+                prompts.set(i, prompt);
+            }
+            if (prompt.getId() == null || prompt.getId().trim().isEmpty() || DEFAULT_PROMPT_ID.equals(prompt.getId())) {
+                prompt.setId(createPromptId(i));
+            }
+            if (prompt.getName() == null || prompt.getName().trim().isEmpty()) prompt.setName("Prompt " + (i + 1));
+            if (prompt.getPrompt() == null) prompt.setPrompt("");
+            prompt.setDefaultPrompt(Boolean.FALSE);
+        }
+        if (findPromptProfile(prompts, dataSettings.getActivePromptId()) == null) {
+            dataSettings.setActivePromptId(DEFAULT_PROMPT_ID);
+        }
+    }
+
+    @NotNull
+    private static List<PromptProfile> createDefaultPromptProfiles() {
+        List<PromptProfile> prompts = new LinkedList<>();
+        prompts.add(createDefaultPromptProfile());
+        return prompts;
+    }
+
+    @NotNull
+    private static PromptProfile createDefaultPromptProfile() {
+        return createPromptProfile(DEFAULT_PROMPT_ID, "Default", "", true);
+    }
+
+    @NotNull
+    public static PromptProfile createPromptProfile(@NotNull String id, @NotNull String name, @NotNull String prompt, boolean defaultPrompt) {
+        PromptProfile profile = new PromptProfile();
+        profile.setId(id);
+        profile.setName(name);
+        profile.setPrompt(prompt);
+        profile.setDefaultPrompt(defaultPrompt);
+        return profile;
+    }
+
+    @NotNull
+    public static String createPromptId(int index) {
+        return "prompt-" + System.currentTimeMillis() + "-" + index;
+    }
+
+    @Nullable
+    private static PromptProfile findPromptProfile(List<PromptProfile> prompts, String id) {
+        if (prompts == null || id == null) return null;
+        for (PromptProfile prompt : prompts) {
+            if (prompt != null && id.equals(prompt.getId())) return prompt;
+        }
+        return null;
     }
 
     @NotNull

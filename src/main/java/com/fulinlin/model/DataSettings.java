@@ -11,6 +11,8 @@ public class DataSettings {
     private String template;
     private List<CommitTemplateProfile> templates;
     private String activeTemplateId;
+    private List<PromptProfile> prompts;
+    private String activePromptId;
     private List<TypeAlias> typeAliases;
     private List<String> skipCis;
 
@@ -36,6 +38,22 @@ public class DataSettings {
 
     public void setActiveTemplateId(String activeTemplateId) {
         this.activeTemplateId = activeTemplateId;
+    }
+
+    public List<PromptProfile> getPrompts() {
+        return prompts;
+    }
+
+    public void setPrompts(List<PromptProfile> prompts) {
+        this.prompts = prompts;
+    }
+
+    public String getActivePromptId() {
+        return activePromptId;
+    }
+
+    public void setActivePromptId(String activePromptId) {
+        this.activePromptId = activePromptId;
     }
 
     public List<TypeAlias> getTypeAliases() {

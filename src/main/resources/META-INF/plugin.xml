@@ -50,6 +50,14 @@
                 key="setting.configurable.llm"
                 bundle="i18n.info"/>
 
+        <applicationConfigurable
+                instance="com.fulinlin.configurable.PromptConfigurable"
+                id="plugins.gitcommitmessagehelper.prompt"
+                groupId="plugins.gitcommitmessagehelper"
+                groupWeight="15"
+                key="setting.configurable.prompt"
+                bundle="i18n.info"/>
+
     </extensions>
 
 

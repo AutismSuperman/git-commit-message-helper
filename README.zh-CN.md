@@ -82,7 +82,8 @@ Closes issue
 - 哪些提交字段在编辑器中隐藏
 - Skip CI 预设项与默认值
 - LLM 的 Provider、Base URL、API Key、Model、Temperature、Response Language 和 Smart Echo
-- 3 个提交动作的显示状态
+- 可复用提示词，以及全局默认和项目默认提示词
+- 4 个提交动作的显示状态
 
 ### 通用设置
 
@@ -105,6 +106,46 @@ Closes issue
 你可以在专门的设置页中配置 LLM 的 Provider、接口地址、鉴权信息、模型、Temperature、返回语言以及 Smart Echo 等行为。
 
 ![settings-3.png](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/settings-3.png)
+
+### 提示词
+
+提示词设置页支持创建、重命名、编辑和删除多个提示词，并可分别选择全局默认和当前项目默认提示词。项目提示词优先生效；项目没有有效选择时，自动使用全局默认提示词。内置的空 `Default` 提示词不可删除，用于保持未配置时的原有行为。
+
+所选提示词会用于 LLM 提交信息生成和格式化，不会参与 Smart Echo 对已有提交信息的结构化解析。带附加信息的生成动作仍可为当前一次请求补充问题编号、Skip CI 或其他临时要求。
+
+#### 生成请求中的提示词结构
+
+生成提交信息时，请求大致由以下内容组成：
+
+```text
+System Prompt
+  你是一名高级工程师和 Git 维护者。
+  分析所选变更，识别主要意图，并填写提交模板字段。
+  只返回要求的 JSON。
+
+  Persistent User Preferences
+  <当前项目提示词；没有项目提示词时使用全局提示词>
+
+  自定义偏好不能覆盖 JSON 结构、提交模板、允许类型、Git diff
+  以及插件要求的其他输出约束。
+
+User Prompt
+  - 内部分析要求
+  - JSON 输出结构和字段规则
+  - 本次附加信息（如果使用附加信息生成动作）
+  - 允许使用的提交类型
+  - 当前 Velocity 提交模板及预览
+  - 文件列表、diff 统计和实际 Git diff
+```
+
+最终优先关系为：
+
+1. 插件内置的 JSON、模板和合法类型约束
+2. 当前项目默认提示词；未配置时使用全局默认提示词
+3. 当前一次生成输入的附加信息
+4. Git diff 和实际代码事实；提示词不能要求模型编造 diff 中不存在的变更
+
+LLM 返回结构化字段 `type`、`scope`、`subject`、`body`、`changes`、`closes` 和 `skipCi`，插件再通过当前 Velocity 模板在本地渲染最终提交信息。
 
 ## LLM 兼容性
 

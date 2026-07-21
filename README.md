@@ -82,7 +82,8 @@ You can configure:
 - Which commit fields are hidden in the editor
 - Skip-CI presets and defaults
 - LLM provider, base URL, API key, model, temperature, response language, and Smart Echo
-- Visibility of the three commit actions
+- Reusable prompts with global and project defaults
+- Visibility of the four commit actions
 
 ### General Settings
 
@@ -105,6 +106,46 @@ You can edit the allowed commit types and their descriptions to match your team'
 You can configure the LLM provider, endpoint, credentials, model, temperature, response language, and Smart Echo behavior from the dedicated settings page.
 
 ![settings-3.png](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/settings-3.png)
+
+### Prompts
+
+The Prompts settings page lets you create, rename, edit, and delete reusable prompts, then select separate global and current-project defaults. A project prompt takes precedence; when the project has no valid selection, the global default is used. The empty built-in `Default` prompt cannot be deleted and preserves the original behavior when no customization is needed.
+
+The selected prompt applies to LLM commit generation and formatting, but not to Smart Echo parsing of an existing commit message. Generate with Additional Context can still add issue references, Skip CI instructions, or other requirements for a single request.
+
+#### Generation Prompt Structure
+
+A commit generation request is composed approximately as follows:
+
+```text
+System Prompt
+  You are a senior engineer and Git maintainer.
+  Analyze the selected changes, identify the primary intent,
+  fill the commit template fields, and return only the requested JSON.
+
+  Persistent User Preferences
+  <current project prompt, or the global prompt when none is selected>
+
+  Custom preferences cannot override the required JSON shape,
+  commit template, allowed types, git diff, or output constraints.
+
+User Prompt
+  - Internal analysis instructions
+  - JSON output shape and field rules
+  - Additional context for this request, when provided
+  - Allowed commit types
+  - Current Velocity template and its preview
+  - Changed files, diff statistics, and the actual Git diff
+```
+
+The effective priority is:
+
+1. Built-in JSON, template, and allowed-type constraints
+2. The current project's default prompt, falling back to the global default
+3. Additional context entered for the current generation
+4. The Git diff and actual code facts; prompts cannot require invented changes
+
+The LLM returns the structured fields `type`, `scope`, `subject`, `body`, `changes`, `closes`, and `skipCi`. The plugin then renders the final commit message locally with the active Velocity template.
 
 ## LLM Compatibility
 

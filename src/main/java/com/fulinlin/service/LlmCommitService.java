@@ -86,7 +86,7 @@ public class LlmCommitService {
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
         String template = settings.getActiveCommitTemplate(project);
-        String systemPrompt = GENERATE_SYSTEM_PROMPT;
+        String systemPrompt = buildSystemPrompt(GENERATE_SYSTEM_PROMPT, settings.getActivePromptProfile(project).getPrompt());
         String userPrompt = buildGeneratePrompt(settings, llmSettings, gitContext, template, additionalContext);
         onDelta.accept(completeTemplatedCommitMessage(template, profile, llmSettings, systemPrompt, userPrompt));
     }
@@ -118,7 +118,7 @@ public class LlmCommitService {
         LlmSettings llmSettings = getLlmSettings(settings);
         LlmProfile profile = llmSettings.getActiveProfile();
         String template = settings.getActiveCommitTemplate(project);
-        String systemPrompt = FORMAT_SYSTEM_PROMPT;
+        String systemPrompt = buildSystemPrompt(FORMAT_SYSTEM_PROMPT, settings.getActivePromptProfile(project).getPrompt());
         String userPrompt = buildFormatPrompt(settings, llmSettings, gitContext, currentMessage, template);
         onDelta.accept(completeTemplatedCommitMessage(template, profile, llmSettings, systemPrompt, userPrompt));
     }
@@ -336,6 +336,18 @@ public class LlmCommitService {
                 + "2. If it mentions fixed/closed issues, bug IDs, Jira keys, or references like #123, put those references in the closes field without the Closes prefix.\n"
                 + "3. If it asks to skip CI or includes a skip-ci marker such as [skip ci], put the marker in the skipCi field.\n"
                 + "4. Use any other notes to refine subject, body, changes, or scope, but do not invent information not present in the diff or this context.";
+    }
+
+    @NotNull
+    static String buildSystemPrompt(@NotNull String builtInPrompt, String customPrompt) {
+        String value = safe(customPrompt).trim();
+        if (value.isEmpty()) {
+            return builtInPrompt;
+        }
+        return builtInPrompt
+                + "\n\nPersistent User Preferences:\n"
+                + value
+                + "\n\nFollow these preferences when they do not conflict with the required JSON shape, commit template, allowed types, git diff, or other output constraints.";
     }
 
     @NotNull
