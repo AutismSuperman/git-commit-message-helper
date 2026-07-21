@@ -8,6 +8,7 @@ import com.fulinlin.storage.GitCommitMessageStorage;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.ui.OnePixelSplitter;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
@@ -48,9 +49,22 @@ public class PromptEditPanel {
         defaults.add(projectCombo);
         projectCombo.setEnabled(project != null);
         panel.add(defaults, BorderLayout.NORTH);
-        panel.add(createToolbar(), BorderLayout.WEST);
-        panel.add(new JBScrollPane(editor), BorderLayout.CENTER);
+        panel.add(createContentSplitPane(), BorderLayout.CENTER);
         reload();
+    }
+
+    private JComponent createContentSplitPane() {
+        JComponent listPanel = createToolbar();
+        JBScrollPane editorScrollPane = new JBScrollPane(editor);
+        listPanel.setMinimumSize(new Dimension(JBUI.scale(180), 0));
+        editorScrollPane.setMinimumSize(new Dimension(JBUI.scale(320), 0));
+
+        OnePixelSplitter splitPane = new OnePixelSplitter(false, 0.29f, 0.18f, 0.55f);
+        splitPane.setOpaque(false);
+        splitPane.setSplitterProportionKey("GitCommitMessageHelper.PromptSettings.Splitter");
+        splitPane.setFirstComponent(listPanel);
+        splitPane.setSecondComponent(editorScrollPane);
+        return splitPane;
     }
 
     private JComponent createToolbar() {
