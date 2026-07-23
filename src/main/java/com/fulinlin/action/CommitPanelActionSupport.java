@@ -82,7 +82,7 @@ public final class CommitPanelActionSupport {
     }
 
     public static void setCommitMessage(@NotNull CommitMessageI commitPanel, @NotNull String message) {
-        ApplicationManager.getApplication().invokeLater(() -> commitPanel.setCommitMessage(message));
+        invokeOnEdt(() -> setCommitMessageOnEdt(commitPanel, message));
     }
 
     @Nullable
@@ -148,6 +148,23 @@ public final class CommitPanelActionSupport {
         return state[0] == null ? CommitMessageLoadingState.empty(commitPanel) : state[0];
     }
 
+    private static void setCommitMessageOnEdt(@NotNull CommitMessageI commitPanel, @NotNull String message) {
+        Runnable write = () -> commitPanel.setCommitMessage(message);
+        if (ApplicationManager.getApplication().isWriteAccessAllowed()) {
+            write.run();
+        } else {
+            ApplicationManager.getApplication().runWriteAction(write);
+        }
+    }
+
+    private static void invokeOnEdt(@NotNull Runnable runnable) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            runnable.run();
+        } else {
+            ApplicationManager.getApplication().invokeLater(runnable);
+        }
+    }
+
     @NotNull
     public static CommitMessageLoadingState startCommitMessageLoading(@NotNull CommitMessageI commitPanel) {
         if (SwingUtilities.isEventDispatchThread()) {
@@ -203,7 +220,7 @@ public final class CommitPanelActionSupport {
         }
         ActivityTracker.getInstance().inc();
         if (placeholder != null) {
-            commitPanel.setCommitMessage(placeholder);
+            setCommitMessageOnEdt(commitPanel, placeholder);
         }
         state.setReadOnly(true);
         return state;
@@ -335,7 +352,7 @@ public final class CommitPanelActionSupport {
         }
 
         public void finish() {
-            ApplicationManager.getApplication().invokeLater(() -> {
+            invokeOnEdt(() -> {
                 try {
                     if (editorField != null) {
                         editorField.setViewer(previousViewer);
