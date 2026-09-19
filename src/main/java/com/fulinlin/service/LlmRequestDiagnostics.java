@@ -19,6 +19,7 @@ public class LlmRequestDiagnostics {
     private boolean reasoningCompatibilitySkippedByCache;
     private boolean reasoningCompatibilityApplied;
     private boolean compatibilityFallbackUsed;
+    private boolean temperatureFallbackUsed;
     private boolean streamingFallbackUsed;
     private boolean streamingSkippedByCache;
     private int requestAttempts;
@@ -57,6 +58,10 @@ public class LlmRequestDiagnostics {
         compatibilityFallbackUsed = true;
     }
 
+    void markTemperatureFallbackUsed() {
+        temperatureFallbackUsed = true;
+    }
+
     void markStreamingFallbackUsed() {
         streamingFallbackUsed = true;
     }
@@ -84,6 +89,9 @@ public class LlmRequestDiagnostics {
                 : requestParameters.stream().collect(Collectors.joining(", ")));
         if (compatibilityFallbackUsed) {
             appendLine(builder, "Fallback", "retried without compatibility params");
+        }
+        if (temperatureFallbackUsed) {
+            appendLine(builder, "Temperature fallback", "retried without temperature");
         }
         if (streamingFallbackUsed) {
             appendLine(builder, "Streaming fallback", "used non-stream response");

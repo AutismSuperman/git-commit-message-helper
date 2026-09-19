@@ -66,7 +66,8 @@ public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
         loading = true;
         updateLoadingPresentation(actionEvent, true);
         CommitPanelActionSupport.CommitMessageLoadingState loadingState =
-                CommitPanelActionSupport.startCommitMessageLoading(commitPanel, PluginBundle.get("action.generate.progress") + "...");
+                CommitPanelActionSupport.startCommitMessageLoading(commitPanel,
+                        CommitPanelActionSupport.buildLoadingPlaceholderText(PluginBundle.get("action.generate.progress")));
         String historicalCommitHash = editedCommitHash;
         ProgressManager.getInstance().run(new Task.Backgroundable(project, PluginBundle.get("action.generate.progress"), true) {
             @Override

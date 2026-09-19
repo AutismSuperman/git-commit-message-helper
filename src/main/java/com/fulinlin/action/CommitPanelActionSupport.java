@@ -1,5 +1,8 @@
 package com.fulinlin.action;
 
+import com.fulinlin.localization.PluginBundle;
+import com.fulinlin.model.LlmProfile;
+import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.ide.ActivityTracker;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -63,6 +66,24 @@ public final class CommitPanelActionSupport {
         event.getPresentation().setVisible(visible);
         CommitMessageI commitPanel = getCommitPanel(event);
         event.getPresentation().setEnabled(visible && event.getProject() != null && !isCommitMessageLoading(commitPanel));
+    }
+
+    /**
+     * Placeholder shown in the commit message area while the LLM request runs. Reasoning
+     * compatibility means the model may think before answering with no visible output,
+     * so set expectations about the silent wait.
+     */
+    @NotNull
+    public static String buildLoadingPlaceholderText(@NotNull String progressText) {
+        String text = progressText + "...";
+        LlmProfile activeProfile = GitCommitMessageHelperSettings.getInstance()
+                .getCentralSettings()
+                .getLlmSettings()
+                .getActiveProfile();
+        if (activeProfile != null && Boolean.TRUE.equals(activeProfile.getReasoningCompatibilityEnabled())) {
+            text += " (" + PluginBundle.get("action.progress.reasoning.hint") + ")";
+        }
+        return text;
     }
 
     @NotNull

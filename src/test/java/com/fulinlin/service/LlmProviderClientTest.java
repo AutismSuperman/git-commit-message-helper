@@ -56,6 +56,119 @@ public class LlmProviderClientTest {
         assertEquals(4096, requestBody.get("max_completion_tokens").getAsInt());
         assertFalse(requestBody.has("max_tokens"));
         assertEquals("low", requestBody.get("reasoning_effort").getAsString());
+        assertFalse(requestBody.has("temperature"));
+    }
+
+    @Test
+    public void openAiReasoningCompatibilityUsesReasoningEffortForGeminiAndGrok() {
+        LlmSettings settings = new LlmSettings();
+        settings.setTemperature(0.5D);
+
+        LlmProfile gemini = new LlmProfile();
+        gemini.setBaseUrl("https://generativelanguage.googleapis.com/v1beta/openai");
+        gemini.setModel("gemini-3-pro");
+        gemini.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        JsonObject geminiRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                gemini, settings, "system prompt", "user prompt", false
+        );
+
+        assertEquals("low", geminiRequest.get("reasoning_effort").getAsString());
+        assertEquals(4096, geminiRequest.get("max_tokens").getAsInt());
+        assertEquals(0.5D, geminiRequest.get("temperature").getAsDouble(), 0.0D);
+
+        LlmProfile grok = new LlmProfile();
+        grok.setBaseUrl("https://api.x.ai/v1");
+        grok.setModel("grok-4");
+        grok.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        JsonObject grokRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                grok, settings, "system prompt", "user prompt", false
+        );
+
+        assertEquals("low", grokRequest.get("reasoning_effort").getAsString());
+        assertFalse(grokRequest.has("thinking"));
+        assertFalse(grokRequest.has("enable_thinking"));
+    }
+
+    @Test
+    public void openAiReasoningCompatibilityUsesThinkingObjectForDoubaoArk() {
+        LlmProfile profile = new LlmProfile();
+        profile.setBaseUrl("https://ark.cn-beijing.volces.com/api/v3");
+        profile.setModel("doubao-seed-1.6");
+        profile.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        LlmSettings settings = new LlmSettings();
+
+        JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+
+        assertEquals(4096, requestBody.get("max_tokens").getAsInt());
+        assertEquals("disabled", requestBody.getAsJsonObject("thinking").get("type").getAsString());
+        assertFalse(requestBody.has("reasoning_effort"));
+    }
+
+    @Test
+    public void openAiReasoningCompatibilityUsesReasoningObjectForOpenRouterStyleGateways() {
+        LlmSettings settings = new LlmSettings();
+
+        LlmProfile openRouter = new LlmProfile();
+        openRouter.setBaseUrl("https://openrouter.ai/api/v1");
+        openRouter.setModel("minimax/minimax-m2.7");
+        openRouter.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        JsonObject openRouterRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                openRouter, settings, "system prompt", "user prompt", false
+        );
+
+        assertFalse(openRouterRequest.getAsJsonObject("reasoning").get("enabled").getAsBoolean());
+        assertFalse(openRouterRequest.has("thinking"));
+        assertFalse(openRouterRequest.has("enable_thinking"));
+        assertFalse(openRouterRequest.has("reasoning_effort"));
+
+        LlmProfile minimax = new LlmProfile();
+        minimax.setBaseUrl("https://api.minimaxi.com/v1");
+        minimax.setModel("MiniMax-M2.7");
+        minimax.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        JsonObject minimaxRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                minimax, settings, "system prompt", "user prompt", false
+        );
+
+        assertFalse(minimaxRequest.getAsJsonObject("reasoning").get("enabled").getAsBoolean());
+    }
+
+    @Test
+    public void retryRequestKeepsCompletionTokenLimitAndDropsTemperatureForOpenAiReasoningModels() {
+        LlmProfile profile = new LlmProfile();
+        profile.setBaseUrl("https://api.openai.com/v1");
+        profile.setModel("o3-mini");
+        LlmSettings settings = new LlmSettings();
+        settings.setTemperature(0.5D);
+
+        JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false,
+                false, true, true
+        );
+
+        assertEquals(4096, requestBody.get("max_completion_tokens").getAsInt());
+        assertFalse(requestBody.has("max_tokens"));
+        assertFalse(requestBody.has("temperature"));
+        assertFalse(requestBody.has("reasoning_effort"));
+    }
+
+    @Test
+    public void temperatureRejectionErrorsTriggerFallbackRetry() {
+        assertTrue(AbstractHttpLlmProviderClient.errorIndicatesUnsupportedTemperature(
+                "{\"error\":{\"message\":\"Unsupported value: 'temperature' does not support 0.5 with this model. "
+                        + "Only the default (1) value is supported.\"}}"
+        ));
+        assertTrue(AbstractHttpLlmProviderClient.errorIndicatesUnsupportedTemperature(
+                "{\"error\":{\"message\":\"1 validation error for Request\\nbody -> temperature\\n"
+                        + "  value is not a valid float\"}}"
+        ));
+        assertFalse(AbstractHttpLlmProviderClient.errorIndicatesUnsupportedTemperature(
+                "{\"error\":{\"message\":\"bad api key\"}}"
+        ));
+        assertFalse(AbstractHttpLlmProviderClient.errorIndicatesUnsupportedTemperature(
+                "{\"error\":{\"message\":\"unknown parameter: enable_thinking\"}}"
+        ));
     }
 
     @Test
@@ -164,6 +277,26 @@ public class LlmProviderClientTest {
         );
 
         assertFalse(requestBody.has("thinking"));
+    }
+
+    @Test
+    public void anthropicRetryRequestDropsTemperature() {
+        LlmProfile profile = new LlmProfile();
+        profile.setBaseUrl("https://api.anthropic.com");
+        profile.setModel("claude-3-7-sonnet-latest");
+        LlmSettings settings = new LlmSettings();
+        settings.setTemperature(1.5D);
+
+        JsonObject normalRequest = AnthropicLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false, false, false
+        );
+        JsonObject retryRequest = AnthropicLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false, false, true
+        );
+
+        assertEquals(1.5D, normalRequest.get("temperature").getAsDouble(), 0.0D);
+        assertFalse(retryRequest.has("temperature"));
+        assertEquals(4096, retryRequest.get("max_tokens").getAsInt());
     }
 
     @Test

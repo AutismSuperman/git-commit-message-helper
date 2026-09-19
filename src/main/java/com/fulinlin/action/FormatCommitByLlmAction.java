@@ -58,7 +58,8 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
         loading = true;
         updateLoadingPresentation(actionEvent, true);
         CommitPanelActionSupport.CommitMessageLoadingState loadingState =
-                CommitPanelActionSupport.startCommitMessageLoading(commitPanel, PluginBundle.get("action.format.progress") + "...");
+                CommitPanelActionSupport.startCommitMessageLoading(commitPanel,
+                        CommitPanelActionSupport.buildLoadingPlaceholderText(PluginBundle.get("action.format.progress")));
         String historicalCommitHash = editedCommitHash;
         ProgressManager.getInstance().run(new Task.Backgroundable(project, PluginBundle.get("action.format.progress"), true) {
             @Override

@@ -60,13 +60,11 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         if (responseCode < 200 || responseCode >= 300) {
             String errorBody = readAll(inputStream);
             connection.disconnect();
-            if (compatibilityEnabled && shouldRetryWithoutReasoningCompatibility(errorBody)) {
-                LlmCapabilityCache.markReasoningCompatibilityUnsupported(profile);
-                diagnostics.markCompatibilityFallbackUsed();
+            if (shouldRetryWithAdjustedParameters(profile, compatibilityEnabled, errorBody, diagnostics)) {
                 connection = createConnection(profile);
-                requestBody = createRequestBody(
+                requestBody = createRequestBodyForRetry(
                         profile, settings, systemPrompt, userPrompt, false,
-                        false, compatibilityRequested, false, diagnostics
+                        compatibilityRequested, diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
                 responseCode = getResponseCode(connection);
@@ -124,13 +122,11 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         if (responseCode < 200 || responseCode >= 300) {
             String errorBody = readAll(inputStream);
             connection.disconnect();
-            if (compatibilityEnabled && shouldRetryWithoutReasoningCompatibility(errorBody)) {
-                LlmCapabilityCache.markReasoningCompatibilityUnsupported(profile);
-                diagnostics.markCompatibilityFallbackUsed();
+            if (shouldRetryWithAdjustedParameters(profile, compatibilityEnabled, errorBody, diagnostics)) {
                 connection = createConnection(profile);
-                requestBody = createRequestBody(
+                requestBody = createRequestBodyForRetry(
                         profile, settings, systemPrompt, userPrompt, true,
-                        false, compatibilityRequested, false, diagnostics
+                        compatibilityRequested, diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
                 responseCode = getResponseCode(connection);
@@ -199,22 +195,32 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                                         @NotNull String systemPrompt,
                                         @NotNull String userPrompt,
                                         boolean stream) {
-        return createRequestBody(profile, settings, systemPrompt, userPrompt, stream, isReasoningCompatibilityEnabled(profile));
+        boolean compatibilityEnabled = isReasoningCompatibilityEnabled(profile);
+        return createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
+                compatibilityEnabled,
+                compatibilityEnabled && isOpenAiReasoningModel(profile),
+                compatibilityEnabled && needsCompletionTokenLimit(profile));
     }
 
     @NotNull
-    private static JsonObject createRequestBody(@NotNull LlmProfile profile,
-                                                @NotNull LlmSettings settings,
-                                                @NotNull String systemPrompt,
-                                                @NotNull String userPrompt,
-                                                boolean stream,
-                                                boolean compatibilityEnabled) {
+    static JsonObject createRequestBody(@NotNull LlmProfile profile,
+                                        @NotNull LlmSettings settings,
+                                        @NotNull String systemPrompt,
+                                        @NotNull String userPrompt,
+                                        boolean stream,
+                                        boolean compatibilityEnabled,
+                                        boolean omitTemperature,
+                                        boolean useCompletionTokens) {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", profile.getModel().trim());
         requestBody.addProperty("stream", stream);
-        applyTokenLimitParameter(requestBody, profile, compatibilityEnabled);
+        if (useCompletionTokens) {
+            requestBody.addProperty("max_completion_tokens", MAX_RESPONSE_TOKENS);
+        } else {
+            requestBody.addProperty("max_tokens", MAX_RESPONSE_TOKENS);
+        }
         applyReasoningCompatibility(requestBody, profile, compatibilityEnabled);
-        if (settings.getTemperature() != null) {
+        if (!omitTemperature && settings.getTemperature() != null) {
             requestBody.addProperty("temperature", settings.getTemperature());
         }
         JsonArray messages = new JsonArray();
@@ -234,21 +240,49 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                                                 boolean compatibilityRequested,
                                                 boolean compatibilitySkippedByCache,
                                                 @NotNull LlmRequestDiagnostics diagnostics) {
-        JsonObject requestBody = createRequestBody(
-                profile, settings, systemPrompt, userPrompt, stream, compatibilityEnabled
-        );
+        JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
+                compatibilityEnabled,
+                compatibilityEnabled && isOpenAiReasoningModel(profile),
+                compatibilityEnabled && needsCompletionTokenLimit(profile));
         diagnostics.recordRequest(profile, stream, compatibilityRequested, compatibilitySkippedByCache, requestBody);
         return requestBody;
     }
 
-    private static void applyTokenLimitParameter(@NotNull JsonObject requestBody,
-                                                 @NotNull LlmProfile profile,
-                                                 boolean compatibilityEnabled) {
-        if (compatibilityEnabled && shouldUseCompletionTokenLimit(profile)) {
-            requestBody.addProperty("max_completion_tokens", MAX_RESPONSE_TOKENS);
-        } else {
-            requestBody.addProperty("max_tokens", MAX_RESPONSE_TOKENS);
+    /**
+     * Retry request after the provider rejected the original one: compatibility parameters
+     * are dropped, the token-limit field the model requires is kept, and temperature is
+     * omitted for OpenAI reasoning models or when the error blamed it.
+     */
+    @NotNull
+    private static JsonObject createRequestBodyForRetry(@NotNull LlmProfile profile,
+                                                        @NotNull LlmSettings settings,
+                                                        @NotNull String systemPrompt,
+                                                        @NotNull String userPrompt,
+                                                        boolean stream,
+                                                        boolean compatibilityRequested,
+                                                        @NotNull LlmRequestDiagnostics diagnostics) {
+        JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
+                false,
+                isOpenAiReasoningModel(profile),
+                needsCompletionTokenLimit(profile));
+        diagnostics.recordRequest(profile, stream, compatibilityRequested, false, requestBody);
+        return requestBody;
+    }
+
+    private static boolean shouldRetryWithAdjustedParameters(@NotNull LlmProfile profile,
+                                                             boolean compatibilityEnabled,
+                                                             @NotNull String errorBody,
+                                                             @NotNull LlmRequestDiagnostics diagnostics) {
+        boolean temperatureRejected = errorIndicatesUnsupportedTemperature(errorBody);
+        boolean compatibilityRejected = compatibilityEnabled && shouldRetryWithoutReasoningCompatibility(errorBody);
+        if (compatibilityRejected) {
+            LlmCapabilityCache.markReasoningCompatibilityUnsupported(profile);
+            diagnostics.markCompatibilityFallbackUsed();
         }
+        if (temperatureRejected) {
+            diagnostics.markTemperatureFallbackUsed();
+        }
+        return compatibilityRejected || temperatureRejected;
     }
 
     @NotNull

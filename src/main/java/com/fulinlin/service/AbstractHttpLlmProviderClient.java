@@ -151,9 +151,13 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
         return Boolean.TRUE.equals(profile.getReasoningCompatibilityEnabled());
     }
 
-    protected static boolean shouldUseCompletionTokenLimit(@NotNull LlmProfile profile) {
-        return isReasoningCompatibilityEnabled(profile)
-                && (isOpenAiReasoningModel(profile) || containsProfileText(profile, "mimo", "xiaomimimo", "token-plan"));
+    /**
+     * Models that reject {@code max_tokens} in favor of {@code max_completion_tokens}.
+     * This is a model capability and must hold even when the compatibility parameters
+     * themselves are dropped on retry.
+     */
+    protected static boolean needsCompletionTokenLimit(@NotNull LlmProfile profile) {
+        return isOpenAiReasoningModel(profile) || containsProfileText(profile, "mimo", "xiaomimimo", "token-plan");
     }
 
     protected static void applyReasoningCompatibility(@NotNull JsonObject requestBody, @NotNull LlmProfile profile) {
@@ -170,12 +174,16 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
             requestBody.addProperty("enable_thinking", false);
             return;
         }
-        if (isOpenAiReasoningModel(profile)) {
+        if (supportsReasoningEffort(profile)) {
             requestBody.addProperty("reasoning_effort", "low");
             return;
         }
         if (isThinkingObjectCompatible(profile)) {
             requestBody.add("thinking", createThinkingDisabled());
+            return;
+        }
+        if (isReasoningObjectCompatible(profile)) {
+            requestBody.add("reasoning", createReasoningDisabled());
         }
     }
 
@@ -190,6 +198,19 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
                 || lower.contains("not_supported");
     }
 
+    static boolean errorIndicatesUnsupportedTemperature(@NotNull String responseBody) {
+        String lower = responseBody.toLowerCase(Locale.ROOT);
+        return lower.contains("temperature")
+                && (lower.contains("unsupported")
+                || lower.contains("unknown parameter")
+                || lower.contains("unrecognized")
+                || lower.contains("invalid")
+                || lower.contains("is not a valid")
+                || lower.contains("not support")
+                || lower.contains("not_supported")
+                || lower.contains("only the default"));
+    }
+
     @NotNull
     private static JsonObject createThinkingDisabled() {
         JsonObject thinking = new JsonObject();
@@ -197,7 +218,23 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
         return thinking;
     }
 
-    private static boolean isOpenAiReasoningModel(@NotNull LlmProfile profile) {
+    @NotNull
+    private static JsonObject createReasoningDisabled() {
+        JsonObject reasoning = new JsonObject();
+        reasoning.addProperty("enabled", false);
+        return reasoning;
+    }
+
+    /**
+     * Providers accepting the OpenAI-style {@code reasoning_effort} knob: the OpenAI
+     * reasoning families plus Gemini and Grok, whose OpenAI-compatible endpoints map it
+     * to their native thinking-level parameters.
+     */
+    private static boolean supportsReasoningEffort(@NotNull LlmProfile profile) {
+        return isOpenAiReasoningModel(profile) || containsProfileText(profile, "gemini", "grok", "x.ai");
+    }
+
+    protected static boolean isOpenAiReasoningModel(@NotNull LlmProfile profile) {
         String model = normalize(profile.getModel());
         return model.startsWith("o1")
                 || model.startsWith("o3")
@@ -214,7 +251,16 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
         if (LlmProvider.ANTHROPIC == LlmProvider.fromNullable(profile.getProvider())) {
             return !containsProfileText(profile, "api.anthropic.com");
         }
-        return containsProfileText(profile, "mimo", "xiaomimimo", "token-plan", "zhipu", "bigmodel", "glm", "moonshot", "kimi");
+        return containsProfileText(profile, "mimo", "xiaomimimo", "token-plan", "zhipu", "bigmodel", "glm",
+                "moonshot", "kimi", "doubao", "volces");
+    }
+
+    /**
+     * Gateways speaking the OpenRouter-style {@code reasoning} object (OpenRouter itself,
+     * MiniMax, and relays built on the same convention).
+     */
+    private static boolean isReasoningObjectCompatible(@NotNull LlmProfile profile) {
+        return containsProfileText(profile, "openrouter", "minimax");
     }
 
     private static boolean containsProfileText(@NotNull LlmProfile profile, @NotNull String... needles) {

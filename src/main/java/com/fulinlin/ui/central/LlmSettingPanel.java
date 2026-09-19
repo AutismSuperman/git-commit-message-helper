@@ -243,6 +243,22 @@ public class LlmSettingPanel {
         reasoningCompatibilityEnabledCheckBox.setSelected(
                 profile != null && Boolean.TRUE.equals(profile.getReasoningCompatibilityEnabled())
         );
+        updateReasoningCompatibilityLabel(profile);
+    }
+
+    /**
+     * Reasoning compatibility is a per-profile setting while its checkbox sits in a row of
+     * global settings; showing the owning profile name keeps that scope visible.
+     */
+    private void updateReasoningCompatibilityLabel(LlmProfile profile) {
+        String base = PluginBundle.get("setting.llm.reasoning.compatibility");
+        String profileName = profile == null || profile.getName() == null ? "" : profile.getName().trim();
+        if (profileName.isEmpty()) {
+            reasoningCompatibilityEnabledCheckBox.setText(base);
+            return;
+        }
+        reasoningCompatibilityEnabledCheckBox.setText(base
+                + " (" + PluginBundle.get("setting.llm.reasoning.compatibility.current") + ": " + profileName + ")");
     }
 
     private void testActiveProfile() {
