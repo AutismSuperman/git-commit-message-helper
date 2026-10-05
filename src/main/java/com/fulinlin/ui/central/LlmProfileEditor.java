@@ -3,6 +3,7 @@ package com.fulinlin.ui.central;
 import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.enums.LlmProvider;
+import com.fulinlin.model.enums.ThinkingLevel;
 import com.fulinlin.service.LlmClient;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.application.ApplicationManager;
@@ -26,7 +27,9 @@ public class LlmProfileEditor extends DialogWrapper {
     private final JComboBox<String> modelComboBox;
     private final JButton fetchModelsButton;
     private final JComboBox<LlmProvider> providerComboBox;
-    private final JCheckBox reasoningCompatibilityCheckBox;
+    private final JComboBox<ThinkingLevel> thinkingLevelComboBox;
+    private final JLabel apiFormatHintLabel;
+    private final JSpinner maxResponseTokensSpinner;
     private final String profileId;
     private LlmProvider previousProvider;
 
@@ -43,8 +46,17 @@ public class LlmProfileEditor extends DialogWrapper {
         modelComboBox.setSelectedItem(profile.getModel());
         fetchModelsButton = new JButton(PluginBundle.get("setting.llm.model.fetch"));
         providerComboBox = new JComboBox<>(LlmProvider.values());
-        reasoningCompatibilityCheckBox = new JCheckBox(PluginBundle.get("setting.llm.reasoning.compatibility"));
-        reasoningCompatibilityCheckBox.setToolTipText(PluginBundle.get("setting.llm.reasoning.compatibility.tooltip"));
+        thinkingLevelComboBox = new JComboBox<>(ThinkingLevel.values());
+        thinkingLevelComboBox.setToolTipText(PluginBundle.get("setting.llm.thinking.level.tooltip"));
+        apiFormatHintLabel = new JLabel();
+        apiFormatHintLabel.setForeground(com.intellij.util.ui.UIUtil.getContextHelpForeground());
+        maxResponseTokensSpinner = new JSpinner(new SpinnerNumberModel(
+                profile.resolveMaxResponseTokens(),
+                LlmProfile.MIN_MAX_RESPONSE_TOKENS,
+                LlmProfile.MAX_MAX_RESPONSE_TOKENS,
+                256
+        ));
+        maxResponseTokensSpinner.setToolTipText(PluginBundle.get("setting.llm.max.response.tokens.tooltip"));
         providerComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
@@ -52,24 +64,25 @@ public class LlmProfileEditor extends DialogWrapper {
                 return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
             }
         });
+        thinkingLevelComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                Object displayValue = value instanceof ThinkingLevel ? ((ThinkingLevel) value).getDisplayName() : value;
+                return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
+            }
+        });
         previousProvider = LlmProvider.fromNullable(profile.getProvider());
         providerComboBox.setSelectedItem(previousProvider);
-        reasoningCompatibilityCheckBox.setSelected(Boolean.TRUE.equals(profile.getReasoningCompatibilityEnabled()));
+        thinkingLevelComboBox.setSelectedItem(ThinkingLevel.fromNullable(profile.getThinkingLevel()));
         buildPanel();
         bindListeners();
+        updateApiFormatHint();
         init();
     }
 
     @NotNull
     public LlmProfile getProfile() {
-        LlmProfile profile = new LlmProfile();
-        profile.setId(profileId);
-        profile.setName(nameField.getText().trim());
-        profile.setBaseUrl(baseUrlField.getText().trim());
-        profile.setApiKey(new String(apiKeyField.getPassword()).trim());
-        profile.setModel(getModelText());
-        profile.setProvider((LlmProvider) providerComboBox.getSelectedItem());
-        profile.setReasoningCompatibilityEnabled(reasoningCompatibilityCheckBox.isSelected());
+        LlmProfile profile = createProfileFromFields();
         GitCommitMessageHelperSettings.checkDefaultLlmProfile(profile);
         return profile;
     }
@@ -90,10 +103,12 @@ public class LlmProfileEditor extends DialogWrapper {
         int row = 0;
         row = addField(mainPanel, PluginBundle.get("setting.llm.profile.name"), nameField, gbc, row);
         row = addField(mainPanel, PluginBundle.get("setting.llm.profile.provider"), providerComboBox, gbc, row);
+        row = addHint(mainPanel, apiFormatHintLabel, gbc, row);
         row = addField(mainPanel, PluginBundle.get("setting.central.llm.base.url"), baseUrlField, gbc, row);
         row = addField(mainPanel, PluginBundle.get("setting.central.llm.api.key"), apiKeyField, gbc, row);
         row = addField(mainPanel, PluginBundle.get("setting.central.llm.model"), createModelPanel(), gbc, row);
-        addCheckBox(reasoningCompatibilityCheckBox, gbc, row);
+        row = addField(mainPanel, PluginBundle.get("setting.llm.thinking.level"), thinkingLevelComboBox, gbc, row);
+        row = addField(mainPanel, PluginBundle.get("setting.llm.max.response.tokens"), maxResponseTokensSpinner, gbc, row);
     }
 
     @NotNull
@@ -119,15 +134,45 @@ public class LlmProfileEditor extends DialogWrapper {
         return row + 1;
     }
 
-    private void addCheckBox(@NotNull JCheckBox checkBox, GridBagConstraints gbc, int row) {
-        JPanel checkBoxPanel = new JPanel(new BorderLayout());
-        checkBoxPanel.add(checkBox, BorderLayout.WEST);
+    private int addHint(@NotNull JPanel panel, @NotNull JLabel label, GridBagConstraints gbc, int row) {
+        gbc.gridwidth = 1;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.weightx = 0;
+        panel.add(new JLabel(), gbc);
+
         gbc.gridx = 1;
         gbc.gridy = row;
-        gbc.gridwidth = 1;
         gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        mainPanel.add(checkBoxPanel, gbc);
+        panel.add(label, gbc);
+        return row + 1;
+    }
+
+    /**
+     * Shows the endpoint the current base URL and API format resolve to, so a shared gateway URL
+     * can be checked against the protocol it actually speaks before saving.
+     */
+    private void updateApiFormatHint() {
+        LlmProvider provider = (LlmProvider) providerComboBox.getSelectedItem();
+        if (provider == null) {
+            apiFormatHintLabel.setText("");
+            return;
+        }
+        providerComboBox.setToolTipText("<html><b>" + provider.getDisplayName() + "</b><br>"
+                + provider.getDescription() + "</html>");
+        String baseUrl = baseUrlField.getText().trim();
+        if (baseUrl.isEmpty()) {
+            apiFormatHintLabel.setText(PluginBundle.get("setting.llm.provider.endpoint.preview")
+                    + " " + provider.getEndpointPath());
+            return;
+        }
+        if (baseUrl.endsWith(provider.getEndpointPath())) {
+            apiFormatHintLabel.setText(PluginBundle.get("setting.llm.provider.endpoint.preview") + " " + baseUrl);
+            return;
+        }
+        String normalized = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        apiFormatHintLabel.setText(PluginBundle.get("setting.llm.provider.endpoint.preview")
+                + " " + normalized + provider.getEndpointPath());
     }
 
     private void bindListeners() {
@@ -141,6 +186,23 @@ public class LlmProfileEditor extends DialogWrapper {
                 baseUrlField.setText(currentProvider.getDefaultBaseUrl());
             }
             previousProvider = currentProvider;
+            updateApiFormatHint();
+        });
+        baseUrlField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                updateApiFormatHint();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                updateApiFormatHint();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                updateApiFormatHint();
+            }
         });
         fetchModelsButton.addActionListener(e -> fetchModels());
     }
@@ -201,7 +263,8 @@ public class LlmProfileEditor extends DialogWrapper {
         profile.setApiKey(new String(apiKeyField.getPassword()).trim());
         profile.setModel(getModelText());
         profile.setProvider((LlmProvider) providerComboBox.getSelectedItem());
-        profile.setReasoningCompatibilityEnabled(reasoningCompatibilityCheckBox.isSelected());
+        profile.setThinkingLevel((ThinkingLevel) thinkingLevelComboBox.getSelectedItem());
+        profile.setMaxResponseTokens(((Number) maxResponseTokensSpinner.getValue()).intValue());
         return profile;
     }
 

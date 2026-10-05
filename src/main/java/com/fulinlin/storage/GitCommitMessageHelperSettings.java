@@ -11,6 +11,7 @@ import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.model.enums.LlmProvider;
+import com.fulinlin.model.enums.ThinkingLevel;
 import com.fulinlin.model.enums.TypeDisplayStyleEnum;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;
@@ -349,6 +350,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         llmSettings.setResponseLanguage("English");
         llmSettings.setSmartEchoEnabled(Boolean.FALSE);
         llmSettings.setStreamingResponseEnabled(Boolean.TRUE);
+        llmSettings.setMaxDiffLength(LlmSettings.DEFAULT_MAX_DIFF_LENGTH);
         syncLegacyLlmFields(llmSettings, profile);
         return llmSettings;
     }
@@ -362,7 +364,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         profile.setBaseUrl(profile.getProvider().getDefaultBaseUrl());
         profile.setApiKey("");
         profile.setModel("");
-        profile.setReasoningCompatibilityEnabled(Boolean.FALSE);
+        profile.setThinkingLevel(ThinkingLevel.DEFAULT);
+        profile.setMaxResponseTokens(LlmProfile.DEFAULT_MAX_RESPONSE_TOKENS);
         return profile;
     }
 
@@ -387,6 +390,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         if (llmSettings.getStreamingResponseEnabled() == null) {
             llmSettings.setStreamingResponseEnabled(Boolean.TRUE);
         }
+        llmSettings.setMaxDiffLength(llmSettings.resolveMaxDiffLength());
         for (LlmProfile profile : llmSettings.getProfiles()) {
             checkDefaultLlmProfile(profile);
         }
@@ -410,7 +414,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
             profile.setName("Default");
         }
         profile.setProvider(LlmProvider.fromNullable(profile.getProvider()));
-        profile.setReasoningCompatibilityEnabled(defaultBoolean(profile.getReasoningCompatibilityEnabled(), Boolean.FALSE));
+        migrateLegacyReasoningFlag(profile);
+        profile.setThinkingLevel(ThinkingLevel.fromNullable(profile.getThinkingLevel()));
         if (profile.getBaseUrl() == null) {
             profile.setBaseUrl(profile.getProvider().getDefaultBaseUrl());
         }
@@ -420,6 +425,21 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         if (profile.getModel() == null) {
             profile.setModel("");
         }
+        profile.setMaxResponseTokens(LlmProfile.resolveMaxResponseTokens(profile.getMaxResponseTokens()));
+    }
+
+    /**
+     * Settings written before thinking levels existed stored a single boolean that switched model
+     * reasoning off. It maps to the disabled level; the legacy field is then cleared so the new
+     * level stays authoritative. Absent or false values keep the protocol default.
+     */
+    @SuppressWarnings("deprecation")
+    private static void migrateLegacyReasoningFlag(@NotNull LlmProfile profile) {
+        if (Boolean.TRUE.equals(profile.getReasoningCompatibilityEnabled())
+                && !ThinkingLevel.fromNullable(profile.getThinkingLevel()).isSpecified()) {
+            profile.setThinkingLevel(ThinkingLevel.DISABLED);
+        }
+        profile.setReasoningCompatibilityEnabled(null);
     }
 
     private void checkDefaultCommitTemplates(@NotNull DataSettings dataSettings) {
@@ -598,10 +618,6 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
     }
 
     private static String defaultString(String value, String defaultValue) {
-        return value == null ? defaultValue : value;
-    }
-
-    private static Boolean defaultBoolean(Boolean value, Boolean defaultValue) {
         return value == null ? defaultValue : value;
     }
 

@@ -2,6 +2,7 @@ package com.fulinlin.action;
 
 import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.LlmProfile;
+import com.fulinlin.model.enums.ThinkingLevel;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.ide.ActivityTracker;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -69,9 +70,9 @@ public final class CommitPanelActionSupport {
     }
 
     /**
-     * Placeholder shown in the commit message area while the LLM request runs. Reasoning
-     * compatibility means the model may think before answering with no visible output,
-     * so set expectations about the silent wait.
+     * Placeholder shown in the commit message area while the LLM request runs. A profile with
+     * thinking enabled may reason before answering with no visible output, so set expectations
+     * about the silent wait.
      */
     @NotNull
     public static String buildLoadingPlaceholderText(@NotNull String progressText) {
@@ -80,7 +81,7 @@ public final class CommitPanelActionSupport {
                 .getCentralSettings()
                 .getLlmSettings()
                 .getActiveProfile();
-        if (activeProfile != null && Boolean.TRUE.equals(activeProfile.getReasoningCompatibilityEnabled())) {
+        if (activeProfile != null && ThinkingLevel.fromNullable(activeProfile.getThinkingLevel()).isReasoningRequested()) {
             text += " (" + PluginBundle.get("action.progress.reasoning.hint") + ")";
         }
         return text;

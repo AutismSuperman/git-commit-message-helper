@@ -149,36 +149,25 @@ LLM 返回结构化字段 `type`、`scope`、`subject`、`body`、`changes`、`c
 
 ## LLM 兼容性
 
-插件现在支持两种 Provider 模式：
+每个模型配置可以选择三种接口协议之一，同一个 Base URL 只要协议匹配就能接入：
 
-- `OpenAI Compatible`
-- `Anthropic`
+| 接口协议 | 端点 | 请求要点 |
+| --- | --- | --- |
+| `Chat Completions` | `/chat/completions` | `model`、`messages`、`temperature`、`max_tokens` |
+| `Anthropic Messages` | `/v1/messages` | `x-api-key` 与 `anthropic-version` 请求头、`system`、`max_tokens` |
+| `Responses` | `/responses` | `instructions`、`input`、`max_output_tokens`、`reasoning.effort` |
 
-### OpenAI Compatible
+任意协议下 `Base URL` 既可以填写完整接口地址，也可以填写 `https://api.openai.com/v1` 这样的基础地址，插件会自动补全对应路径。
 
-配置中的 `Base URL` 可以是：
+### 思考等级
 
-- 以 `/chat/completions` 结尾的完整接口地址
-- 服务基础地址，例如 `https://api.openai.com/v1`，插件会自动补上 `/chat/completions`
+每个模型配置都有一个思考等级：`模型默认`、`关闭(最快)`、`低`、`中`、`高`、`最高`。插件会把所选等级翻译成当前接口协议支持的参数，你不需要记住各家厂商的字段名：
 
-请求会使用：
+- **Chat Completions**：Qwen/DashScope 走 `enable_thinking`；智谱、Moonshot、豆包/火山、MiMo、DeepSeek 走 `thinking` 对象；OpenRouter 与 MiniMax 走 `reasoning.effort` 对象；OpenAI 推理模型、Gemini、Grok 及其他兼容网关走 `reasoning_effort`。OpenAI `o*`/`gpt-5` 系列使用 `max_completion_tokens`。
+- **Anthropic Messages**：发送经典 `thinking` 对象，并按等级与模型最大响应 token 数推导思考预算；支持分级 effort 的网关则发送 `output_config.effort`。思考开启期间不会发送 temperature，因为 Anthropic 此时只接受默认值。
+- **Responses**：发送 `reasoning.effort`，响应预算使用 `max_output_tokens`。
 
-- `Authorization: Bearer <API Key>`
-- 包含 `model`、`temperature`、`stream`、`messages` 等字段的 JSON 请求体
-
-因此，只要服务提供的是 OpenAI 风格的 Chat Completions 接口，理论上都可以接入本插件。
-
-### Anthropic
-
-如果使用 Anthropic，`Base URL` 可以配置为 `https://api.anthropic.com`，插件会自动调用 `/v1/messages`。
-
-请求会使用：
-
-- `x-api-key: <API Key>`
-- `anthropic-version: 2023-06-01`
-- 包含 `model`、`system`、`messages`、`temperature`、`max_tokens`、`stream` 等字段的 JSON 请求体
-
-这种模式会直接调用 Anthropic 官方 Messages API，而不是通过 OpenAI 兼容网关转接。
+选择“模型默认”不会发送任何思考参数，保持服务商自身的默认行为。若服务商拒绝这些额外参数，请求会自动去掉它们重试一次，并记住该模型后续请求不再携带。
 
 ### Smart Echo
 

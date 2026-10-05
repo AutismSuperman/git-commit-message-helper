@@ -5,6 +5,14 @@ import java.util.Objects;
 
 public class LlmSettings {
 
+    /**
+     * Character budget for the git diff sent to the model. Large changes get truncated below
+     * this limit, so it is configurable; the default keeps ordinary requests small and cheap.
+     */
+    public static final int DEFAULT_MAX_DIFF_LENGTH = 12000;
+    public static final int MIN_MAX_DIFF_LENGTH = 2000;
+    public static final int MAX_MAX_DIFF_LENGTH = 200000;
+
     private String baseUrl;
 
     private String apiKey;
@@ -18,6 +26,8 @@ public class LlmSettings {
     private Boolean smartEchoEnabled;
 
     private Boolean streamingResponseEnabled;
+
+    private Integer maxDiffLength;
 
     private String activeProfileId;
 
@@ -79,6 +89,30 @@ public class LlmSettings {
         this.streamingResponseEnabled = streamingResponseEnabled;
     }
 
+    public Integer getMaxDiffLength() {
+        return maxDiffLength;
+    }
+
+    public void setMaxDiffLength(Integer maxDiffLength) {
+        this.maxDiffLength = maxDiffLength;
+    }
+
+    /**
+     * Diff character budget to use when collecting git context. Null means the profile never
+     * configured one, so the default applies; out-of-range values are clamped rather than
+     * rejected so a hand-edited settings file cannot break prompt assembly.
+     */
+    public static int resolveMaxDiffLength(Integer configured) {
+        if (configured == null) {
+            return DEFAULT_MAX_DIFF_LENGTH;
+        }
+        return Math.max(MIN_MAX_DIFF_LENGTH, Math.min(MAX_MAX_DIFF_LENGTH, configured));
+    }
+
+    public int resolveMaxDiffLength() {
+        return resolveMaxDiffLength(maxDiffLength);
+    }
+
     public String getActiveProfileId() {
         return activeProfileId;
     }
@@ -121,12 +155,13 @@ public class LlmSettings {
                 && Objects.equals(responseLanguage, that.responseLanguage)
                 && Objects.equals(smartEchoEnabled, that.smartEchoEnabled)
                 && Objects.equals(streamingResponseEnabled, that.streamingResponseEnabled)
+                && Objects.equals(maxDiffLength, that.maxDiffLength)
                 && Objects.equals(activeProfileId, that.activeProfileId)
                 && Objects.equals(profiles, that.profiles);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(baseUrl, apiKey, model, temperature, responseLanguage, smartEchoEnabled, streamingResponseEnabled, activeProfileId, profiles);
+        return Objects.hash(baseUrl, apiKey, model, temperature, responseLanguage, smartEchoEnabled, streamingResponseEnabled, maxDiffLength, activeProfileId, profiles);
     }
 }

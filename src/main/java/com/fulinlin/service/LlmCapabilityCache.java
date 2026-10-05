@@ -10,18 +10,31 @@ import java.util.concurrent.ConcurrentHashMap;
 
 final class LlmCapabilityCache {
 
-    private static final Set<String> REASONING_COMPATIBILITY_UNSUPPORTED = ConcurrentHashMap.newKeySet();
+    private static final Set<String> THINKING_PARAMETERS_UNSUPPORTED = ConcurrentHashMap.newKeySet();
+    private static final Set<String> COMPLETION_TOKENS_UNSUPPORTED = ConcurrentHashMap.newKeySet();
     private static final Set<String> STREAMING_UNSUPPORTED = ConcurrentHashMap.newKeySet();
 
     private LlmCapabilityCache() {
     }
 
-    static boolean shouldSkipReasoningCompatibility(@NotNull LlmProfile profile) {
-        return REASONING_COMPATIBILITY_UNSUPPORTED.contains(key(profile));
+    static boolean shouldSkipThinkingParameters(@NotNull LlmProfile profile) {
+        return THINKING_PARAMETERS_UNSUPPORTED.contains(key(profile));
     }
 
-    static void markReasoningCompatibilityUnsupported(@NotNull LlmProfile profile) {
-        REASONING_COMPATIBILITY_UNSUPPORTED.add(key(profile));
+    static void markThinkingParametersUnsupported(@NotNull LlmProfile profile) {
+        THINKING_PARAMETERS_UNSUPPORTED.add(key(profile));
+    }
+
+    /**
+     * Gateways that expose reasoning models but reject {@code max_completion_tokens} and still
+     * expect {@code max_tokens}.
+     */
+    static boolean shouldSkipCompletionTokens(@NotNull LlmProfile profile) {
+        return COMPLETION_TOKENS_UNSUPPORTED.contains(key(profile));
+    }
+
+    static void markCompletionTokensUnsupported(@NotNull LlmProfile profile) {
+        COMPLETION_TOKENS_UNSUPPORTED.add(key(profile));
     }
 
     static boolean shouldSkipStreaming(@NotNull LlmProfile profile) {
@@ -33,7 +46,8 @@ final class LlmCapabilityCache {
     }
 
     static void clearForTests() {
-        REASONING_COMPATIBILITY_UNSUPPORTED.clear();
+        THINKING_PARAMETERS_UNSUPPORTED.clear();
+        COMPLETION_TOKENS_UNSUPPORTED.clear();
         STREAMING_UNSUPPORTED.clear();
     }
 

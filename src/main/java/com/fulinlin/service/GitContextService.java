@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
 
 public class GitContextService {
 
-    private static final int MAX_DIFF_LENGTH = 12000;
     private static final int MAX_UNVERSIONED_FILE_LENGTH = 4000;
     private static final int MAX_CHANGED_LINES_PER_HUNK = 24;
     private static final int MAX_CONTEXT_LINES_PER_HUNK = 4;
@@ -36,7 +35,8 @@ public class GitContextService {
     @NotNull
     public GitContext collect(@NotNull Project project,
                               @NotNull Collection<Change> selectedChanges,
-                              @NotNull Collection<File> selectedFiles) {
+                              @NotNull Collection<File> selectedFiles,
+                              int maxDiffLength) {
         String basePath = project.getBasePath();
         if (basePath == null || basePath.trim().isEmpty()) {
             return new GitContext("", "", "", "");
@@ -48,7 +48,7 @@ public class GitContextService {
         String selectedDiff = buildSelectedDiff(project, selectedChanges, workDir.toPath());
         String unversionedSnapshot = buildUnversionedSnapshot(selectedChanges, selectedFiles, workDir);
         String recentCommits = execute(workDir, "git", "log", "-5", "--pretty=format:%h %s");
-        String promptDiff = trimDiffForPrompt(combine(selectedDiff, unversionedSnapshot), MAX_DIFF_LENGTH);
+        String promptDiff = trimDiffForPrompt(combine(selectedDiff, unversionedSnapshot), maxDiffLength);
         return new GitContext(
                 workDir.getAbsolutePath(),
                 trim(status, 4000),
@@ -59,7 +59,9 @@ public class GitContextService {
     }
 
     @NotNull
-    public GitContext collectCommitted(@NotNull Project project, @NotNull String commitHash) throws IOException {
+    public GitContext collectCommitted(@NotNull Project project,
+                                       @NotNull String commitHash,
+                                       int maxDiffLength) throws IOException {
         CommitReference commitReference = resolveCommitReference(project, commitHash);
         File workDir = commitReference.workDir;
         String fullHash = commitReference.fullHash;
@@ -73,7 +75,7 @@ public class GitContextService {
         return new GitContext(
                 workDir.getAbsolutePath(),
                 trim(status, 4000),
-                trimDiffForPrompt(historicalDiff, MAX_DIFF_LENGTH),
+                trimDiffForPrompt(historicalDiff, maxDiffLength),
                 "",
                 trim(recentCommits, 2000)
         );

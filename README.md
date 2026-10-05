@@ -149,36 +149,37 @@ The LLM returns the structured fields `type`, `scope`, `subject`, `body`, `chang
 
 ## LLM Compatibility
 
-The plugin now supports two LLM provider modes:
+Each model profile selects one of three API formats, so a single base URL can be reused with the
+protocol the gateway actually speaks:
 
-- `OpenAI Compatible`
-- `Anthropic`
+| API format | Endpoint | Request highlights |
+| --- | --- | --- |
+| `Chat Completions` | `/chat/completions` | `model`, `messages`, `temperature`, `max_tokens` |
+| `Anthropic Messages` | `/v1/messages` | `x-api-key` and `anthropic-version` headers, `system`, `max_tokens` |
+| `Responses` | `/responses` | `instructions`, `input`, `max_output_tokens`, `reasoning.effort` |
 
-### OpenAI Compatible
+For any format the `Base URL` can be either a full endpoint or a server base URL such as
+`https://api.openai.com/v1`; the plugin appends the matching path automatically.
 
-Your configured `Base URL` can be either:
+### Thinking Level
 
-- a full endpoint ending with `/chat/completions`
-- or a server base URL such as `https://api.openai.com/v1`, in which case the plugin automatically appends `/chat/completions`
+Every profile has a thinking level: `Model default`, `Off (fastest)`, `Low`, `Medium`, `High`, or
+`Max`. The plugin translates the chosen level into the parameter the selected API format supports,
+so you do not have to remember per-vendor names:
 
-The request uses:
+- **Chat Completions** uses `enable_thinking` for Qwen/DashScope endpoints, a `thinking` object for
+  Zhipu, Moonshot, Doubao/Volcengine, MiMo, and DeepSeek gateways, a `reasoning.effort` object for
+  OpenRouter and MiniMax, and `reasoning_effort` for OpenAI reasoning models, Gemini, Grok, and
+  other compatible gateways. OpenAI `o*`/`gpt-5` models use `max_completion_tokens`.
+- **Anthropic Messages** sends the classic `thinking` object with a token budget derived from the
+  level and the profile's max response tokens, or `output_config.effort` on gateways that expose
+  graded effort. Temperature is omitted while thinking is active because Anthropic only accepts the
+  default value then.
+- **Responses** sends `reasoning.effort` and uses `max_output_tokens`.
 
-- `Authorization: Bearer <API Key>`
-- JSON fields including `model`, `temperature`, `stream`, and `messages`
-
-This mode works with services that expose an OpenAI-style Chat Completions interface.
-
-### Anthropic
-
-For Anthropic, use a base URL such as `https://api.anthropic.com`. The plugin automatically calls `/v1/messages`.
-
-The request uses:
-
-- `x-api-key: <API Key>`
-- `anthropic-version: 2023-06-01`
-- JSON fields including `model`, `system`, `messages`, `temperature`, `max_tokens`, and `stream`
-
-This mode talks to Anthropic's native Messages API instead of relying on an OpenAI-compatible gateway.
+`Model default` sends no thinking parameter at all, which keeps the provider's own default. If an
+endpoint rejects the extra fields, the request is retried once without them and that model is
+remembered so later requests skip them.
 
 ### Smart Echo
 

@@ -18,6 +18,7 @@ public class LlmClient {
     public LlmClient() {
         clients.put(LlmProvider.OPENAI_COMPATIBLE, new OpenAiCompatibleLlmProviderClient());
         clients.put(LlmProvider.ANTHROPIC, new AnthropicLlmProviderClient());
+        clients.put(LlmProvider.OPENAI_RESPONSES, new OpenAiResponsesLlmProviderClient());
     }
 
     @NotNull

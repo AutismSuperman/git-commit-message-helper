@@ -4,6 +4,7 @@ import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.enums.LlmProvider;
+import com.fulinlin.model.enums.ThinkingLevel;
 import com.fulinlin.service.LlmClient;
 import com.fulinlin.service.LlmRequestDiagnostics;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
@@ -39,7 +40,8 @@ public class LlmSettingPanel {
     private final JTextField responseLanguageField;
     private final JCheckBox smartEchoEnabledCheckBox;
     private final JCheckBox streamingResponseEnabledCheckBox;
-    private final JCheckBox reasoningCompatibilityEnabledCheckBox;
+    private final JComboBox<ThinkingLevel> thinkingLevelComboBox;
+    private final JSpinner maxDiffLengthSpinner;
     private final JButton testButton;
     private final JLabel testStatusLabel;
     private final LlmProfileTable profileTable;
@@ -60,8 +62,16 @@ public class LlmSettingPanel {
         responseLanguageField = new JTextField();
         smartEchoEnabledCheckBox = new JCheckBox(PluginBundle.get("setting.central.llm.smart.echo"));
         streamingResponseEnabledCheckBox = new JCheckBox(PluginBundle.get("setting.llm.streaming.response"));
-        reasoningCompatibilityEnabledCheckBox = new JCheckBox(PluginBundle.get("setting.llm.reasoning.compatibility"));
-        reasoningCompatibilityEnabledCheckBox.setToolTipText(PluginBundle.get("setting.llm.reasoning.compatibility.tooltip"));
+        thinkingLevelComboBox = new JComboBox<>(ThinkingLevel.values());
+        thinkingLevelComboBox.setToolTipText(PluginBundle.get("setting.llm.thinking.level.tooltip"));
+        thinkingLevelComboBox.setRenderer(new ThinkingLevelCellRenderer());
+        maxDiffLengthSpinner = new JSpinner(new SpinnerNumberModel(
+                LlmSettings.DEFAULT_MAX_DIFF_LENGTH,
+                LlmSettings.MIN_MAX_DIFF_LENGTH,
+                LlmSettings.MAX_MAX_DIFF_LENGTH,
+                1000
+        ));
+        maxDiffLengthSpinner.setToolTipText(PluginBundle.get("setting.llm.max.diff.length.tooltip"));
         testButton = new JButton(PluginBundle.get("setting.llm.test.connection"));
         testStatusLabel = new JLabel();
         profileTable = new LlmProfileTable();
@@ -142,6 +152,20 @@ public class LlmSettingPanel {
         responseLanguageField.setPreferredSize(new Dimension(JBUI.scale(220), responseLanguageField.getPreferredSize().height));
         compactSettingsPanel.add(responseLanguageField, compactGbc);
 
+        compactGbc.gridx = 4;
+        compactGbc.weightx = 0;
+        compactGbc.insets = JBUI.insets(0, 16, 0, 8);
+        compactGbc.fill = GridBagConstraints.NONE;
+        compactSettingsPanel.add(new JLabel(PluginBundle.get("setting.llm.max.diff.length")), compactGbc);
+
+        compactGbc.gridx = 5;
+        compactGbc.weightx = 0;
+        compactGbc.insets = JBUI.insets(0);
+        compactGbc.fill = GridBagConstraints.HORIZONTAL;
+        JComponent maxDiffLengthEditor = maxDiffLengthSpinner.getEditor();
+        maxDiffLengthEditor.setPreferredSize(new Dimension(JBUI.scale(110), maxDiffLengthEditor.getPreferredSize().height));
+        compactSettingsPanel.add(maxDiffLengthSpinner, compactGbc);
+
         JPanel settingsRowWrapper = new JPanel(new BorderLayout());
         settingsRowWrapper.add(compactSettingsPanel, BorderLayout.WEST);
 
@@ -152,16 +176,30 @@ public class LlmSettingPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(settingsRowWrapper, gbc);
 
+        // Thinking level belongs to the active profile, so it sits next to the active model
+        // selector rather than in the global settings row.
+        JPanel thinkingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, JBUI.scale(8), 0));
+        thinkingPanel.add(new JLabel(PluginBundle.get("setting.llm.thinking.level")));
+        thinkingLevelComboBox.setPreferredSize(new Dimension(JBUI.scale(180), thinkingLevelComboBox.getPreferredSize().height));
+        thinkingPanel.add(thinkingLevelComboBox);
+        JPanel thinkingWrapper = new JPanel(new BorderLayout());
+        thinkingWrapper.add(thinkingPanel, BorderLayout.WEST);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(thinkingWrapper, gbc);
+
         JPanel checkboxPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, JBUI.scale(12), 0));
         checkboxPanel.add(smartEchoEnabledCheckBox);
         checkboxPanel.add(streamingResponseEnabledCheckBox);
-        checkboxPanel.add(reasoningCompatibilityEnabledCheckBox);
         checkboxPanel.add(testButton);
         checkboxPanel.add(testStatusLabel);
         JPanel checkboxWrapper = new JPanel(new BorderLayout());
         checkboxWrapper.add(checkboxPanel, BorderLayout.WEST);
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.gridwidth = 2;
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -199,6 +237,16 @@ public class LlmSettingPanel {
                 profileTable.selectProfile(selectedProfile);
             }
         });
+        thinkingLevelComboBox.addActionListener(e -> {
+            if (loading || displayedProfile == null) {
+                return;
+            }
+            Object selected = thinkingLevelComboBox.getSelectedItem();
+            if (selected instanceof ThinkingLevel) {
+                displayedProfile.setThinkingLevel((ThinkingLevel) selected);
+                profileTable.refresh();
+            }
+        });
         testButton.addActionListener(e -> testActiveProfile());
     }
 
@@ -209,6 +257,7 @@ public class LlmSettingPanel {
         responseLanguageField.setText(llmSettings.getResponseLanguage());
         smartEchoEnabledCheckBox.setSelected(Boolean.TRUE.equals(llmSettings.getSmartEchoEnabled()));
         streamingResponseEnabledCheckBox.setSelected(Boolean.TRUE.equals(llmSettings.getStreamingResponseEnabled()));
+        maxDiffLengthSpinner.setValue(llmSettings.resolveMaxDiffLength());
         profileTable.reset(llmSettings.getProfiles());
         activeProfileComboBox.removeAllItems();
         for (LlmProfile profile : llmSettings.getProfiles()) {
@@ -234,31 +283,17 @@ public class LlmSettingPanel {
         llmSettings.setResponseLanguage(responseLanguageField.getText().trim());
         llmSettings.setSmartEchoEnabled(smartEchoEnabledCheckBox.isSelected());
         llmSettings.setStreamingResponseEnabled(streamingResponseEnabledCheckBox.isSelected());
-        if (displayedProfile != null) {
-            displayedProfile.setReasoningCompatibilityEnabled(reasoningCompatibilityEnabledCheckBox.isSelected());
+        llmSettings.setMaxDiffLength(((Number) maxDiffLengthSpinner.getValue()).intValue());
+        if (displayedProfile != null && thinkingLevelComboBox.getSelectedItem() instanceof ThinkingLevel) {
+            displayedProfile.setThinkingLevel((ThinkingLevel) thinkingLevelComboBox.getSelectedItem());
         }
     }
 
     private void loadDisplayedProfileSettings(LlmProfile profile) {
-        reasoningCompatibilityEnabledCheckBox.setSelected(
-                profile != null && Boolean.TRUE.equals(profile.getReasoningCompatibilityEnabled())
-        );
-        updateReasoningCompatibilityLabel(profile);
-    }
-
-    /**
-     * Reasoning compatibility is a per-profile setting while its checkbox sits in a row of
-     * global settings; showing the owning profile name keeps that scope visible.
-     */
-    private void updateReasoningCompatibilityLabel(LlmProfile profile) {
-        String base = PluginBundle.get("setting.llm.reasoning.compatibility");
-        String profileName = profile == null || profile.getName() == null ? "" : profile.getName().trim();
-        if (profileName.isEmpty()) {
-            reasoningCompatibilityEnabledCheckBox.setText(base);
-            return;
-        }
-        reasoningCompatibilityEnabledCheckBox.setText(base
-                + " (" + PluginBundle.get("setting.llm.reasoning.compatibility.current") + ": " + profileName + ")");
+        thinkingLevelComboBox.setSelectedItem(profile == null
+                ? ThinkingLevel.defaultLevel()
+                : ThinkingLevel.fromNullable(profile.getThinkingLevel()));
+        thinkingLevelComboBox.setEnabled(profile != null);
     }
 
     private void testActiveProfile() {
@@ -391,7 +426,8 @@ public class LlmSettingPanel {
         profile.setApiKey(source.getApiKey());
         profile.setModel(source.getModel());
         profile.setProvider(source.getProvider());
-        profile.setReasoningCompatibilityEnabled(source.getReasoningCompatibilityEnabled());
+        profile.setThinkingLevel(source.getThinkingLevel());
+        profile.setMaxResponseTokens(source.getMaxResponseTokens());
         return profile;
     }
 
@@ -417,6 +453,14 @@ public class LlmSettingPanel {
         return false;
     }
 
+    private static class ThinkingLevelCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            Object displayValue = value instanceof ThinkingLevel ? ((ThinkingLevel) value).getDisplayName() : value;
+            return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
+        }
+    }
+
     private static class ProfileListCellRenderer extends DefaultListCellRenderer {
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
@@ -434,16 +478,18 @@ public class LlmSettingPanel {
         private static final int PROVIDER_COLUMN = 1;
         private static final int BASE_URL_COLUMN = 2;
         private static final int MODEL_COLUMN = 3;
+        private static final int THINKING_COLUMN = 4;
 
         private final LlmProfileTableModel tableModel = new LlmProfileTableModel();
 
         LlmProfileTable() {
             setModel(tableModel);
             setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-            setColumnWidth(NAME_COLUMN, 160);
+            setColumnWidth(NAME_COLUMN, 150);
             setColumnWidth(PROVIDER_COLUMN, 150);
-            setColumnWidth(BASE_URL_COLUMN, 260);
-            setColumnWidth(MODEL_COLUMN, 180);
+            setColumnWidth(BASE_URL_COLUMN, 240);
+            setColumnWidth(MODEL_COLUMN, 160);
+            setColumnWidth(THINKING_COLUMN, 110);
         }
 
         void reset(List<LlmProfile> profiles) {
@@ -451,6 +497,10 @@ public class LlmSettingPanel {
             if (getRowCount() > 0) {
                 setRowSelectionInterval(0, 0);
             }
+        }
+
+        void refresh() {
+            tableModel.fireTableDataChanged();
         }
 
         void addProfile(LlmProfile profile) {
@@ -550,7 +600,7 @@ public class LlmSettingPanel {
 
         @Override
         public int getColumnCount() {
-            return 4;
+            return 5;
         }
 
         @Override
@@ -564,6 +614,8 @@ public class LlmSettingPanel {
                     return PluginBundle.get("setting.central.llm.base.url");
                 case LlmProfileTable.MODEL_COLUMN:
                     return PluginBundle.get("setting.central.llm.model");
+                case LlmProfileTable.THINKING_COLUMN:
+                    return PluginBundle.get("setting.llm.thinking.level.column");
                 default:
                     return "";
             }
@@ -586,6 +638,8 @@ public class LlmSettingPanel {
                     return profile.getBaseUrl();
                 case LlmProfileTable.MODEL_COLUMN:
                     return profile.getModel();
+                case LlmProfileTable.THINKING_COLUMN:
+                    return ThinkingLevel.fromNullable(profile.getThinkingLevel()).getDisplayName();
                 default:
                     return "";
             }

@@ -2,6 +2,7 @@ package com.fulinlin.service;
 
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
+import com.fulinlin.model.enums.ThinkingLevel;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -41,14 +42,14 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
                        @NotNull String systemPrompt,
                        @NotNull String userPrompt,
                        @NotNull LlmRequestDiagnostics diagnostics) throws IOException {
-        boolean compatibilityRequested = isReasoningCompatibilityEnabled(profile);
-        boolean compatibilitySkippedByCache = compatibilityRequested
-                && LlmCapabilityCache.shouldSkipReasoningCompatibility(profile);
-        boolean compatibilityEnabled = compatibilityRequested && !compatibilitySkippedByCache;
+        boolean thinkingRequested = LlmThinkingParameters.isRequested(profile);
+        boolean thinkingSkippedByCache = thinkingRequested
+                && LlmCapabilityCache.shouldSkipThinkingParameters(profile);
+        boolean thinkingEnabled = thinkingRequested && !thinkingSkippedByCache;
         HttpURLConnection connection = createConnection(profile);
         JsonObject requestBody = createRequestBody(
                 profile, settings, systemPrompt, userPrompt, false,
-                compatibilityEnabled, compatibilityRequested, compatibilitySkippedByCache, diagnostics
+                thinkingEnabled, thinkingRequested, thinkingSkippedByCache, diagnostics
         );
         write(connection, GSON.toJson(requestBody));
 
@@ -59,11 +60,11 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
         if (responseCode < 200 || responseCode >= 300) {
             String errorBody = readAll(inputStream);
             connection.disconnect();
-            if (shouldRetryWithAdjustedParameters(profile, compatibilityEnabled, errorBody, diagnostics)) {
+            if (shouldRetryWithAdjustedParameters(profile, thinkingEnabled, errorBody, diagnostics)) {
                 connection = createConnection(profile);
                 requestBody = createRequestBodyForRetry(
                         profile, settings, systemPrompt, userPrompt, false,
-                        compatibilityRequested, diagnostics
+                        thinkingRequested, diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
                 responseCode = getResponseCode(connection);
@@ -108,14 +109,14 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
                            @NotNull String userPrompt,
                            @NotNull Consumer<String> onDelta,
                            @NotNull LlmRequestDiagnostics diagnostics) throws IOException {
-        boolean compatibilityRequested = isReasoningCompatibilityEnabled(profile);
-        boolean compatibilitySkippedByCache = compatibilityRequested
-                && LlmCapabilityCache.shouldSkipReasoningCompatibility(profile);
-        boolean compatibilityEnabled = compatibilityRequested && !compatibilitySkippedByCache;
+        boolean thinkingRequested = LlmThinkingParameters.isRequested(profile);
+        boolean thinkingSkippedByCache = thinkingRequested
+                && LlmCapabilityCache.shouldSkipThinkingParameters(profile);
+        boolean thinkingEnabled = thinkingRequested && !thinkingSkippedByCache;
         HttpURLConnection connection = createConnection(profile);
         JsonObject requestBody = createRequestBody(
                 profile, settings, systemPrompt, userPrompt, true,
-                compatibilityEnabled, compatibilityRequested, compatibilitySkippedByCache, diagnostics
+                thinkingEnabled, thinkingRequested, thinkingSkippedByCache, diagnostics
         );
         write(connection, GSON.toJson(requestBody));
 
@@ -126,11 +127,11 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
         if (responseCode < 200 || responseCode >= 300) {
             String errorBody = readAll(inputStream);
             connection.disconnect();
-            if (shouldRetryWithAdjustedParameters(profile, compatibilityEnabled, errorBody, diagnostics)) {
+            if (shouldRetryWithAdjustedParameters(profile, thinkingEnabled, errorBody, diagnostics)) {
                 connection = createConnection(profile);
                 requestBody = createRequestBodyForRetry(
                         profile, settings, systemPrompt, userPrompt, true,
-                        compatibilityRequested, diagnostics
+                        thinkingRequested, diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
                 responseCode = getResponseCode(connection);
@@ -213,7 +214,7 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
                                         @NotNull String userPrompt,
                                         boolean stream) {
         return createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
-                isReasoningCompatibilityEnabled(profile), false);
+                LlmThinkingParameters.isRequested(profile), false);
     }
 
     @NotNull
@@ -222,15 +223,19 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
                                         @NotNull String systemPrompt,
                                         @NotNull String userPrompt,
                                         boolean stream,
-                                        boolean compatibilityEnabled,
+                                        boolean thinkingEnabled,
                                         boolean omitTemperature) {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", profile.getModel().trim());
         requestBody.addProperty("system", systemPrompt);
         requestBody.addProperty("stream", stream);
-        requestBody.addProperty("max_tokens", MAX_RESPONSE_TOKENS);
-        applyReasoningCompatibility(requestBody, profile, compatibilityEnabled);
-        if (!omitTemperature && settings.getTemperature() != null) {
+        requestBody.addProperty("max_tokens", profile.resolveMaxResponseTokens());
+        if (thinkingEnabled) {
+            LlmThinkingParameters.apply(requestBody, profile);
+        }
+        // Anthropic only accepts the default temperature while thinking is active.
+        boolean thinkingActive = thinkingEnabled && !ThinkingLevel.fromNullable(profile.getThinkingLevel()).isDisabled();
+        if (!omitTemperature && !thinkingActive && settings.getTemperature() != null) {
             requestBody.addProperty("temperature", settings.getTemperature());
         }
         JsonArray messages = new JsonArray();
@@ -248,18 +253,18 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
                                                 @NotNull String systemPrompt,
                                                 @NotNull String userPrompt,
                                                 boolean stream,
-                                                boolean compatibilityEnabled,
-                                                boolean compatibilityRequested,
-                                                boolean compatibilitySkippedByCache,
+                                                boolean thinkingEnabled,
+                                                boolean thinkingRequested,
+                                                boolean thinkingSkippedByCache,
                                                 @NotNull LlmRequestDiagnostics diagnostics) {
         JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
-                compatibilityEnabled, false);
-        diagnostics.recordRequest(profile, stream, compatibilityRequested, compatibilitySkippedByCache, requestBody);
+                thinkingEnabled, false);
+        diagnostics.recordRequest(profile, stream, thinkingRequested, thinkingSkippedByCache, requestBody);
         return requestBody;
     }
 
     /**
-     * Retry request after the provider rejected the original one: compatibility parameters
+     * Retry request after the provider rejected the original one: thinking parameters
      * are dropped, and temperature is omitted when the error blamed it.
      */
     @NotNull
@@ -268,28 +273,28 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
                                                         @NotNull String systemPrompt,
                                                         @NotNull String userPrompt,
                                                         boolean stream,
-                                                        boolean compatibilityRequested,
+                                                        boolean thinkingRequested,
                                                         @NotNull LlmRequestDiagnostics diagnostics) {
         JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
                 false, true);
-        diagnostics.recordRequest(profile, stream, compatibilityRequested, false, requestBody);
+        diagnostics.recordRequest(profile, stream, thinkingRequested, false, requestBody);
         return requestBody;
     }
 
     private static boolean shouldRetryWithAdjustedParameters(@NotNull LlmProfile profile,
-                                                             boolean compatibilityEnabled,
+                                                             boolean thinkingEnabled,
                                                              @NotNull String errorBody,
                                                              @NotNull LlmRequestDiagnostics diagnostics) {
         boolean temperatureRejected = errorIndicatesUnsupportedTemperature(errorBody);
-        boolean compatibilityRejected = compatibilityEnabled && shouldRetryWithoutReasoningCompatibility(errorBody);
-        if (compatibilityRejected) {
-            LlmCapabilityCache.markReasoningCompatibilityUnsupported(profile);
-            diagnostics.markCompatibilityFallbackUsed();
+        boolean thinkingRejected = thinkingEnabled && shouldRetryWithoutThinkingParameters(errorBody);
+        if (thinkingRejected) {
+            LlmCapabilityCache.markThinkingParametersUnsupported(profile);
+            diagnostics.markThinkingFallbackUsed();
         }
         if (temperatureRejected) {
             diagnostics.markTemperatureFallbackUsed();
         }
-        return compatibilityRejected || temperatureRejected;
+        return thinkingRejected || temperatureRejected;
     }
 
     @NotNull

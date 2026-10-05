@@ -135,13 +135,28 @@ Closes issue
 
     <h3>Provider Compatibility</h3>
     <p>
-        The plugin currently supports two provider modes: <strong>OpenAI Compatible</strong> and
-        <strong>Anthropic</strong>. This lets teams connect either official endpoints or compatible internal gateways,
-        depending on their environment.
+        Each model profile selects one of three API formats: <strong>Chat Completions</strong>,
+        <strong>Anthropic Messages</strong>, or <strong>Responses</strong>. This lets teams connect official
+        endpoints or compatible internal gateways with whichever protocol they speak, and one profile can be
+        duplicated when the same host serves more than one format.
     </p>
     <p>
-        插件当前支持两种 Provider 模式：<strong>OpenAI Compatible</strong> 和 <strong>Anthropic</strong>。这让团队可以根据
-        实际环境接入官方接口或兼容的内部网关。
+        每个模型配置可选择三种接口协议之一：<strong>Chat Completions</strong>、<strong>Anthropic Messages</strong>
+        或 <strong>Responses</strong>。这样既能接入官方接口，也能接入兼容的内部网关，同一台主机提供多种协议时复制配置即可。
+    </p>
+    <h3>Thinking Level</h3>
+    <p>
+        Profiles expose a thinking level drop-down: <strong>Model default</strong>, <strong>Off (fastest)</strong>,
+        <strong>Low</strong>, <strong>Medium</strong>, <strong>High</strong>, and <strong>Max</strong>. The plugin maps
+        the level to the parameter the chosen API format supports, so OpenAI reasoning models, Anthropic
+        thinking budgets, Responses reasoning effort, and vendor switches such as Qwen, Zhipu, DeepSeek, Moonshot,
+        and Doubao all work without remembering field names. Model default keeps the provider's own behavior.
+    </p>
+    <p>
+        模型配置提供思考等级下拉框：<strong>模型默认</strong>、<strong>关闭(最快)</strong>、<strong>低</strong>、
+        <strong>中</strong>、<strong>高</strong>、<strong>最高</strong>。插件会把等级映射为所选协议支持的参数，
+        无需记忆字段名即可适配 OpenAI 推理模型、Anthropic 思考预算、Responses 推理强度，以及 Qwen、智谱、
+        DeepSeek、Moonshot、豆包等厂商开关。选择“模型默认”则保持服务商自身行为。
     </p>
 </div>
 
@@ -185,18 +200,21 @@ Closes issue
 
     <h3>LLM Settings</h3>
     <p>
-        Configure the provider, base URL, API key, model, temperature, response language, and Smart Echo behavior.
+        Configure the API format, base URL, API key, model, thinking level, temperature, response language, and
+        Smart Echo behavior.
     </p>
     <p>
-        你可以配置 Provider、Base URL、API Key、模型、Temperature、返回语言以及 Smart Echo 行为。
+        你可以配置接口协议、Base URL、API Key、模型、思考等级、Temperature、返回语言以及 Smart Echo 行为。
     </p>
     <p>
-        For OpenAI-compatible services, the plugin can work with either a full <code>/chat/completions</code>
-        endpoint or a base API URL. For Anthropic, it uses the native Messages API.
+        The base URL can be either a full endpoint or a server base URL; the plugin appends the path that matches
+        the selected API format (<code>/chat/completions</code>, <code>/v1/messages</code>, or
+        <code>/responses</code>). The dialog shows the resolved path beneath the format selector.
     </p>
     <p>
-        对于 OpenAI Compatible 服务，插件既支持直接填写完整的 <code>/chat/completions</code> 接口，也支持填写基础 API 地址。
-        对于 Anthropic，则会使用其原生 Messages API。
+        Base URL 既可以填写完整接口地址，也可以只填写基础地址；插件会按所选协议自动补全路径
+        （<code>/chat/completions</code>、<code>/v1/messages</code> 或 <code>/responses</code>）。
+        配置窗口中会在协议选择框下方显示实际调用的路径。
     </p>
 </div>
 

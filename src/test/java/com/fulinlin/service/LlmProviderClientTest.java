@@ -4,16 +4,28 @@ import com.fulinlin.model.CommitTemplate;
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.enums.LlmProvider;
+import com.fulinlin.model.enums.ThinkingLevel;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class LlmProviderClientTest {
+
+    @Test
+    public void everyProviderExposesItsApiFormatEndpoint() {
+        assertEquals(3, LlmProvider.values().length);
+        assertEquals("/chat/completions", LlmProvider.OPENAI_COMPATIBLE.getEndpointPath());
+        assertEquals("/v1/messages", LlmProvider.ANTHROPIC.getEndpointPath());
+        assertEquals("/responses", LlmProvider.OPENAI_RESPONSES.getEndpointPath());
+        assertEquals(LlmProvider.OPENAI_COMPATIBLE, LlmProvider.defaultProvider());
+    }
 
     @Test
     public void openAiRequestBodyUsesChatCompletionsShape() {
@@ -32,6 +44,7 @@ public class LlmProviderClientTest {
         assertEquals(4096, requestBody.get("max_tokens").getAsInt());
         assertFalse(requestBody.has("max_completion_tokens"));
         assertFalse(requestBody.has("thinking"));
+        assertFalse(requestBody.has("reasoning_effort"));
         assertEquals(0.6D, requestBody.get("temperature").getAsDouble(), 0.0D);
         JsonArray messages = requestBody.getAsJsonArray("messages");
         assertEquals(2, messages.size());
@@ -40,46 +53,76 @@ public class LlmProviderClientTest {
     }
 
     @Test
-    public void openAiReasoningCompatibilityUsesOpenAiReasoningParameters() {
-        LlmProfile profile = new LlmProfile();
-        profile.setBaseUrl("https://api.openai.com/v1");
-        profile.setModel("o3-mini");
-        profile.setReasoningCompatibilityEnabled(Boolean.TRUE);
+    public void defaultThinkingLevelSendsNoThinkingParameterForAnyProtocol() {
         LlmSettings settings = new LlmSettings();
-        settings.setTemperature(0.5D);
 
-        JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
-                profile, settings, "system prompt", "user prompt", false
-        );
+        for (LlmProvider provider : LlmProvider.values()) {
+            LlmProfile profile = new LlmProfile();
+            profile.setProvider(provider);
+            profile.setBaseUrl(provider.getDefaultBaseUrl());
+            profile.setModel("test-model");
+            profile.setThinkingLevel(ThinkingLevel.DEFAULT);
 
-        assertEquals("o3-mini", requestBody.get("model").getAsString());
-        assertEquals(4096, requestBody.get("max_completion_tokens").getAsInt());
-        assertFalse(requestBody.has("max_tokens"));
-        assertEquals("low", requestBody.get("reasoning_effort").getAsString());
-        assertFalse(requestBody.has("temperature"));
+            JsonObject requestBody = createRequestBodyFor(provider, profile, settings);
+
+            assertFalse(provider.name(), requestBody.has("thinking"));
+            assertFalse(provider.name(), requestBody.has("reasoning"));
+            assertFalse(provider.name(), requestBody.has("reasoning_effort"));
+            assertFalse(provider.name(), requestBody.has("enable_thinking"));
+            assertFalse(provider.name(), requestBody.has("output_config"));
+        }
     }
 
     @Test
-    public void openAiReasoningCompatibilityUsesReasoningEffortForGeminiAndGrok() {
+    public void chatCompletionsThinkingLevelsUseReasoningEffortForOpenAiStyleGateways() {
+        LlmSettings settings = new LlmSettings();
+        LlmProfile profile = new LlmProfile();
+        profile.setBaseUrl("https://api.openai.com/v1");
+        profile.setModel("o3-mini");
+        profile.setThinkingLevel(ThinkingLevel.DISABLED);
+
+        JsonObject disabledRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals("low", disabledRequest.get("reasoning_effort").getAsString());
+        assertEquals(4096, disabledRequest.get("max_completion_tokens").getAsInt());
+        assertFalse(disabledRequest.has("max_tokens"));
+        assertFalse(disabledRequest.has("temperature"));
+
+        profile.setThinkingLevel(ThinkingLevel.HIGH);
+        JsonObject highRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals("high", highRequest.get("reasoning_effort").getAsString());
+
+        profile.setThinkingLevel(ThinkingLevel.MAX);
+        JsonObject maxRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals("max", maxRequest.get("reasoning_effort").getAsString());
+    }
+
+    @Test
+    public void chatCompletionsThinkingLevelsUseReasoningEffortForGeminiAndGrok() {
         LlmSettings settings = new LlmSettings();
         settings.setTemperature(0.5D);
 
         LlmProfile gemini = new LlmProfile();
         gemini.setBaseUrl("https://generativelanguage.googleapis.com/v1beta/openai");
         gemini.setModel("gemini-3-pro");
-        gemini.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        gemini.setThinkingLevel(ThinkingLevel.MEDIUM);
         JsonObject geminiRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
                 gemini, settings, "system prompt", "user prompt", false
         );
 
-        assertEquals("low", geminiRequest.get("reasoning_effort").getAsString());
+        assertEquals("medium", geminiRequest.get("reasoning_effort").getAsString());
         assertEquals(4096, geminiRequest.get("max_tokens").getAsInt());
         assertEquals(0.5D, geminiRequest.get("temperature").getAsDouble(), 0.0D);
 
         LlmProfile grok = new LlmProfile();
         grok.setBaseUrl("https://api.x.ai/v1");
         grok.setModel("grok-4");
-        grok.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        grok.setThinkingLevel(ThinkingLevel.LOW);
         JsonObject grokRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
                 grok, settings, "system prompt", "user prompt", false
         );
@@ -90,11 +133,11 @@ public class LlmProviderClientTest {
     }
 
     @Test
-    public void openAiReasoningCompatibilityUsesThinkingObjectForDoubaoArk() {
+    public void chatCompletionsThinkingLevelsUseThinkingObjectForDoubaoArk() {
         LlmProfile profile = new LlmProfile();
         profile.setBaseUrl("https://ark.cn-beijing.volces.com/api/v3");
         profile.setModel("doubao-seed-1.6");
-        profile.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        profile.setThinkingLevel(ThinkingLevel.HIGH);
         LlmSettings settings = new LlmSettings();
 
         JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
@@ -102,36 +145,48 @@ public class LlmProviderClientTest {
         );
 
         assertEquals(4096, requestBody.get("max_tokens").getAsInt());
-        assertEquals("disabled", requestBody.getAsJsonObject("thinking").get("type").getAsString());
+        assertEquals("enabled", requestBody.getAsJsonObject("thinking").get("type").getAsString());
         assertFalse(requestBody.has("reasoning_effort"));
+
+        profile.setThinkingLevel(ThinkingLevel.DISABLED);
+        JsonObject disabledRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals("disabled", disabledRequest.getAsJsonObject("thinking").get("type").getAsString());
     }
 
     @Test
-    public void openAiReasoningCompatibilityUsesReasoningObjectForOpenRouterStyleGateways() {
+    public void chatCompletionsThinkingLevelsUseReasoningObjectForOpenRouterStyleGateways() {
         LlmSettings settings = new LlmSettings();
 
         LlmProfile openRouter = new LlmProfile();
         openRouter.setBaseUrl("https://openrouter.ai/api/v1");
         openRouter.setModel("minimax/minimax-m2.7");
-        openRouter.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        openRouter.setThinkingLevel(ThinkingLevel.HIGH);
         JsonObject openRouterRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
                 openRouter, settings, "system prompt", "user prompt", false
         );
 
-        assertFalse(openRouterRequest.getAsJsonObject("reasoning").get("enabled").getAsBoolean());
+        assertEquals("high", openRouterRequest.getAsJsonObject("reasoning").get("effort").getAsString());
         assertFalse(openRouterRequest.has("thinking"));
         assertFalse(openRouterRequest.has("enable_thinking"));
         assertFalse(openRouterRequest.has("reasoning_effort"));
 
+        openRouter.setThinkingLevel(ThinkingLevel.DISABLED);
+        JsonObject openRouterDisabled = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                openRouter, settings, "system prompt", "user prompt", false
+        );
+        assertEquals("none", openRouterDisabled.getAsJsonObject("reasoning").get("effort").getAsString());
+
         LlmProfile minimax = new LlmProfile();
         minimax.setBaseUrl("https://api.minimaxi.com/v1");
         minimax.setModel("MiniMax-M2.7");
-        minimax.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        minimax.setThinkingLevel(ThinkingLevel.LOW);
         JsonObject minimaxRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
                 minimax, settings, "system prompt", "user prompt", false
         );
 
-        assertFalse(minimaxRequest.getAsJsonObject("reasoning").get("enabled").getAsBoolean());
+        assertEquals("low", minimaxRequest.getAsJsonObject("reasoning").get("effort").getAsString());
     }
 
     @Test
@@ -154,6 +209,58 @@ public class LlmProviderClientTest {
     }
 
     @Test
+    public void reasoningModelsKeepCompletionTokenLimitEvenWithDefaultThinkingLevel() {
+        LlmProfile profile = new LlmProfile();
+        profile.setBaseUrl("https://api.openai.com/v1");
+        profile.setModel("gpt-5.2");
+        profile.setThinkingLevel(ThinkingLevel.DEFAULT);
+        LlmSettings settings = new LlmSettings();
+
+        JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+
+        // The token field is a model capability, independent of the thinking level.
+        assertEquals(4096, requestBody.get("max_completion_tokens").getAsInt());
+        assertFalse(requestBody.has("max_tokens"));
+        assertFalse("default level sends no thinking parameter", requestBody.has("reasoning_effort"));
+    }
+
+    @Test
+    public void unsupportedCompletionTokenErrorsTriggerTokenFallback() {
+        assertTrue(OpenAiCompatibleLlmProviderClient.errorIndicatesUnsupportedCompletionTokens(
+                "{\"error\":{\"message\":\"Unsupported parameter: 'max_completion_tokens' is not supported with this model.\"}}"
+        ));
+        assertTrue(OpenAiCompatibleLlmProviderClient.errorIndicatesUnsupportedCompletionTokens(
+                "{\"error\":{\"message\":\"unknown parameter: max_completion_tokens\"}}"
+        ));
+        assertFalse(OpenAiCompatibleLlmProviderClient.errorIndicatesUnsupportedCompletionTokens(
+                "{\"error\":{\"message\":\"unknown parameter: enable_thinking\"}}"
+        ));
+        assertFalse(OpenAiCompatibleLlmProviderClient.errorIndicatesUnsupportedCompletionTokens(
+                "{\"error\":{\"message\":\"bad api key\"}}"
+        ));
+    }
+
+    @Test
+    public void completionTokenFallbackIsRememberedPerModel() {
+        LlmProfile profile = new LlmProfile();
+        profile.setBaseUrl("https://compatible.example.com/v1");
+        profile.setModel("mimo-v2.5-pro");
+        profile.setProvider(LlmProvider.OPENAI_COMPATIBLE);
+
+        LlmCapabilityCache.clearForTests();
+        assertFalse(LlmCapabilityCache.shouldSkipCompletionTokens(profile));
+
+        LlmCapabilityCache.markCompletionTokensUnsupported(profile);
+
+        assertTrue(LlmCapabilityCache.shouldSkipCompletionTokens(profile));
+        assertFalse("other capabilities stay unaffected",
+                LlmCapabilityCache.shouldSkipThinkingParameters(profile));
+        LlmCapabilityCache.clearForTests();
+    }
+
+    @Test
     public void temperatureRejectionErrorsTriggerFallbackRetry() {
         assertTrue(AbstractHttpLlmProviderClient.errorIndicatesUnsupportedTemperature(
                 "{\"error\":{\"message\":\"Unsupported value: 'temperature' does not support 0.5 with this model. "
@@ -172,11 +279,11 @@ public class LlmProviderClientTest {
     }
 
     @Test
-    public void openAiReasoningCompatibilityUsesQwenThinkingSwitch() {
+    public void chatCompletionsThinkingLevelsUseQwenThinkingSwitch() {
         LlmProfile profile = new LlmProfile();
         profile.setBaseUrl("https://dashscope.aliyuncs.com/compatible-mode/v1");
         profile.setModel("qwen3-coder-plus");
-        profile.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        profile.setThinkingLevel(ThinkingLevel.HIGH);
         LlmSettings settings = new LlmSettings();
 
         JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
@@ -185,15 +292,21 @@ public class LlmProviderClientTest {
 
         assertEquals(4096, requestBody.get("max_tokens").getAsInt());
         assertFalse(requestBody.has("max_completion_tokens"));
-        assertFalse(requestBody.get("enable_thinking").getAsBoolean());
+        assertTrue(requestBody.get("enable_thinking").getAsBoolean());
+
+        profile.setThinkingLevel(ThinkingLevel.DISABLED);
+        JsonObject disabledRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertFalse(disabledRequest.get("enable_thinking").getAsBoolean());
     }
 
     @Test
-    public void openAiReasoningCompatibilityDoesNotAddUnknownParametersForDeepSeekReasoner() {
+    public void chatCompletionsThinkingLevelsUseThinkingObjectForDeepSeekGateways() {
         LlmProfile profile = new LlmProfile();
         profile.setBaseUrl("https://api.deepseek.com/v1");
         profile.setModel("deepseek-reasoner");
-        profile.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        profile.setThinkingLevel(ThinkingLevel.LOW);
         LlmSettings settings = new LlmSettings();
 
         JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
@@ -202,17 +315,16 @@ public class LlmProviderClientTest {
 
         assertEquals(4096, requestBody.get("max_tokens").getAsInt());
         assertFalse(requestBody.has("max_completion_tokens"));
-        assertFalse(requestBody.has("enable_thinking"));
+        assertEquals("enabled", requestBody.getAsJsonObject("thinking").get("type").getAsString());
         assertFalse(requestBody.has("reasoning_effort"));
-        assertFalse(requestBody.has("thinking"));
     }
 
     @Test
-    public void openAiReasoningCompatibilityUsesThinkingObjectForCompatibleGateway() {
+    public void chatCompletionsThinkingLevelsUseThinkingObjectForCompatibleGateway() {
         LlmProfile profile = new LlmProfile();
         profile.setBaseUrl("https://compatible.example.com/v1");
         profile.setModel("mimo-v2.5-pro");
-        profile.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        profile.setThinkingLevel(ThinkingLevel.DISABLED);
         LlmSettings settings = new LlmSettings();
 
         JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
@@ -239,6 +351,7 @@ public class LlmProviderClientTest {
         assertEquals("system prompt", requestBody.get("system").getAsString());
         assertEquals(4096, requestBody.get("max_tokens").getAsInt());
         assertFalse(requestBody.has("thinking"));
+        assertEquals(0.3D, requestBody.get("temperature").getAsDouble(), 0.0D);
         JsonArray messages = requestBody.getAsJsonArray("messages");
         assertEquals(1, messages.size());
         assertEquals("user", messages.get(0).getAsJsonObject().get("role").getAsString());
@@ -246,12 +359,12 @@ public class LlmProviderClientTest {
     }
 
     @Test
-    public void anthropicRequestBodyCanUseConfiguredReasoningParameter() {
+    public void anthropicThinkingLevelsUseThinkingObjectAndDropTemperature() {
         LlmProfile profile = new LlmProfile();
-        profile.setBaseUrl("https://compatible.example.com/anthropic");
-        profile.setModel("compatible-reasoning-model");
+        profile.setBaseUrl("https://api.anthropic.com");
+        profile.setModel("claude-3-7-sonnet-latest");
         profile.setProvider(LlmProvider.ANTHROPIC);
-        profile.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        profile.setThinkingLevel(ThinkingLevel.HIGH);
         LlmSettings settings = new LlmSettings();
         settings.setTemperature(0.3D);
 
@@ -260,43 +373,190 @@ public class LlmProviderClientTest {
         );
 
         assertEquals(4096, requestBody.get("max_tokens").getAsInt());
-        assertEquals("disabled", requestBody.getAsJsonObject("thinking").get("type").getAsString());
+        JsonObject thinking = requestBody.getAsJsonObject("thinking");
+        assertEquals("enabled", thinking.get("type").getAsString());
+        assertTrue(thinking.get("budget_tokens").getAsInt() > 0);
+        assertFalse(requestBody.has("temperature"));
+
+        profile.setThinkingLevel(ThinkingLevel.DISABLED);
+        JsonObject disabledRequest = AnthropicLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals("disabled", disabledRequest.getAsJsonObject("thinking").get("type").getAsString());
+        assertEquals(0.3D, disabledRequest.get("temperature").getAsDouble(), 0.0D);
     }
 
     @Test
-    public void officialAnthropicRequestBodyDoesNotAddThinkingDisableParameter() {
+    public void anthropicThinkingBudgetScalesWithLevelAndStaysBelowResponseLimit() {
         LlmProfile profile = new LlmProfile();
+        profile.setProvider(LlmProvider.ANTHROPIC);
+
+        profile.setMaxResponseTokens(8000);
+        int low = LlmThinkingParameters.resolveThinkingBudget(profile, ThinkingLevel.LOW);
+        int medium = LlmThinkingParameters.resolveThinkingBudget(profile, ThinkingLevel.MEDIUM);
+        int high = LlmThinkingParameters.resolveThinkingBudget(profile, ThinkingLevel.HIGH);
+        int max = LlmThinkingParameters.resolveThinkingBudget(profile, ThinkingLevel.MAX);
+
+        assertTrue("low < medium", low < medium);
+        assertTrue("medium < high", medium < high);
+        assertTrue("high < max", high < max);
+        assertTrue("budget stays below max_tokens", max < 8000);
+        assertTrue("budget is a valid Anthropic budget", max >= 1024);
+    }
+
+    @Test
+    public void anthropicSkipsThinkingWhenResponseBudgetCannotHoldAValidBudget() {
+        LlmProfile profile = new LlmProfile();
+        profile.setProvider(LlmProvider.ANTHROPIC);
         profile.setBaseUrl("https://api.anthropic.com");
         profile.setModel("claude-3-7-sonnet-latest");
-        profile.setProvider(LlmProvider.ANTHROPIC);
-        profile.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        profile.setThinkingLevel(ThinkingLevel.HIGH);
+        profile.setMaxResponseTokens(LlmProfile.MIN_MAX_RESPONSE_TOKENS);
         LlmSettings settings = new LlmSettings();
 
         JsonObject requestBody = AnthropicLlmProviderClient.createRequestBody(
                 profile, settings, "system prompt", "user prompt", false
         );
 
+        // The request stays valid instead of asking for a budget Anthropic would reject.
         assertFalse(requestBody.has("thinking"));
+        assertEquals(LlmProfile.MIN_MAX_RESPONSE_TOKENS, requestBody.get("max_tokens").getAsInt());
     }
 
     @Test
-    public void anthropicRetryRequestDropsTemperature() {
+    public void anthropicEffortGatewaysReceiveOutputConfigInsteadOfBudget() {
         LlmProfile profile = new LlmProfile();
-        profile.setBaseUrl("https://api.anthropic.com");
-        profile.setModel("claude-3-7-sonnet-latest");
+        profile.setBaseUrl("https://open.bigmodel.cn/api/anthropic");
+        profile.setModel("glm-5.3");
+        profile.setProvider(LlmProvider.ANTHROPIC);
+        profile.setThinkingLevel(ThinkingLevel.HIGH);
         LlmSettings settings = new LlmSettings();
-        settings.setTemperature(1.5D);
 
-        JsonObject normalRequest = AnthropicLlmProviderClient.createRequestBody(
-                profile, settings, "system prompt", "user prompt", false, false, false
-        );
-        JsonObject retryRequest = AnthropicLlmProviderClient.createRequestBody(
-                profile, settings, "system prompt", "user prompt", false, false, true
+        JsonObject requestBody = AnthropicLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
         );
 
-        assertEquals(1.5D, normalRequest.get("temperature").getAsDouble(), 0.0D);
-        assertFalse(retryRequest.has("temperature"));
-        assertEquals(4096, retryRequest.get("max_tokens").getAsInt());
+        assertEquals("enabled", requestBody.getAsJsonObject("thinking").get("type").getAsString());
+        assertFalse(requestBody.getAsJsonObject("thinking").has("budget_tokens"));
+        assertEquals("high", requestBody.getAsJsonObject("output_config").get("effort").getAsString());
+    }
+
+    @Test
+    public void openAiResponsesRequestBodyUsesResponsesApiShape() {
+        LlmProfile profile = new LlmProfile();
+        profile.setProvider(LlmProvider.OPENAI_RESPONSES);
+        profile.setBaseUrl("https://api.openai.com/v1");
+        profile.setModel("gpt-5.2");
+        LlmSettings settings = new LlmSettings();
+        settings.setTemperature(0.4D);
+
+        JsonObject requestBody = OpenAiResponsesLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+
+        assertEquals("gpt-5.2", requestBody.get("model").getAsString());
+        assertEquals("system prompt", requestBody.get("instructions").getAsString());
+        assertEquals("user prompt", requestBody.get("input").getAsString());
+        assertEquals(4096, requestBody.get("max_output_tokens").getAsInt());
+        assertFalse(requestBody.has("messages"));
+        assertFalse(requestBody.has("max_tokens"));
+        assertFalse(requestBody.has("max_completion_tokens"));
+        // Without a thinking request, sampling parameters are still forwarded.
+        assertEquals(0.4D, requestBody.get("temperature").getAsDouble(), 0.0D);
+
+        profile.setThinkingLevel(ThinkingLevel.HIGH);
+        JsonObject thinkingRequest = OpenAiResponsesLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        // Reasoning requests drop temperature, which reasoning models do not accept.
+        assertFalse(thinkingRequest.has("temperature"));
+    }
+
+    @Test
+    public void openAiResponsesThinkingLevelsUseReasoningEffort() {
+        LlmProfile profile = new LlmProfile();
+        profile.setProvider(LlmProvider.OPENAI_RESPONSES);
+        profile.setBaseUrl("https://api.openai.com/v1");
+        profile.setModel("gpt-5.2");
+        LlmSettings settings = new LlmSettings();
+
+        profile.setThinkingLevel(ThinkingLevel.DISABLED);
+        JsonObject disabled = OpenAiResponsesLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals("none", disabled.getAsJsonObject("reasoning").get("effort").getAsString());
+
+        profile.setThinkingLevel(ThinkingLevel.HIGH);
+        JsonObject high = OpenAiResponsesLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals("high", high.getAsJsonObject("reasoning").get("effort").getAsString());
+
+        // Models that only expose none/high collapse graded levels instead of failing.
+        profile.setModel("kimi-k2.7-code");
+        profile.setThinkingLevel(ThinkingLevel.LOW);
+        JsonObject collapsed = OpenAiResponsesLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals("high", collapsed.getAsJsonObject("reasoning").get("effort").getAsString());
+    }
+
+    @Test
+    public void openAiResponsesResponseParsingExtractsTextFromOutputAndStream() {
+        String response = "{\"output\":[{\"type\":\"reasoning\",\"content\":[]},"
+                + "{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"commit text\"}]}]}";
+        String outputText = "{\"output_text\":\"direct text\"}";
+        String delta = "{\"type\":\"response.output_text.delta\",\"delta\":\"part\"}";
+        String completed = "{\"type\":\"response.completed\",\"response\":"
+                + "{\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"done\"}]}]}}";
+
+        assertEquals("commit text", OpenAiResponsesLlmProviderClient.extractChatResponse(response));
+        assertEquals("direct text", OpenAiResponsesLlmProviderClient.extractChatResponse(outputText));
+        assertEquals("part", OpenAiResponsesLlmProviderClient.extractStreamDelta("", delta));
+        assertEquals("done", OpenAiResponsesLlmProviderClient.extractStreamDelta("", completed));
+        assertEquals("part", OpenAiResponsesLlmProviderClient.extractChatResponseFromEventStream(
+                "event: response.output_text.delta\ndata: " + delta + "\n\n"
+        ));
+    }
+
+    @Test
+    public void openAiResponsesStreamDoesNotDuplicateTextWhenCompletionFollowsDeltas() {
+        String delta = "{\"type\":\"response.output_text.delta\",\"delta\":\"part\"}";
+        String completed = "{\"type\":\"response.completed\",\"response\":"
+                + "{\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"part\"}]}]}}";
+
+        // Deltas win; the completion payload must not be appended on top of them.
+        assertEquals("part", OpenAiResponsesLlmProviderClient.extractChatResponseFromEventStream(
+                "data: " + delta + "\n\n"
+                        + "data: " + completed + "\n\n"
+        ));
+
+        // When a gateway sends only the completion event, its text is used as the fallback.
+        assertEquals("part", OpenAiResponsesLlmProviderClient.extractChatResponseFromEventStream(
+                "event: response.completed\ndata: " + completed + "\n\n"
+        ));
+    }
+
+    @Test
+    public void openAiResponsesEndpointsAcceptBaseUrlOrFullPath() {
+        LlmProfile profile = new LlmProfile();
+        profile.setProvider(LlmProvider.OPENAI_RESPONSES);
+
+        profile.setBaseUrl("https://api.openai.com/v1");
+        assertEquals("https://api.openai.com/v1/responses",
+                OpenAiResponsesLlmProviderClient.resolveResponsesEndpoint(profile));
+        assertEquals("https://api.openai.com/v1/models",
+                OpenAiResponsesLlmProviderClient.resolveModelsEndpoint(profile));
+
+        profile.setBaseUrl("https://api.openai.com/v1/responses");
+        assertEquals("https://api.openai.com/v1/responses",
+                OpenAiResponsesLlmProviderClient.resolveResponsesEndpoint(profile));
+        assertEquals("https://api.openai.com/v1/models",
+                OpenAiResponsesLlmProviderClient.resolveModelsEndpoint(profile));
+
+        profile.setBaseUrl("https://api.x.ai/v1/responses");
+        assertTrue(OpenAiResponsesLlmProviderClient.isEventStream(
+                "text/event-stream", "{}"));
     }
 
     @Test
@@ -372,18 +632,54 @@ public class LlmProviderClientTest {
 
         assertEquals(LlmProvider.OPENAI_COMPATIBLE, profile.getProvider());
         assertEquals("https://api.openai.com/v1", profile.getBaseUrl());
-        assertFalse(profile.getReasoningCompatibilityEnabled());
+        assertEquals(ThinkingLevel.DEFAULT, profile.getThinkingLevel());
     }
 
     @Test
-    public void unsupportedCompatibilityParameterErrorsCanRetryWithoutCompatibility() {
-        assertTrue(AbstractHttpLlmProviderClient.shouldRetryWithoutReasoningCompatibility(
+    @SuppressWarnings("deprecation")
+    public void legacyReasoningCompatibilityFlagMigratesToDisabledThinkingLevel() {
+        LlmProfile legacyOff = new LlmProfile();
+        legacyOff.setId("legacy-off");
+        legacyOff.setName("Legacy");
+        legacyOff.setReasoningCompatibilityEnabled(Boolean.TRUE);
+
+        GitCommitMessageHelperSettings.checkDefaultLlmProfile(legacyOff);
+
+        assertEquals(ThinkingLevel.DISABLED, legacyOff.getThinkingLevel());
+        assertNull("legacy flag is cleared after migration", legacyOff.getReasoningCompatibilityEnabled());
+
+        LlmProfile legacyAbsent = new LlmProfile();
+        legacyAbsent.setId("legacy-absent");
+        legacyAbsent.setName("Legacy");
+        legacyAbsent.setReasoningCompatibilityEnabled(Boolean.FALSE);
+
+        GitCommitMessageHelperSettings.checkDefaultLlmProfile(legacyAbsent);
+
+        assertEquals(ThinkingLevel.DEFAULT, legacyAbsent.getThinkingLevel());
+
+        LlmProfile explicitLevel = new LlmProfile();
+        explicitLevel.setId("explicit");
+        explicitLevel.setName("Explicit");
+        explicitLevel.setThinkingLevel(ThinkingLevel.MAX);
+        explicitLevel.setReasoningCompatibilityEnabled(Boolean.TRUE);
+
+        GitCommitMessageHelperSettings.checkDefaultLlmProfile(explicitLevel);
+
+        assertEquals("an explicit level wins over the legacy flag", ThinkingLevel.MAX, explicitLevel.getThinkingLevel());
+    }
+
+    @Test
+    public void unsupportedThinkingParameterErrorsCanRetryWithoutThinking() {
+        assertTrue(AbstractHttpLlmProviderClient.shouldRetryWithoutThinkingParameters(
                 "{\"error\":{\"message\":\"unknown parameter: enable_thinking\"}}"
         ));
-        assertTrue(AbstractHttpLlmProviderClient.shouldRetryWithoutReasoningCompatibility(
+        assertTrue(AbstractHttpLlmProviderClient.shouldRetryWithoutThinkingParameters(
                 "{\"error\":{\"message\":\"unsupported parameter: thinking\"}}"
         ));
-        assertFalse(AbstractHttpLlmProviderClient.shouldRetryWithoutReasoningCompatibility(
+        assertTrue(AbstractHttpLlmProviderClient.shouldRetryWithoutThinkingParameters(
+                "{\"error\":{\"message\":\"Extra inputs are not permitted\",\"param\":\"reasoning\"}}"
+        ));
+        assertFalse(AbstractHttpLlmProviderClient.shouldRetryWithoutThinkingParameters(
                 "{\"error\":{\"message\":\"bad api key\"}}"
         ));
     }
@@ -396,13 +692,13 @@ public class LlmProviderClientTest {
         profile.setProvider(LlmProvider.OPENAI_COMPATIBLE);
 
         LlmCapabilityCache.clearForTests();
-        assertFalse(LlmCapabilityCache.shouldSkipReasoningCompatibility(profile));
+        assertFalse(LlmCapabilityCache.shouldSkipThinkingParameters(profile));
         assertFalse(LlmCapabilityCache.shouldSkipStreaming(profile));
 
-        LlmCapabilityCache.markReasoningCompatibilityUnsupported(profile);
+        LlmCapabilityCache.markThinkingParametersUnsupported(profile);
         LlmCapabilityCache.markStreamingUnsupported(profile);
 
-        assertTrue(LlmCapabilityCache.shouldSkipReasoningCompatibility(profile));
+        assertTrue(LlmCapabilityCache.shouldSkipThinkingParameters(profile));
         assertTrue(LlmCapabilityCache.shouldSkipStreaming(profile));
         LlmCapabilityCache.clearForTests();
     }
@@ -414,7 +710,7 @@ public class LlmProviderClientTest {
         profile.setApiKey("secret-key");
         profile.setModel("o3-mini");
         profile.setProvider(LlmProvider.OPENAI_COMPATIBLE);
-        profile.setReasoningCompatibilityEnabled(Boolean.TRUE);
+        profile.setThinkingLevel(ThinkingLevel.LOW);
         LlmSettings settings = new LlmSettings();
 
         JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
@@ -427,6 +723,7 @@ public class LlmProviderClientTest {
         assertTrue(summary.contains("o3-mini"));
         assertTrue(summary.contains("max_completion_tokens"));
         assertTrue(summary.contains("reasoning_effort"));
+        assertTrue(summary.contains("low, applied"));
         assertFalse(summary.contains("secret-key"));
     }
 
@@ -593,5 +890,99 @@ public class LlmProviderClientTest {
         assertTrue(trimmed.contains("diff --git a/src/A.java b/src/A.java"));
         assertTrue(trimmed.contains("@@ -1,80 +1,80 @@"));
         assertTrue(trimmed.contains("...[diff summarized: omitted "));
+    }
+
+    @Test
+    public void profileTokenLimitDefaultsTo4096AndHonoursConfiguredValue() {
+        LlmProfile profile = new LlmProfile();
+        profile.setModel("gpt-4.1");
+        LlmSettings settings = new LlmSettings();
+
+        JsonObject defaultRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals(4096, defaultRequest.get("max_tokens").getAsInt());
+
+        profile.setMaxResponseTokens(16000);
+        JsonObject configuredRequest = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals(16000, configuredRequest.get("max_tokens").getAsInt());
+
+        JsonObject anthropicRequest = AnthropicLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals(16000, anthropicRequest.get("max_tokens").getAsInt());
+
+        JsonObject responsesRequest = OpenAiResponsesLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        assertEquals(16000, responsesRequest.get("max_output_tokens").getAsInt());
+    }
+
+    @Test
+    public void profileTokenLimitIsClampedToSupportedRange() {
+        assertEquals(4096, LlmProfile.resolveMaxResponseTokens(null));
+        assertEquals(256, LlmProfile.resolveMaxResponseTokens(1));
+        assertEquals(128000, LlmProfile.resolveMaxResponseTokens(999999));
+        assertEquals(8192, LlmProfile.resolveMaxResponseTokens(8192));
+    }
+
+    @Test
+    public void reasoningRetryKeepsConfiguredTokenLimit() {
+        LlmProfile profile = new LlmProfile();
+        profile.setBaseUrl("https://api.openai.com/v1");
+        profile.setModel("o3-mini");
+        profile.setMaxResponseTokens(32768);
+        LlmSettings settings = new LlmSettings();
+
+        JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false,
+                false, true, true
+        );
+
+        assertEquals(32768, requestBody.get("max_completion_tokens").getAsInt());
+    }
+
+    @Test
+    public void diffLengthSettingDefaultsTo12000AndIsClamped() {
+        assertEquals(12000, LlmSettings.resolveMaxDiffLength(null));
+        assertEquals(2000, LlmSettings.resolveMaxDiffLength(10));
+        assertEquals(200000, LlmSettings.resolveMaxDiffLength(9999999));
+        assertEquals(48000, LlmSettings.resolveMaxDiffLength(48000));
+    }
+
+    @Test
+    public void diagnosticsReportConfiguredTokenLimit() {
+        LlmProfile profile = new LlmProfile();
+        profile.setBaseUrl("https://api.openai.com/v1");
+        profile.setModel("gpt-4.1");
+        profile.setMaxResponseTokens(24000);
+        LlmSettings settings = new LlmSettings();
+
+        JsonObject requestBody = OpenAiCompatibleLlmProviderClient.createRequestBody(
+                profile, settings, "system prompt", "user prompt", false
+        );
+        LlmRequestDiagnostics diagnostics = new LlmRequestDiagnostics();
+        diagnostics.recordRequest(profile, false, false, false, requestBody);
+
+        assertTrue(diagnostics.toUserSummary().contains("Token limit: 24000"));
+    }
+
+    @NotNull
+    private static JsonObject createRequestBodyFor(@NotNull LlmProvider provider,
+                                                   @NotNull LlmProfile profile,
+                                                   @NotNull LlmSettings settings) {
+        switch (provider) {
+            case ANTHROPIC:
+                return AnthropicLlmProviderClient.createRequestBody(
+                        profile, settings, "system prompt", "user prompt", false);
+            case OPENAI_RESPONSES:
+                return OpenAiResponsesLlmProviderClient.createRequestBody(
+                        profile, settings, "system prompt", "user prompt", false);
+            default:
+                return OpenAiCompatibleLlmProviderClient.createRequestBody(
+                        profile, settings, "system prompt", "user prompt", false);
+        }
     }
 }

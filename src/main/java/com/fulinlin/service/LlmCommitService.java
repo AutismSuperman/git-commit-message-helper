@@ -58,7 +58,8 @@ public class LlmCommitService {
                                       @NotNull Collection<File> selectedFiles,
                                       @NotNull String additionalContext,
                                       @NotNull Consumer<String> onDelta) throws IOException {
-        GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
+        GitContextService.GitContext gitContext = gitContextService.collect(
+                project, selectedChanges, selectedFiles, resolveMaxDiffLength(settings));
         generateCommitMessage(project, settings, gitContext, additionalContext, onDelta);
     }
 
@@ -74,7 +75,8 @@ public class LlmCommitService {
                                                @NotNull String commitHash,
                                                @NotNull String additionalContext,
                                                @NotNull Consumer<String> onDelta) throws IOException {
-        GitContextService.GitContext gitContext = gitContextService.collectCommitted(project, commitHash);
+        GitContextService.GitContext gitContext = gitContextService.collectCommitted(
+                project, commitHash, resolveMaxDiffLength(settings));
         generateCommitMessage(project, settings, gitContext, additionalContext, onDelta);
     }
 
@@ -97,7 +99,8 @@ public class LlmCommitService {
                                     @NotNull Collection<File> selectedFiles,
                                     @NotNull String currentMessage,
                                     @NotNull Consumer<String> onDelta) throws IOException {
-        GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
+        GitContextService.GitContext gitContext = gitContextService.collect(
+                project, selectedChanges, selectedFiles, resolveMaxDiffLength(settings));
         formatCommitMessage(project, settings, gitContext, currentMessage, onDelta);
     }
 
@@ -106,7 +109,8 @@ public class LlmCommitService {
                                              @NotNull String commitHash,
                                              @NotNull String currentMessage,
                                              @NotNull Consumer<String> onDelta) throws IOException {
-        GitContextService.GitContext gitContext = gitContextService.collectCommitted(project, commitHash);
+        GitContextService.GitContext gitContext = gitContextService.collectCommitted(
+                project, commitHash, resolveMaxDiffLength(settings));
         formatCommitMessage(project, settings, gitContext, currentMessage, onDelta);
     }
 
@@ -129,7 +133,8 @@ public class LlmCommitService {
                                                        @NotNull Collection<Change> selectedChanges,
                                                        @NotNull Collection<File> selectedFiles,
                                                        @NotNull String currentMessage) throws IOException {
-        GitContextService.GitContext gitContext = gitContextService.collect(project, selectedChanges, selectedFiles);
+        GitContextService.GitContext gitContext = gitContextService.collect(
+                project, selectedChanges, selectedFiles, resolveMaxDiffLength(settings));
         return parseCommitMessageToTemplate(project, settings, gitContext, currentMessage);
     }
 
@@ -138,7 +143,8 @@ public class LlmCommitService {
                                                                 @NotNull GitCommitMessageHelperSettings settings,
                                                                 @NotNull String commitHash,
                                                                 @NotNull String currentMessage) throws IOException {
-        GitContextService.GitContext gitContext = gitContextService.collectCommitted(project, commitHash);
+        GitContextService.GitContext gitContext = gitContextService.collectCommitted(
+                project, commitHash, resolveMaxDiffLength(settings));
         return parseCommitMessageToTemplate(project, settings, gitContext, currentMessage);
     }
 
@@ -708,6 +714,10 @@ public class LlmCommitService {
         LlmSettings llmSettings = settings.getCentralSettings().getLlmSettings();
         GitCommitMessageHelperSettings.checkDefaultLlmSettings(llmSettings);
         return llmSettings;
+    }
+
+    private static int resolveMaxDiffLength(@NotNull GitCommitMessageHelperSettings settings) {
+        return getLlmSettings(settings).resolveMaxDiffLength();
     }
 
     private static boolean notBlank(String value) {

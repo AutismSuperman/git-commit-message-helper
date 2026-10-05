@@ -2,6 +2,7 @@ package com.fulinlin.service;
 
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.enums.LlmProvider;
+import com.fulinlin.model.enums.ThinkingLevel;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,48 +15,65 @@ public class LlmRequestDiagnostics {
     private String provider = "";
     private String baseUrl = "";
     private String model = "";
+    private String thinkingLevel = "";
     private boolean streamRequested;
-    private boolean reasoningCompatibilityRequested;
-    private boolean reasoningCompatibilitySkippedByCache;
-    private boolean reasoningCompatibilityApplied;
-    private boolean compatibilityFallbackUsed;
+    private boolean thinkingRequested;
+    private boolean thinkingSkippedByCache;
+    private boolean thinkingParametersApplied;
+    private boolean thinkingFallbackUsed;
+    private boolean completionTokenFallbackUsed;
     private boolean temperatureFallbackUsed;
     private boolean streamingFallbackUsed;
     private boolean streamingSkippedByCache;
     private int requestAttempts;
     private String tokenField = "";
+    private int tokenLimit;
     private final Set<String> requestParameters = new LinkedHashSet<>();
 
     void recordRequest(@NotNull LlmProfile profile,
                        boolean stream,
-                       boolean compatibilityRequested,
-                       boolean compatibilitySkippedByCache,
+                       boolean thinkingRequested,
+                       boolean thinkingSkippedByCache,
                        @NotNull JsonObject requestBody) {
         provider = LlmProvider.fromNullable(profile.getProvider()).name();
         baseUrl = safe(profile.getBaseUrl());
         model = safe(profile.getModel());
+        thinkingLevel = ThinkingLevel.fromNullable(profile.getThinkingLevel()).name();
         streamRequested = stream;
-        reasoningCompatibilityRequested = compatibilityRequested;
-        reasoningCompatibilitySkippedByCache |= compatibilitySkippedByCache;
+        this.thinkingRequested = thinkingRequested;
+        this.thinkingSkippedByCache |= thinkingSkippedByCache;
         requestAttempts++;
 
         if (requestBody.has("max_completion_tokens")) {
             tokenField = "max_completion_tokens";
+            tokenLimit = requestBody.get("max_completion_tokens").getAsInt();
+        } else if (requestBody.has("max_output_tokens")) {
+            tokenField = "max_output_tokens";
+            tokenLimit = requestBody.get("max_output_tokens").getAsInt();
         } else if (requestBody.has("max_tokens")) {
             tokenField = "max_tokens";
+            tokenLimit = requestBody.get("max_tokens").getAsInt();
         }
 
         recordIfPresent(requestBody, "enable_thinking");
         recordIfPresent(requestBody, "reasoning_effort");
+        recordIfPresent(requestBody, "reasoning");
         recordIfPresent(requestBody, "thinking");
-        reasoningCompatibilityApplied = reasoningCompatibilityApplied
+        recordIfPresent(requestBody, "output_config");
+        thinkingParametersApplied = thinkingParametersApplied
                 || requestBody.has("enable_thinking")
                 || requestBody.has("reasoning_effort")
-                || requestBody.has("thinking");
+                || requestBody.has("reasoning")
+                || requestBody.has("thinking")
+                || requestBody.has("output_config");
     }
 
-    void markCompatibilityFallbackUsed() {
-        compatibilityFallbackUsed = true;
+    void markThinkingFallbackUsed() {
+        thinkingFallbackUsed = true;
+    }
+
+    void markCompletionTokenFallbackUsed() {
+        completionTokenFallbackUsed = true;
     }
 
     void markTemperatureFallbackUsed() {
@@ -83,12 +101,16 @@ public class LlmRequestDiagnostics {
         appendLine(builder, "Mode", streamRequested ? "stream" : "non-stream");
         appendLine(builder, "Attempts", String.valueOf(requestAttempts));
         appendLine(builder, "Token field", emptyFallback(tokenField));
-        appendLine(builder, "Compatibility", formatCompatibility());
+        appendLine(builder, "Token limit", tokenLimit > 0 ? String.valueOf(tokenLimit) : "none");
+        appendLine(builder, "Thinking", formatThinking());
         appendLine(builder, "Extra params", requestParameters.isEmpty()
                 ? "none"
                 : requestParameters.stream().collect(Collectors.joining(", ")));
-        if (compatibilityFallbackUsed) {
-            appendLine(builder, "Fallback", "retried without compatibility params");
+        if (thinkingFallbackUsed) {
+            appendLine(builder, "Thinking fallback", "retried without thinking parameters");
+        }
+        if (completionTokenFallbackUsed) {
+            appendLine(builder, "Token fallback", "retried with max_tokens");
         }
         if (temperatureFallbackUsed) {
             appendLine(builder, "Temperature fallback", "retried without temperature");
@@ -109,14 +131,15 @@ public class LlmRequestDiagnostics {
     }
 
     @NotNull
-    private String formatCompatibility() {
-        if (!reasoningCompatibilityRequested) {
-            return "off";
+    private String formatThinking() {
+        String level = emptyFallback(thinkingLevel).toLowerCase();
+        if (!thinkingRequested) {
+            return "off (default)";
         }
-        if (reasoningCompatibilitySkippedByCache) {
-            return "on, skipped by cache";
+        if (thinkingSkippedByCache) {
+            return level + ", skipped by cache";
         }
-        return reasoningCompatibilityApplied ? "on, applied" : "on, no extra params needed";
+        return level + (thinkingParametersApplied ? ", applied" : ", no extra params needed");
     }
 
     @NotNull

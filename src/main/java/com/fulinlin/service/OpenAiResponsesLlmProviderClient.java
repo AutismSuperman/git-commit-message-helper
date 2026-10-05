@@ -4,10 +4,12 @@ import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.intellij.openapi.progress.ProcessCanceledException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,16 +17,18 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.function.Consumer;
 
-class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
+/**
+ * Client for the OpenAI Responses API ({@code POST /v1/responses}), the third protocol alongside
+ * Chat Completions and Anthropic Messages. The request carries the system prompt in
+ * {@code instructions}, the user turn in {@code input}, the response budget in
+ * {@code max_output_tokens}, and reasoning depth in {@code reasoning.effort}.
+ */
+class OpenAiResponsesLlmProviderClient extends AbstractHttpLlmProviderClient {
 
-    private static final String CHAT_COMPLETIONS_PATH = "/chat/completions";
+    private static final String RESPONSES_PATH = "/responses";
+    private static final String MODELS_PATH = "/models";
     private static final Gson GSON = new Gson();
 
     @Override
@@ -61,12 +65,11 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         if (responseCode < 200 || responseCode >= 300) {
             String errorBody = readAll(inputStream);
             connection.disconnect();
-            RetryPlan retryPlan = planRetry(profile, thinkingEnabled, errorBody, diagnostics);
-            if (retryPlan.retry) {
+            if (shouldRetryWithAdjustedParameters(profile, thinkingEnabled, errorBody, diagnostics)) {
                 connection = createConnection(profile);
                 requestBody = createRequestBodyForRetry(
                         profile, settings, systemPrompt, userPrompt, false,
-                        thinkingRequested, retryPlan.useCompletionTokens, diagnostics
+                        thinkingRequested, diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
                 responseCode = getResponseCode(connection);
@@ -84,7 +87,12 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         }
 
         try {
-            return extractChatResponse(readAll(inputStream));
+            String responseBody = readAll(inputStream);
+            String contentType = connection.getHeaderField("Content-Type");
+            if (isEventStream(contentType, responseBody)) {
+                return extractChatResponseFromEventStream(responseBody);
+            }
+            return extractChatResponse(responseBody);
         } finally {
             connection.disconnect();
         }
@@ -124,12 +132,11 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         if (responseCode < 200 || responseCode >= 300) {
             String errorBody = readAll(inputStream);
             connection.disconnect();
-            RetryPlan retryPlan = planRetry(profile, thinkingEnabled, errorBody, diagnostics);
-            if (retryPlan.retry) {
+            if (shouldRetryWithAdjustedParameters(profile, thinkingEnabled, errorBody, diagnostics)) {
                 connection = createConnection(profile);
                 requestBody = createRequestBodyForRetry(
                         profile, settings, systemPrompt, userPrompt, true,
-                        thinkingRequested, retryPlan.useCompletionTokens, diagnostics
+                        thinkingRequested, diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
                 responseCode = getResponseCode(connection);
@@ -148,30 +155,56 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
+            String currentEvent = "";
+            boolean emittedDelta = false;
+            String completedText = "";
             while ((line = readLine(reader)) != null) {
-                if (!line.startsWith("data:")) {
+                String normalizedLine = line.trim();
+                if (normalizedLine.isEmpty()) {
                     continue;
                 }
-                String payload = line.substring(5).trim();
-                if (payload.isEmpty()) {
+                if (normalizedLine.startsWith("event:")) {
+                    currentEvent = normalizedLine.substring(6).trim();
                     continue;
                 }
-                if ("[DONE]".equals(payload)) {
-                    break;
+                if (!normalizedLine.startsWith("data:")) {
+                    continue;
                 }
-                String deltaText = extractStreamDelta(payload);
-                if (!deltaText.isEmpty()) {
-                    onDelta.accept(deltaText);
+                String payload = normalizedLine.substring(5).trim();
+                if (payload.isEmpty() || "[DONE]".equals(payload)) {
+                    continue;
                 }
+                if (isCompletionEvent(currentEvent, payload)) {
+                    completedText = extractStreamDelta(currentEvent, payload);
+                    continue;
+                }
+                String delta = extractStreamDelta(currentEvent, payload);
+                if (!delta.isEmpty()) {
+                    emittedDelta = true;
+                    onDelta.accept(delta);
+                }
+            }
+            // Some gateways omit the delta events and send only the final response; use it
+            // instead of the deltas, never in addition to them.
+            if (!emittedDelta && !completedText.isEmpty()) {
+                onDelta.accept(completedText);
             }
         } finally {
             connection.disconnect();
         }
     }
 
+    private static boolean isCompletionEvent(@NotNull String eventType, @NotNull String payload) {
+        JsonObject jsonObject = JsonParser.parseString(payload).getAsJsonObject();
+        String type = jsonObject.has("type") && !jsonObject.get("type").isJsonNull()
+                ? jsonObject.get("type").getAsString()
+                : eventType;
+        return "response.completed".equals(type) || "response.done".equals(type);
+    }
+
     @Override
     @NotNull
-    public List<String> listModels(@NotNull LlmProfile profile) throws IOException {
+    public java.util.List<String> listModels(@NotNull LlmProfile profile) throws IOException {
         HttpURLConnection connection = createModelListConnection(profile);
         try {
             int responseCode = getResponseCode(connection);
@@ -182,7 +215,7 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
             if (responseCode < 200 || responseCode >= 300) {
                 throw new IOException(extractErrorMessage(responseBody));
             }
-            return extractModelIds(responseBody);
+            return OpenAiCompatibleLlmProviderClient.extractModelIds(responseBody);
         } catch (ProcessCanceledException ex) {
             throw ex;
         } catch (RuntimeException ex) {
@@ -198,11 +231,8 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                                         @NotNull String systemPrompt,
                                         @NotNull String userPrompt,
                                         boolean stream) {
-        boolean thinkingEnabled = LlmThinkingParameters.isRequested(profile);
         return createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
-                thinkingEnabled,
-                LlmThinkingParameters.isOpenAiReasoningModel(profile),
-                LlmThinkingParameters.needsCompletionTokenLimit(profile));
+                LlmThinkingParameters.isRequested(profile), false);
     }
 
     @NotNull
@@ -212,27 +242,21 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                                         @NotNull String userPrompt,
                                         boolean stream,
                                         boolean thinkingEnabled,
-                                        boolean omitTemperature,
-                                        boolean useCompletionTokens) {
+                                        boolean omitTemperature) {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", profile.getModel().trim());
         requestBody.addProperty("stream", stream);
-        int maxResponseTokens = profile.resolveMaxResponseTokens();
-        if (useCompletionTokens) {
-            requestBody.addProperty("max_completion_tokens", maxResponseTokens);
-        } else {
-            requestBody.addProperty("max_tokens", maxResponseTokens);
-        }
+        requestBody.addProperty("instructions", systemPrompt);
+        requestBody.addProperty("input", userPrompt);
+        requestBody.addProperty("max_output_tokens", profile.resolveMaxResponseTokens());
         if (thinkingEnabled) {
             LlmThinkingParameters.apply(requestBody, profile);
         }
-        if (!omitTemperature && settings.getTemperature() != null) {
+        // The Responses API drops sampling parameters for reasoning models, so temperature is
+        // only sent for requests that do not ask for thinking.
+        if (!omitTemperature && !thinkingEnabled && settings.getTemperature() != null) {
             requestBody.addProperty("temperature", settings.getTemperature());
         }
-        JsonArray messages = new JsonArray();
-        messages.add(createMessage("system", systemPrompt));
-        messages.add(createMessage("user", userPrompt));
-        requestBody.add("messages", messages);
         return requestBody;
     }
 
@@ -247,25 +271,15 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                                                 boolean thinkingSkippedByCache,
                                                 @NotNull LlmRequestDiagnostics diagnostics) {
         JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
-                thinkingEnabled,
-                LlmThinkingParameters.isOpenAiReasoningModel(profile),
-                resolveCompletionTokens(profile));
+                thinkingEnabled, false);
         diagnostics.recordRequest(profile, stream, thinkingRequested, thinkingSkippedByCache, requestBody);
         return requestBody;
     }
 
     /**
-     * Whether this request uses {@code max_completion_tokens}: only when the model calls for it
-     * and a previous attempt has not shown the gateway rejects that field.
-     */
-    private static boolean resolveCompletionTokens(@NotNull LlmProfile profile) {
-        return LlmThinkingParameters.needsCompletionTokenLimit(profile)
-                && !LlmCapabilityCache.shouldSkipCompletionTokens(profile);
-    }
-
-    /**
      * Retry request after the provider rejected the original one: thinking parameters are
-     * dropped, and temperature is omitted for OpenAI reasoning models or when the error blamed it.
+     * dropped and temperature is omitted, since gateways that reject reasoning usually reject
+     * sampling parameters on reasoning models too.
      */
     @NotNull
     private static JsonObject createRequestBodyForRetry(@NotNull LlmProfile profile,
@@ -274,123 +288,124 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                                                         @NotNull String userPrompt,
                                                         boolean stream,
                                                         boolean thinkingRequested,
-                                                        boolean useCompletionTokens,
                                                         @NotNull LlmRequestDiagnostics diagnostics) {
         JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
-                false,
-                LlmThinkingParameters.isOpenAiReasoningModel(profile),
-                useCompletionTokens);
+                false, true);
         diagnostics.recordRequest(profile, stream, thinkingRequested, false, requestBody);
         return requestBody;
     }
 
-    /**
-     * Decides how to retry a rejected request. {@code max_completion_tokens} and thinking
-     * parameters are independent capabilities, and a model may need either field shape dropped
-     * or kept; the decision is recorded per model so later requests go straight to the working
-     * combination.
-     */
-    @NotNull
-    private static RetryPlan planRetry(@NotNull LlmProfile profile,
-                                       boolean thinkingEnabled,
-                                       @NotNull String errorBody,
-                                       @NotNull LlmRequestDiagnostics diagnostics) {
+    private static boolean shouldRetryWithAdjustedParameters(@NotNull LlmProfile profile,
+                                                             boolean thinkingEnabled,
+                                                             @NotNull String errorBody,
+                                                             @NotNull LlmRequestDiagnostics diagnostics) {
         boolean temperatureRejected = errorIndicatesUnsupportedTemperature(errorBody);
         boolean thinkingRejected = thinkingEnabled && shouldRetryWithoutThinkingParameters(errorBody);
-        boolean completionTokenRejected = LlmThinkingParameters.needsCompletionTokenLimit(profile)
-                && errorIndicatesUnsupportedCompletionTokens(errorBody);
         if (thinkingRejected) {
             LlmCapabilityCache.markThinkingParametersUnsupported(profile);
             diagnostics.markThinkingFallbackUsed();
         }
-        if (completionTokenRejected) {
-            LlmCapabilityCache.markCompletionTokensUnsupported(profile);
-            diagnostics.markCompletionTokenFallbackUsed();
-        }
         if (temperatureRejected) {
             diagnostics.markTemperatureFallbackUsed();
         }
-        if (!thinkingRejected && !completionTokenRejected && !temperatureRejected) {
-            return RetryPlan.none();
-        }
-        boolean useCompletionTokens = LlmThinkingParameters.needsCompletionTokenLimit(profile)
-                && !LlmCapabilityCache.shouldSkipCompletionTokens(profile);
-        return new RetryPlan(true, useCompletionTokens);
-    }
-
-    static boolean errorIndicatesUnsupportedCompletionTokens(@NotNull String responseBody) {
-        String lower = responseBody.toLowerCase(Locale.ROOT);
-        return lower.contains("max_completion_tokens")
-                && (lower.contains("unsupported")
-                || lower.contains("unknown parameter")
-                || lower.contains("unrecognized")
-                || lower.contains("invalid")
-                || lower.contains("not support")
-                || lower.contains("not_supported"));
-    }
-
-    /**
-     * Outcome of interpreting a provider error: whether to retry at all, and which token-limit
-     * field the retry should use.
-     */
-    private static final class RetryPlan {
-        private final boolean retry;
-        private final boolean useCompletionTokens;
-
-        private RetryPlan(boolean retry, boolean useCompletionTokens) {
-            this.retry = retry;
-            this.useCompletionTokens = useCompletionTokens;
-        }
-
-        @NotNull
-        private static RetryPlan none() {
-            return new RetryPlan(false, false);
-        }
+        return thinkingRejected || temperatureRejected;
     }
 
     @NotNull
     static String extractChatResponse(@NotNull String responseBody) {
         JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
-        JsonArray choices = jsonObject.getAsJsonArray("choices");
-        if (choices == null || choices.size() == 0) {
-            return "";
-        }
-        JsonObject choice = choices.get(0).getAsJsonObject();
-        JsonObject message = choice.has("message") ? choice.getAsJsonObject("message") : null;
-        if (message != null && message.has("content") && !message.get("content").isJsonNull()) {
-            return extractContent(message);
-        }
-        return "";
+        return extractOutputText(jsonObject);
     }
 
+    /**
+     * Text of a complete SSE transcript. Deltas are preferred; the final
+     * {@code response.completed} payload is used only when a gateway skipped the deltas, so the
+     * same text is never counted twice.
+     */
     @NotNull
-    static String extractStreamDelta(@NotNull String payload) {
+    static String extractChatResponseFromEventStream(@NotNull String responseBody) {
+        StringBuilder builder = new StringBuilder();
+        String currentEvent = "";
+        String completedText = "";
+        for (String rawLine : responseBody.split("\\R")) {
+            String line = rawLine.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            if (line.startsWith("event:")) {
+                currentEvent = line.substring(6).trim();
+                continue;
+            }
+            if (!line.startsWith("data:")) {
+                continue;
+            }
+            String payload = line.substring(5).trim();
+            if (payload.isEmpty() || "[DONE]".equals(payload)) {
+                continue;
+            }
+            if (isCompletionEvent(currentEvent, payload)) {
+                completedText = extractStreamDelta(currentEvent, payload);
+                continue;
+            }
+            builder.append(extractStreamDelta(currentEvent, payload));
+        }
+        return builder.length() > 0 ? builder.toString() : completedText;
+    }
+
+    /**
+     * Streaming delta for one SSE payload. The final {@code response.completed} event carries the
+     * whole response and is used to recover text when a gateway omits the delta events.
+     */
+    @NotNull
+    static String extractStreamDelta(@NotNull String eventType, @NotNull String payload) {
         JsonObject jsonObject = JsonParser.parseString(payload).getAsJsonObject();
-        JsonArray choices = jsonObject.getAsJsonArray("choices");
-        if (choices == null || choices.size() == 0) {
-            return "";
+        String type = jsonObject.has("type") && !jsonObject.get("type").isJsonNull()
+                ? jsonObject.get("type").getAsString()
+                : eventType;
+        if ("response.output_text.delta".equals(type)) {
+            return jsonObject.has("delta") && !jsonObject.get("delta").isJsonNull()
+                    ? jsonObject.get("delta").getAsString()
+                    : "";
         }
-        JsonObject choice = choices.get(0).getAsJsonObject();
-        JsonObject delta = choice.has("delta") ? choice.getAsJsonObject("delta") : null;
-        if (delta != null && delta.has("content") && !delta.get("content").isJsonNull()) {
-            return delta.get("content").getAsString();
-        }
-        JsonObject message = choice.has("message") ? choice.getAsJsonObject("message") : null;
-        if (message != null && message.has("content") && !message.get("content").isJsonNull()) {
-            return extractContent(message);
+        if ("response.completed".equals(type) || "response.done".equals(type)) {
+            JsonObject response = jsonObject.has("response") && jsonObject.get("response").isJsonObject()
+                    ? jsonObject.getAsJsonObject("response")
+                    : jsonObject;
+            return extractOutputText(response);
         }
         return "";
     }
 
+    /**
+     * Text carried by a non-streaming response: {@code output_text} when present, otherwise the
+     * {@code output[].content[].text} parts of completed message items.
+     */
     @NotNull
-    static List<String> extractModelIds(@NotNull String responseBody) {
-        JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
-        Set<String> modelIds = new LinkedHashSet<>();
-        collectModelIds(jsonObject.getAsJsonArray("data"), modelIds);
-        if (modelIds.isEmpty() && jsonObject.has("models") && jsonObject.get("models").isJsonArray()) {
-            collectModelIds(jsonObject.getAsJsonArray("models"), modelIds);
+    private static String extractOutputText(@NotNull JsonObject response) {
+        if (response.has("output_text") && !response.get("output_text").isJsonNull()) {
+            return response.get("output_text").getAsString();
         }
-        return new ArrayList<>(modelIds);
+        StringBuilder builder = new StringBuilder();
+        JsonArray output = response.getAsJsonArray("output");
+        if (output == null) {
+            return "";
+        }
+        for (JsonElement itemElement : output) {
+            if (!itemElement.isJsonObject()) {
+                continue;
+            }
+            JsonObject item = itemElement.getAsJsonObject();
+            if (item.has("type") && !item.get("type").isJsonNull()
+                    && !"message".equals(item.get("type").getAsString())) {
+                continue;
+            }
+            JsonElement content = item.get("content");
+            if (content == null || content.isJsonNull()) {
+                continue;
+            }
+            builder.append(new OpenAiResponsesLlmProviderClient().extractTextParts(content));
+        }
+        return builder.toString();
     }
 
     @Override
@@ -412,7 +427,7 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
 
     @NotNull
     private HttpURLConnection createConnection(@NotNull LlmProfile profile) throws IOException {
-        HttpURLConnection connection = openPostConnection(resolveEndpoint(profile, "/chat/completions"));
+        HttpURLConnection connection = openPostConnection(resolveResponsesEndpoint(profile));
         connection.setRequestProperty("Authorization", "Bearer " + profile.getApiKey().trim());
         return connection;
     }
@@ -428,59 +443,29 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
     }
 
     @NotNull
-    static String resolveModelsEndpoint(@NotNull LlmProfile profile) {
-        String baseUrl = new OpenAiCompatibleLlmProviderClient().stripTrailingSlash(profile.getBaseUrl().trim());
-        if (baseUrl.endsWith("/models")) {
+    static String resolveResponsesEndpoint(@NotNull LlmProfile profile) {
+        String baseUrl = new OpenAiResponsesLlmProviderClient().stripTrailingSlash(profile.getBaseUrl().trim());
+        if (baseUrl.endsWith(RESPONSES_PATH)) {
             return baseUrl;
         }
-        if (baseUrl.endsWith(CHAT_COMPLETIONS_PATH)) {
-            return baseUrl.substring(0, baseUrl.length() - CHAT_COMPLETIONS_PATH.length()) + "/models";
-        }
-        return new OpenAiCompatibleLlmProviderClient().resolveEndpoint(profile, "/models");
+        return new OpenAiResponsesLlmProviderClient().resolveEndpoint(profile, RESPONSES_PATH);
     }
 
     @NotNull
-    private static JsonObject createMessage(@NotNull String role, @NotNull String content) {
-        JsonObject message = new JsonObject();
-        message.addProperty("role", role);
-        message.addProperty("content", content);
-        return message;
+    static String resolveModelsEndpoint(@NotNull LlmProfile profile) {
+        String baseUrl = new OpenAiResponsesLlmProviderClient().stripTrailingSlash(profile.getBaseUrl().trim());
+        if (baseUrl.endsWith(MODELS_PATH)) {
+            return baseUrl;
+        }
+        if (baseUrl.endsWith(RESPONSES_PATH)) {
+            return baseUrl.substring(0, baseUrl.length() - RESPONSES_PATH.length()) + MODELS_PATH;
+        }
+        return new OpenAiResponsesLlmProviderClient().resolveEndpoint(profile, MODELS_PATH);
     }
 
-    @NotNull
-    private static String extractContent(@NotNull JsonObject message) {
-        return message.get("content").isJsonPrimitive()
-                ? message.get("content").getAsString()
-                : new OpenAiCompatibleLlmProviderClient().extractTextParts(message.get("content"));
-    }
-
-    private static void collectModelIds(JsonArray models, @NotNull Set<String> modelIds) {
-        if (models == null) {
-            return;
-        }
-        for (int i = 0; i < models.size(); i++) {
-            String modelId = extractModelId(models.get(i));
-            if (!modelId.isEmpty()) {
-                modelIds.add(modelId);
-            }
-        }
-    }
-
-    @NotNull
-    private static String extractModelId(@NotNull com.google.gson.JsonElement modelElement) {
-        if (modelElement.isJsonPrimitive()) {
-            return modelElement.getAsString().trim();
-        }
-        if (!modelElement.isJsonObject()) {
-            return "";
-        }
-        JsonObject model = modelElement.getAsJsonObject();
-        if (model.has("id") && !model.get("id").isJsonNull()) {
-            return model.get("id").getAsString().trim();
-        }
-        if (model.has("name") && !model.get("name").isJsonNull()) {
-            return model.get("name").getAsString().trim();
-        }
-        return "";
+    static boolean isEventStream(@Nullable String contentType, @NotNull String responseBody) {
+        return contentType != null && contentType.contains("text/event-stream")
+                || responseBody.startsWith("data:")
+                || responseBody.startsWith("event:");
     }
 }

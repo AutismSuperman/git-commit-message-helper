@@ -1,7 +1,6 @@
 package com.fulinlin.service;
 
 import com.fulinlin.model.LlmProfile;
-import com.fulinlin.model.enums.LlmProvider;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -22,7 +21,6 @@ import java.util.Locale;
 
 abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
 
-    protected static final int MAX_RESPONSE_TOKENS = 4096;
     private static final int CANCELLABLE_READ_TIMEOUT_MS = 1000;
 
     @NotNull
@@ -147,53 +145,21 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
         return builder.toString();
     }
 
-    protected static boolean isReasoningCompatibilityEnabled(@NotNull LlmProfile profile) {
-        return Boolean.TRUE.equals(profile.getReasoningCompatibilityEnabled());
-    }
-
     /**
-     * Models that reject {@code max_tokens} in favor of {@code max_completion_tokens}.
-     * This is a model capability and must hold even when the compatibility parameters
-     * themselves are dropped on retry.
+     * Providers reject thinking parameters they do not know. Official APIs report unknown fields
+     * with a small set of phrasings, from {@code unsupported} to Anthropic's
+     * {@code Extra inputs are not permitted}.
      */
-    protected static boolean needsCompletionTokenLimit(@NotNull LlmProfile profile) {
-        return isOpenAiReasoningModel(profile) || containsProfileText(profile, "mimo", "xiaomimimo", "token-plan");
-    }
-
-    protected static void applyReasoningCompatibility(@NotNull JsonObject requestBody, @NotNull LlmProfile profile) {
-        applyReasoningCompatibility(requestBody, profile, isReasoningCompatibilityEnabled(profile));
-    }
-
-    protected static void applyReasoningCompatibility(@NotNull JsonObject requestBody,
-                                                      @NotNull LlmProfile profile,
-                                                      boolean enabled) {
-        if (!enabled) {
-            return;
-        }
-        if (isQwenCompatible(profile)) {
-            requestBody.addProperty("enable_thinking", false);
-            return;
-        }
-        if (supportsReasoningEffort(profile)) {
-            requestBody.addProperty("reasoning_effort", "low");
-            return;
-        }
-        if (isThinkingObjectCompatible(profile)) {
-            requestBody.add("thinking", createThinkingDisabled());
-            return;
-        }
-        if (isReasoningObjectCompatible(profile)) {
-            requestBody.add("reasoning", createReasoningDisabled());
-        }
-    }
-
-    protected static boolean shouldRetryWithoutReasoningCompatibility(@NotNull String responseBody) {
+    static boolean shouldRetryWithoutThinkingParameters(@NotNull String responseBody) {
         String lower = responseBody.toLowerCase(Locale.ROOT);
         return lower.contains("unsupported")
                 || lower.contains("unknown parameter")
+                || lower.contains("unknown field")
                 || lower.contains("unrecognized")
                 || lower.contains("invalid parameter")
                 || lower.contains("extra_forbidden")
+                || lower.contains("extra inputs are not permitted")
+                || lower.contains("not permitted")
                 || lower.contains("not support")
                 || lower.contains("not_supported");
     }
@@ -209,72 +175,5 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
                 || lower.contains("not support")
                 || lower.contains("not_supported")
                 || lower.contains("only the default"));
-    }
-
-    @NotNull
-    private static JsonObject createThinkingDisabled() {
-        JsonObject thinking = new JsonObject();
-        thinking.addProperty("type", "disabled");
-        return thinking;
-    }
-
-    @NotNull
-    private static JsonObject createReasoningDisabled() {
-        JsonObject reasoning = new JsonObject();
-        reasoning.addProperty("enabled", false);
-        return reasoning;
-    }
-
-    /**
-     * Providers accepting the OpenAI-style {@code reasoning_effort} knob: the OpenAI
-     * reasoning families plus Gemini and Grok, whose OpenAI-compatible endpoints map it
-     * to their native thinking-level parameters.
-     */
-    private static boolean supportsReasoningEffort(@NotNull LlmProfile profile) {
-        return isOpenAiReasoningModel(profile) || containsProfileText(profile, "gemini", "grok", "x.ai");
-    }
-
-    protected static boolean isOpenAiReasoningModel(@NotNull LlmProfile profile) {
-        String model = normalize(profile.getModel());
-        return model.startsWith("o1")
-                || model.startsWith("o3")
-                || model.startsWith("o4")
-                || model.startsWith("o5")
-                || model.startsWith("gpt-5");
-    }
-
-    private static boolean isQwenCompatible(@NotNull LlmProfile profile) {
-        return containsProfileText(profile, "qwen", "dashscope", "aliyuncs", "alibabacloud");
-    }
-
-    private static boolean isThinkingObjectCompatible(@NotNull LlmProfile profile) {
-        if (LlmProvider.ANTHROPIC == LlmProvider.fromNullable(profile.getProvider())) {
-            return !containsProfileText(profile, "api.anthropic.com");
-        }
-        return containsProfileText(profile, "mimo", "xiaomimimo", "token-plan", "zhipu", "bigmodel", "glm",
-                "moonshot", "kimi", "doubao", "volces");
-    }
-
-    /**
-     * Gateways speaking the OpenRouter-style {@code reasoning} object (OpenRouter itself,
-     * MiniMax, and relays built on the same convention).
-     */
-    private static boolean isReasoningObjectCompatible(@NotNull LlmProfile profile) {
-        return containsProfileText(profile, "openrouter", "minimax");
-    }
-
-    private static boolean containsProfileText(@NotNull LlmProfile profile, @NotNull String... needles) {
-        String text = normalize(profile.getBaseUrl()) + " " + normalize(profile.getModel());
-        for (String needle : needles) {
-            if (text.contains(needle)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @NotNull
-    private static String normalize(String value) {
-        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 }
