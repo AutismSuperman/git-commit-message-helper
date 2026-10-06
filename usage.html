@@ -69,7 +69,7 @@
       <div class="guide-section__label">02</div>
       <div class="guide-section__content">
         <h2 id="workflow-guide-title">提交面板工作流</h2>
-        <p>插件会在 VCS Commit Message 区域中加入三个动作。它们可以在设置页里单独控制显示或隐藏。</p>
+        <p>插件会在 VCS Commit Message 区域中加入四个动作。它们可以在设置页里单独控制显示或隐藏。</p>
         <div class="action-table" role="table" aria-label="提交面板动作">
           <div role="row">
             <span role="columnheader">动作</span>
@@ -78,6 +78,10 @@
           <div role="row">
             <span role="cell"><code>Generate Commit Message</code></span>
             <span role="cell">根据当前选中的变更生成提交信息。</span>
+          </div>
+          <div role="row">
+            <span role="cell"><code>Generate Commit Message With Additional Context</code></span>
+            <span role="cell">先输入本次生成的附加要求（关闭的 issue、跳过 CI、Bug 说明等），再生成提交信息。</span>
           </div>
           <div role="row">
             <span role="cell"><code>Format Commit Message</code></span>
@@ -89,8 +93,8 @@
           </div>
         </div>
         <figure class="article-figure guide-shot">
-          <button class="image-preview" type="button" data-preview="assets/screenshots/operation.gif" data-title="提交面板工作流">
-            <img src="assets/screenshots/operation.gif" alt="在 IntelliJ 提交面板中使用 Git Commit Message Helper 的操作演示">
+          <button class="image-preview" type="button" data-preview="assets/screenshots/commit-panel.png" data-title="提交面板工作流">
+            <img src="assets/screenshots/commit-panel.png" alt="在 IntelliJ 提交面板中使用 Git Commit Message Helper 的四个动作">
           </button>
           <figcaption>在提交面板中选择动作，生成、格式化或手动创建提交信息。点击图片可以放大查看。</figcaption>
         </figure>
@@ -105,15 +109,19 @@
         <div class="settings-grid">
           <article>
             <h3>通用设置</h3>
-            <p>调整类型展示模式、内联展示数量、隐藏字段、Skip CI 默认值和三个提交动作的显示状态。</p>
+            <p>调整类型展示模式、内联展示数量、隐藏字段、Skip CI 默认值和四个提交动作的显示状态。</p>
           </article>
           <article>
             <h3>提交模板</h3>
-            <p>模板由 Apache Velocity 驱动，可以完全控制最终提交信息的渲染格式。</p>
+            <p>模板由 Apache Velocity 驱动，支持多模板档案与全局/项目默认，可以完全控制最终提交信息的渲染格式。</p>
           </article>
           <article>
             <h3>提交类型</h3>
             <p>维护团队允许使用的提交类型和描述，例如 feat、fix、docs、style、refactor、test、chore。</p>
+          </article>
+          <article>
+            <h3>提示词</h3>
+            <p>创建可复用的提示词档案，并为全局与当前项目分别指定默认值，控制 LLM 生成与格式化的行为。</p>
           </article>
         </div>
         <pre class="template-sample"><code>type(scope): subject
@@ -132,7 +140,7 @@ Closes issue
       <div class="guide-section__label">04</div>
       <div class="guide-section__content">
         <h2 id="llm-setup-title">LLM Provider 设置</h2>
-        <p>在 LLM 设置页配置 Provider、Base URL、API Key、Model、Temperature、Response Language 和 Smart Echo。</p>
+        <p>在 LLM 设置页配置默认模型、接口协议、Base URL、API Key、Model、Temperature、回复语言、最大差异长度和思考等级。每个模型档案可以使用不同的接口协议和思考等级。</p>
         <div class="compat-stack provider-grid--guide">
           <article class="provider">
             <h3>OpenAI Compatible</h3>
@@ -145,6 +153,18 @@ Closes issue
             </ul>
             <pre class="endpoint-sample"><code>Base URL: https://api.openai.com/v1
 Actual URL: https://api.openai.com/v1/chat/completions
+Header: Authorization: Bearer sk-...</code></pre>
+          </article>
+          <article class="provider">
+            <h3>OpenAI Responses</h3>
+            <p>这是 OpenAI Responses 协议模式，适用于官方及兼容 Responses API 的服务。它使用 <code>/responses</code> 端点，请求体结构与 Chat Completions 不同。</p>
+            <ul>
+              <li>填写服务根路径：<code>https://api.openai.com/v1</code>，插件自动请求 <code>/responses</code>。</li>
+              <li>鉴权 Header：<code>Authorization: Bearer &lt;API Key&gt;</code>。</li>
+              <li>思考等级映射为 reasoning effort 参数。</li>
+            </ul>
+            <pre class="endpoint-sample"><code>Base URL: https://api.openai.com/v1
+Actual URL: https://api.openai.com/v1/responses
 Header: Authorization: Bearer sk-...</code></pre>
           </article>
           <article class="provider">
@@ -161,6 +181,7 @@ Actual URL: https://api.anthropic.com/v1/messages
 Header: x-api-key: sk-ant-...</code></pre>
           </article>
         </div>
+        <p><strong>思考等级：</strong>每个模型档案可以单独设置思考等级——模型默认、关闭、低、中、高、最高。插件会把等级映射为各家 API 支持的参数：OpenAI reasoning effort、Anthropic thinking budget，以及 Qwen、Zhipu、Moonshot、Doubao、DeepSeek、MiniMax 等厂商开关。如果 Provider 拒绝思考参数，插件会记住并回退。</p>
         <p><strong>Smart Echo：</strong>当提交面板里已有内容时，打开手动编辑器可以让 LLM 把现有文本解析回 <code>type</code>、<code>scope</code>、<code>subject</code>、<code>body</code>、<code>changes</code>、<code>closes</code> 和 <code>skipCi</code> 等结构化字段。它主要用于“继续编辑已有草稿”，不是重新生成一条完全新的提交信息。</p>
       </div>
     </section>
@@ -174,11 +195,11 @@ Header: x-api-key: sk-ant-...</code></pre>
         <section class="article-block article-block--compact">
           <div class="article-copy">
             <h3>通用设置</h3>
-            <p>用于控制编辑器字段、提交动作按钮和 Skip CI。团队可以先决定哪些字段需要展示，再把无关项隐藏掉。</p>
+            <p>用于控制编辑器字段、提交类型展示、Skip CI 和四个提交动作按钮。团队可以先决定哪些字段需要展示，再把无关项隐藏掉。</p>
           </div>
           <figure class="article-figure">
-            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-0.png" data-title="通用设置">
-              <img src="assets/screenshots/settings-0.png" alt="通用设置截图">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-general.png" data-title="通用设置">
+              <img src="assets/screenshots/settings-general.png" alt="通用设置截图">
             </button>
             <figcaption>通用设置负责编辑体验和按钮显示策略。</figcaption>
           </figure>
@@ -187,11 +208,11 @@ Header: x-api-key: sk-ant-...</code></pre>
         <section class="article-block article-block--compact">
           <div class="article-copy">
             <h3>提交模板</h3>
-            <p>Velocity 模板定义最终提交信息怎么拼接。你可以把字段顺序、空行、BREAKING CHANGE、issue 引用和 skip ci 放到团队约定的位置。</p>
+            <p>Velocity 模板定义最终提交信息怎么拼接。支持多模板档案与全局/项目默认，可以把字段顺序、空行、BREAKING CHANGE、issue 引用和 skip ci 放到团队约定的位置。</p>
           </div>
           <figure class="article-figure">
-            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-1.png" data-title="提交模板">
-              <img src="assets/screenshots/settings-1.png" alt="提交模板设置截图">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-template.png" data-title="提交模板">
+              <img src="assets/screenshots/settings-template.png" alt="提交模板设置截图">
             </button>
             <figcaption>模板决定最终写入 Git 的 commit message 文本。</figcaption>
           </figure>
@@ -203,8 +224,8 @@ Header: x-api-key: sk-ant-...</code></pre>
             <p>提交类型列表用于约束 type 字段。默认包含 feat、fix、docs、style、refactor、perf、test、build、ci、chore 和 revert，也可以按团队规范增删。</p>
           </div>
           <figure class="article-figure">
-            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-2.png" data-title="提交类型">
-              <img src="assets/screenshots/settings-2.png" alt="提交类型设置截图">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-types.png" data-title="提交类型">
+              <img src="assets/screenshots/settings-types.png" alt="提交类型设置截图">
             </button>
             <figcaption>类型说明会帮助使用者选择更准确的提交语义。</figcaption>
           </figure>
@@ -212,14 +233,27 @@ Header: x-api-key: sk-ant-...</code></pre>
 
         <section class="article-block article-block--compact">
           <div class="article-copy">
-            <h3>LLM 设置</h3>
-            <p>LLM 设置负责 Provider、接口地址、API Key、模型参数和 Smart Echo。生成、格式化和解析已有草稿都会读取这里的配置。</p>
+            <h3>提示词</h3>
+            <p>提示词档案控制 LLM 生成与格式化的行为。可以创建多个档案并在全局与项目维度分别指定默认值，项目提示词优先。</p>
           </div>
           <figure class="article-figure">
-            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-3.png" data-title="LLM 设置">
-              <img src="assets/screenshots/settings-3.png" alt="LLM 设置截图">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-prompt.png" data-title="提示词">
+              <img src="assets/screenshots/settings-prompt.png" alt="提示词设置截图">
             </button>
-            <figcaption>选择 Provider 后，再按对应协议填写 Base URL 和鉴权信息。</figcaption>
+            <figcaption>提示词只影响生成与格式化，不影响 Smart Echo 解析。</figcaption>
+          </figure>
+        </section>
+
+        <section class="article-block article-block--compact">
+          <div class="article-copy">
+            <h3>LLM 设置</h3>
+            <p>LLM 设置负责默认模型、接口协议、Base URL、API Key、模型参数、思考等级和 Smart Echo。生成、格式化和解析已有草稿都会读取这里的配置。</p>
+          </div>
+          <figure class="article-figure">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-llm.png" data-title="LLM 设置">
+              <img src="assets/screenshots/settings-llm.png" alt="LLM 设置截图">
+            </button>
+            <figcaption>每个模型档案可以选择 Chat Completions、OpenAI Responses 或 Anthropic Messages 协议和自己的思考等级。</figcaption>
           </figure>
         </section>
       </div>

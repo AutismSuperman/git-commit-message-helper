@@ -45,7 +45,7 @@
       <img class="hero__image" src="assets/screenshots/operation.png" alt="Git Commit Message Helper 在 IntelliJ 提交面板中的操作截图">
       <div class="hero__shade"></div>
       <div class="hero__content">
-        <div class="hero__kicker">IntelliJ Platform plugin · v1.6.2</div>
+        <div class="hero__kicker">IntelliJ Platform plugin · v1.6.5</div>
         <h1 id="hero-title"><span>Git Commit</span><span>Message Helper</span></h1>
         <p class="hero__lead">把提交信息的生成、格式化和结构化编辑放进 IDE 提交面板，让团队提交记录更清晰、更一致。</p>
         <div class="hero__actions" aria-label="主要链接">
@@ -61,7 +61,8 @@
         <ul class="signal-list" aria-label="核心能力">
           <li>Conventional Commits</li>
           <li>Apache Velocity 模板</li>
-          <li>OpenAI Compatible / Anthropic</li>
+          <li>Chat Completions · Responses · Anthropic</li>
+          <li>思考等级与提示词档案</li>
           <li>中英日韩本地化</li>
         </ul>
       </div>
@@ -69,8 +70,12 @@
 
     <section class="intro-band" aria-label="插件概览">
       <div class="intro-band__item">
-        <span class="metric">3</span>
+        <span class="metric">4</span>
         <span>提交面板动作</span>
+      </div>
+      <div class="intro-band__item">
+        <span class="metric">3</span>
+        <span>LLM 接口协议</span>
       </div>
       <div class="intro-band__item">
         <span class="metric">11</span>
@@ -102,12 +107,12 @@
         <article class="feature-card">
           <div class="feature-card__icon" aria-hidden="true">UI</div>
           <h3>结构化手动编辑</h3>
-          <p>通过 type、scope、subject、body、BREAKING CHANGE、Closes、skip ci 等字段控制最终输出。</p>
+          <p>通过 type、scope、subject、body、BREAKING CHANGE、Closes、skip ci 等字段控制最终输出，Smart Echo 还能把已有草稿解析回结构化字段。</p>
         </article>
         <article class="feature-card">
           <div class="feature-card__icon" aria-hidden="true">TPL</div>
-          <h3>团队模板可定制</h3>
-          <p>提交模板由 Apache Velocity 驱动，提交类型、字段显示、Skip CI 预设都可以按团队规范调整。</p>
+          <h3>模板与提示词可定制</h3>
+          <p>提交模板由 Apache Velocity 驱动，支持多模板档案与全局/项目默认；LLM 生成行为还可以通过可复用的提示词档案调整。</p>
         </article>
       </div>
     </section>
@@ -127,7 +132,7 @@
         <div class="workflow__step">
           <span>02</span>
           <h3>生成、格式化或手写</h3>
-          <p>使用 Generate、Format、Create 三个动作完成不同程度的自动化。</p>
+          <p>使用 Generate、Generate with Context、Format、Create 四个动作完成不同程度的自动化。</p>
         </div>
         <div class="workflow__step">
           <span>03</span>
@@ -147,29 +152,55 @@
       </div>
 
       <article class="screenshot-article">
-        <p class="article-lead">下面按实际使用顺序汇总插件界面。图片不是单独卡片，放在说明文字中作为文章插图；点击任意图片可以放大查看细节。</p>
+        <p class="article-lead">下面按实际使用顺序汇总插件界面。图片不是单独卡片，放在说明文字中作为文章插图；点击任意图片可以放大查看。</p>
 
         <section class="article-block">
           <div class="article-copy">
             <h3>提交面板工作流</h3>
-            <p>在 VCS Commit Message 区域中，插件会提供生成、格式化和手动创建三个入口。生成和格式化动作适合先拿到可用草稿，再由结构化编辑器进行人工确认。</p>
+            <p>在 VCS Commit Message 区域中，插件会提供生成、附加信息生成、格式化和手动创建四个入口。生成和格式化动作适合先拿到可用草稿，再由结构化编辑器进行人工确认。</p>
           </div>
           <figure class="article-figure">
-            <button class="image-preview" type="button" data-preview="assets/screenshots/operation.gif" data-title="提交面板工作流">
-              <img src="assets/screenshots/operation.gif" alt="在提交面板中生成、格式化和创建提交信息的操作演示">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/commit-panel.png" data-title="提交面板工作流">
+              <img src="assets/screenshots/commit-panel.png" alt="在 IntelliJ 提交面板中使用 Git Commit Message Helper 的四个动作">
             </button>
-            <figcaption>提交面板里的三个动作会直接读写当前 commit message 文本。</figcaption>
+            <figcaption>提交面板里的四个动作会直接读写当前 commit message 文本。</figcaption>
+          </figure>
+        </section>
+
+        <section class="article-block">
+          <div class="article-copy">
+            <h3>附加信息生成</h3>
+            <p>需要补充上下文时，可以通过附加信息动作告诉 LLM 本次生成的额外要求，例如要关闭的 issue、跳过 CI，或者说明修复了什么 Bug。</p>
+          </div>
+          <figure class="article-figure">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/additional-context.png" data-title="附加信息生成">
+              <img src="assets/screenshots/additional-context.png" alt="附加生成信息输入框截图">
+            </button>
+            <figcaption>附加信息只影响一次生成，不会覆盖提示词档案。</figcaption>
+          </figure>
+        </section>
+
+        <section class="article-block">
+          <div class="article-copy">
+            <h3>结构化提交编辑器</h3>
+            <p>手动创建动作会打开结构化编辑器：更改类型、范围、简短描述、详细描述、重大变更、关闭问题和 Skip CI 都有独立字段，提交时按模板渲染成最终文本。</p>
+          </div>
+          <figure class="article-figure">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/commit-dialog.png" data-title="结构化提交编辑器">
+              <img src="assets/screenshots/commit-dialog.png" alt="结构化提交编辑器截图">
+            </button>
+            <figcaption>字段会按团队模板渲染，无需手工拼接格式。</figcaption>
           </figure>
         </section>
 
         <section class="article-block">
           <div class="article-copy">
             <h3>通用设置</h3>
-            <p>通用设置用于控制提交类型展示方式、隐藏字段、Skip CI 默认值，以及三个提交动作是否显示在提交面板中。</p>
+            <p>通用设置用于控制提交类型展示方式、隐藏字段、Skip CI 默认值，以及四个提交动作是否显示在提交面板中。</p>
           </div>
           <figure class="article-figure">
-            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-0.png" data-title="通用设置">
-              <img src="assets/screenshots/settings-0.png" alt="Git Commit Message Helper 通用设置截图">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-general.png" data-title="通用设置">
+              <img src="assets/screenshots/settings-general.png" alt="Git Commit Message Helper 通用设置截图">
             </button>
             <figcaption>适合先配置团队默认行为，再让每次提交沿用同一套规则。</figcaption>
           </figure>
@@ -178,34 +209,47 @@
         <section class="article-block">
           <div class="article-copy">
             <h3>模板与提交类型</h3>
-            <p>提交模板由 Apache Velocity 渲染，提交类型列表可以按团队规范维护。模板决定最终文本结构，类型列表决定编辑器中可以选择的语义分类。</p>
+            <p>提交模板由 Apache Velocity 渲染，支持多模板档案与全局/项目默认；提交类型列表可以按团队规范维护。模板决定最终文本结构，类型列表决定编辑器中可以选择的语义分类。</p>
           </div>
           <div class="figure-pair">
             <figure class="article-figure">
-              <button class="image-preview" type="button" data-preview="assets/screenshots/settings-1.png" data-title="提交模板">
-                <img src="assets/screenshots/settings-1.png" alt="提交模板设置截图">
+              <button class="image-preview" type="button" data-preview="assets/screenshots/settings-template.png" data-title="提交模板">
+                <img src="assets/screenshots/settings-template.png" alt="提交模板设置截图">
               </button>
               <figcaption>模板中可以组合 type、scope、subject、body、breaking change、issue 和 skip ci。</figcaption>
             </figure>
             <figure class="article-figure">
-              <button class="image-preview" type="button" data-preview="assets/screenshots/settings-2.png" data-title="提交类型">
-                <img src="assets/screenshots/settings-2.png" alt="提交类型设置截图">
+              <button class="image-preview" type="button" data-preview="assets/screenshots/settings-types.png" data-title="提交类型">
+                <img src="assets/screenshots/settings-types.png" alt="提交类型设置截图">
               </button>
-              <figcaption>提交类型和说明可以匹配团队自己的 Conventional Commits 约定。</figcaption>
+              <figcaption>类型说明会帮助使用者选择更准确的提交语义。</figcaption>
             </figure>
           </div>
         </section>
 
         <section class="article-block">
           <div class="article-copy">
-            <h3>LLM 设置</h3>
-            <p>LLM 设置页集中配置 Provider、Base URL、API Key、模型、温度、返回语言和 Smart Echo。配置完成后，生成、格式化和回填结构化字段都会使用这里的参数。</p>
+            <h3>提示词档案</h3>
+            <p>提示词设置页可以创建、重命名、编辑和删除可复用的提示词，并为全局与当前项目分别指定默认值。项目提示词优先于全局提示词。</p>
           </div>
           <figure class="article-figure">
-            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-3.png" data-title="LLM 设置">
-              <img src="assets/screenshots/settings-3.png" alt="LLM Provider 和模型参数设置截图">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-prompt.png" data-title="提示词">
+              <img src="assets/screenshots/settings-prompt.png" alt="提示词设置截图">
             </button>
-            <figcaption>OpenAI Compatible 和 Anthropic 两种 Provider 的请求路径、Header 和请求体结构不同。</figcaption>
+            <figcaption>提示词会影响 LLM 生成与格式化，不影响 Smart Echo 解析。</figcaption>
+          </figure>
+        </section>
+
+        <section class="article-block">
+          <div class="article-copy">
+            <h3>LLM 设置</h3>
+            <p>LLM 设置页集中配置默认模型、接口协议、Base URL、API Key、温度、回复语言、最大差异长度和思考等级。每个模型档案可以选择自己的协议与思考等级。</p>
+          </div>
+          <figure class="article-figure">
+            <button class="image-preview" type="button" data-preview="assets/screenshots/settings-llm.png" data-title="LLM 设置">
+              <img src="assets/screenshots/settings-llm.png" alt="LLM 设置截图">
+            </button>
+            <figcaption>三种接口协议对应不同的请求路径、Header 和请求体结构。</figcaption>
           </figure>
         </section>
       </article>
@@ -229,14 +273,14 @@
           <span class="guide-item__index">02</span>
           <div>
             <h3>打开设置页</h3>
-            <p>进入 <code>File</code> → <code>Settings</code> → Git Commit Message Helper，配置提交类型、模板、字段显示和 LLM。</p>
+            <p>进入 <code>File</code> → <code>Settings</code> → Git 提交消息助手，配置提交模板、提示词、类型和 LLM。</p>
           </div>
         </article>
         <article class="guide-item">
           <span class="guide-item__index">03</span>
           <div>
             <h3>在提交面板中使用</h3>
-            <p>选择变更后点击 Generate Commit Message、Format Commit Message 或 Create Commit Message，确认结果后提交。</p>
+            <p>选择变更后点击 Generate、Generate with Context、Format 或 Create，确认结果后提交。</p>
           </div>
         </article>
       </div>
@@ -247,7 +291,7 @@
     <section class="section" id="llm" aria-labelledby="llm-title">
       <div class="section__heading">
         <p class="eyebrow">LLM compatibility</p>
-        <h2 id="llm-title">两种 Provider 模式</h2>
+        <h2 id="llm-title">三种接口协议</h2>
       </div>
 
       <div class="compat-stack">
@@ -261,17 +305,26 @@
           </ul>
         </article>
         <article class="provider">
+          <h3>OpenAI Responses</h3>
+          <p>这是 OpenAI Responses 协议模式，适用于官方及兼容 Responses API 的服务。它使用 <code>/responses</code> 端点，请求体结构与 Chat Completions 不同。</p>
+          <ul>
+            <li>填写服务根路径：<code>https://api.openai.com/v1</code>，插件会自动请求 <code>/responses</code>。</li>
+            <li>鉴权 Header 与 Chat Completions 相同：<code>Authorization: Bearer &lt;API Key&gt;</code>。</li>
+            <li>思考等级会映射为 Responses 的 reasoning effort 参数。</li>
+          </ul>
+        </article>
+        <article class="provider">
           <h3>Anthropic</h3>
-          <p>这是 Anthropic 原生 Messages API 模式，适用于 Claude 官方接口。它不是 OpenAI 兼容转接，协议字段和 Header 都不同。</p>
+          <p>这是 Anthropic 原生 Messages API 模式，适用于 Claude 官方接口。它不是 OpenAI 兼容转接，Header 和请求体结构都按 Anthropic 协议组织。</p>
           <ul>
             <li>Base URL 通常填写 <code>https://api.anthropic.com</code>，插件会自动请求 <code>/v1/messages</code>。</li>
             <li>请求 Header 使用 <code>x-api-key</code> 和 <code>anthropic-version: 2023-06-01</code>。</li>
-            <li>请求体包含 <code>model</code>、<code>system</code>、<code>messages</code>、<code>temperature</code>、<code>max_tokens</code>、<code>stream</code>。</li>
+            <li>思考等级会映射为 Anthropic 的 thinking budget 参数。</li>
           </ul>
         </article>
         <article class="provider provider--wide">
-          <h3>Smart Echo</h3>
-          <p>Smart Echo 不是生成新提交信息，而是把当前 commit message 文本解析回结构化字段。打开手动编辑器时，如果提交面板里已有内容，它会尝试识别 <code>type</code>、<code>scope</code>、<code>subject</code>、<code>body</code>、<code>changes</code>、<code>closes</code> 和 <code>skipCi</code>，方便在原草稿基础上继续调整。</p>
+          <h3>思考等级与 Smart Echo</h3>
+          <p>每个模型档案都可以单独设置思考等级：模型默认、关闭、低、中、高、最高。插件会把等级映射为各家 API 支持的参数（OpenAI reasoning effort、Anthropic thinking budget，以及 Qwen、Zhipu、Moonshot、Doubao、DeepSeek、MiniMax 等厂商开关）。<strong>Smart Echo</strong> 则不是生成新的提交信息，而是把当前 commit message 文本解析回结构化字段，方便在原草稿基础上继续调整。</p>
         </article>
       </div>
     </section>
