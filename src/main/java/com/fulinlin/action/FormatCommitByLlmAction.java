@@ -54,7 +54,8 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
             return;
         }
 
-        String editedCommitHash = commitContext.hasSelection() ? null : CommitPanelActionSupport.findEditedCommitHash(commitPanel);
+        CommitPanelActionSupport.SelectionSnapshot selection = commitContext.captureSelection();
+        String editedCommitHash = selection.hasSelection() ? null : CommitPanelActionSupport.findEditedCommitHash(commitPanel);
         loading = true;
         updateLoadingPresentation(actionEvent, true);
         CommitPanelActionSupport.CommitMessageLoadingState loadingState =
@@ -84,8 +85,8 @@ public class FormatCommitByLlmAction extends AnAction implements DumbAware {
                         llmCommitService.formatCommitMessage(
                                 project,
                                 settings,
-                                commitContext.getSelectedChanges(),
-                                commitContext.getSelectedFiles(),
+                                selection.getSelectedChanges(),
+                                selection.getSelectedFiles(),
                                 currentMessage,
                                 delta -> {
                                     indicator.checkCanceled();

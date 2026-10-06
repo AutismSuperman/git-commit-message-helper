@@ -29,6 +29,7 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -409,18 +410,47 @@ public final class CommitPanelActionSupport {
             return commitPanel;
         }
 
+        /**
+         * Snapshots the panel selection into immutable collections. Must be called on the EDT
+         * because reading the panel's inclusion model is EDT-only; the returned snapshot is
+         * safe to read from background threads.
+         */
+        @NotNull
+        public SelectionSnapshot captureSelection() {
+            if (checkinProjectPanel == null) {
+                return new SelectionSnapshot(Collections.emptyList(), Collections.emptyList());
+            }
+            return new SelectionSnapshot(
+                    List.copyOf(checkinProjectPanel.getSelectedChanges()),
+                    List.copyOf(checkinProjectPanel.getFiles()));
+        }
+    }
+
+    /**
+     * Immutable snapshot of the commit panel selection captured on the EDT, safe to read
+     * from background threads.
+     */
+    public static final class SelectionSnapshot {
+        private final Collection<Change> selectedChanges;
+        private final Collection<File> selectedFiles;
+
+        private SelectionSnapshot(@NotNull Collection<Change> selectedChanges, @NotNull Collection<File> selectedFiles) {
+            this.selectedChanges = selectedChanges;
+            this.selectedFiles = selectedFiles;
+        }
+
         @NotNull
         public Collection<Change> getSelectedChanges() {
-            return checkinProjectPanel != null ? checkinProjectPanel.getSelectedChanges() : Collections.emptyList();
+            return selectedChanges;
         }
 
         @NotNull
         public Collection<File> getSelectedFiles() {
-            return checkinProjectPanel != null ? checkinProjectPanel.getFiles() : Collections.emptyList();
+            return selectedFiles;
         }
 
         public boolean hasSelection() {
-            return !getSelectedChanges().isEmpty() || !getSelectedFiles().isEmpty();
+            return !selectedChanges.isEmpty() || !selectedFiles.isEmpty();
         }
     }
 }

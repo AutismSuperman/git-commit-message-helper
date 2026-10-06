@@ -73,7 +73,8 @@ public class CreateCommitAction extends AnAction implements DumbAware {
         updateLoadingPresentation(actionEvent, true);
         CommitPanelActionSupport.CommitMessageLoadingState loadingState =
                 CommitPanelActionSupport.startCommitMessageLoading(commitPanel);
-        String editedCommitHash = commitContext.hasSelection() ? null : CommitPanelActionSupport.findEditedCommitHash(commitPanel);
+        CommitPanelActionSupport.SelectionSnapshot selection = commitContext.captureSelection();
+        String editedCommitHash = selection.hasSelection() ? null : CommitPanelActionSupport.findEditedCommitHash(commitPanel);
         ProgressManager.getInstance().run(new Task.Backgroundable(project, PluginBundle.get("action.smart.echo.progress"), true) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -94,8 +95,8 @@ public class CreateCommitAction extends AnAction implements DumbAware {
                         initialCommitTemplate = llmCommitService.parseCommitMessageToTemplate(
                                 project,
                                 settings,
-                                commitContext.getSelectedChanges(),
-                                commitContext.getSelectedFiles(),
+                                selection.getSelectedChanges(),
+                                selection.getSelectedFiles(),
                                 currentMessage
                         );
                     }

@@ -39,7 +39,8 @@ public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
         if (commitPanel == null || project == null) {
             return;
         }
-        boolean hasSelection = commitContext.hasSelection();
+        CommitPanelActionSupport.SelectionSnapshot selection = commitContext.captureSelection();
+        boolean hasSelection = selection.hasSelection();
         String editedCommitHash = hasSelection ? null : CommitPanelActionSupport.findEditedCommitHash(commitPanel);
         if (!hasSelection && editedCommitHash == null) {
             Messages.showWarningDialog(project, PluginBundle.get("action.generate.empty.selection"), PluginBundle.get("action.llm.error.title"));
@@ -92,8 +93,8 @@ public class GenerateCommitByLlmAction extends AnAction implements DumbAware {
                         llmCommitService.generateCommitMessage(
                                 project,
                                 settings,
-                                commitContext.getSelectedChanges(),
-                                commitContext.getSelectedFiles(),
+                                selection.getSelectedChanges(),
+                                selection.getSelectedFiles(),
                                 additionalContext,
                                 delta -> {
                                     indicator.checkCanceled();
