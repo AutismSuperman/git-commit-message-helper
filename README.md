@@ -2,199 +2,62 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-Git Commit Message Helper is an IntelliJ Platform plugin for writing cleaner, more consistent commit messages without leaving the IDE.
+Git Commit Message Helper is an IntelliJ Platform plugin for writing cleaner, more consistent commit messages without leaving the IDE. It combines a structured commit editor, customizable Conventional Commit templates (powered by Apache Velocity), and LLM assistance that speaks your gateway's protocol.
 
-It combines a structured commit editor, customizable Conventional Commit style templates, and provider-aware LLM assistance into one workflow. You can create commit messages manually, generate them from selected changes, reformat existing drafts, and tune the final output to match your team's conventions.
-
-This project started as an enhanced version of [git-commit-template](https://plugins.jetbrains.com/plugin/9861-git-commit-template) and has evolved into a more configurable commit authoring assistant.
-
-## JetBrains Marketplace
-
-[![Git Commit Message Helper](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/operation.png)](https://plugins.jetbrains.com/plugin/13477-git-commit-message-helper)
-
-Install from the [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/13477-git-commit-message-helper).
-
-## What It Does
-
-- Adds commit actions directly to the IntelliJ commit message panel.
-- Helps compose commit messages with structured fields such as `type`, `scope`, `subject`, `body`, `BREAKING CHANGE`, `Closes`, and `skip ci`.
-- Supports customizable commit templates powered by Apache Velocity.
-- Lets you manage allowed commit types and their descriptions.
-- Can generate a commit message from the selected git changes with an LLM.
-- Can rewrite an existing commit message to match the configured template.
-- Can parse an existing commit message back into structured fields with Smart Echo when opening the manual editor.
-- Supports optional skip-CI presets and configurable field visibility.
-- Includes localized resources for English, Chinese, Japanese, and Korean.
-
-## Main Actions
-
-The plugin contributes three actions to the VCS commit message area:
-
-- `Generate Commit Message`: generates a message from the currently selected changes.
-- `Format Commit Message`: rewrites the current commit message to fit the configured template.
-- `Create Commit Message`: opens the structured editor for manual commit composition.
-
-Each action can be individually shown or hidden from the plugin settings.
-
-## Default Commit Style
-
-Out of the box, the plugin uses a Conventional Commit style template similar to:
-
-```text
-type(scope): subject
-
-body
-
-BREAKING CHANGE: changes
-
-Closes issue
-
-[skip ci]
-```
-
-The default commit types are:
-
-`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
-
-Everything here is configurable, including the template text, visible fields, type list, display style, and skip-CI presets.
+![Git Commit Message Helper](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/operation.png)
 
 ## Installation
 
-Install from the [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/13477-git-commit-message-helper) inside your IDE:
+Install from the [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/13477-git-commit-message-helper):
 
-`File` -> `Settings` -> `Plugins` -> `Marketplace` -> `Git Commit Message Helper`
+`File` → `Settings` → `Plugins` → `Marketplace` → `Git Commit Message Helper`
 
-## Usage
+## Commit Panel Actions
 
-![operation.gif](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/operation.gif)
+The plugin adds four actions to the VCS commit message area. Each one can be shown or hidden in the plugin settings.
 
-Use the action buttons in the commit panel to generate, format, or manually build a commit message. The structured dialog is useful when you want strict control over each field, while the LLM actions help when you want a faster draft based on the selected diff.
+| Action | What it does |
+| --- | --- |
+| `Generate Commit Message` | Generates a message from the selected changes via LLM. |
+| `Generate Commit Message With Additional Context` | Adds per-request requirements first — closed issues, skip-CI notes, bug descriptions — then generates. |
+| `Format Commit Message` | Rewrites the current draft to match the configured template. |
+| `Create Commit Message` | Opens the structured editor for manual composition. |
+
+![Structured commit editor](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/commit-dialog.png)
 
 ## Configuration
 
-Open the plugin settings from:
+Open `File` → `Settings` → `Git 提交消息助手` (Git Commit Message Helper). Everything is configurable:
 
-`File` -> `Settings` -> `GitCommitMessageHelper`
-
-You can configure:
-
-- Type display mode and how many type options are shown inline
-- Which commit fields are hidden in the editor
-- Skip-CI presets and defaults
-- LLM provider, base URL, API key, model, temperature, response language, and Smart Echo
-- Reusable prompts with global and project defaults
-- Visibility of the four commit actions
-
-### General Settings
-
-![settings-0.png](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/settings-0.png)
-
-### Commit Template
-
-The commit template is powered by Apache Velocity, so you can fully customize how the final commit message is rendered.
-
-![settings-1.png](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/settings-1.png)
-
-### Commit Types
-
-You can edit the allowed commit types and their descriptions to match your team's workflow.
-
-![settings-2.png](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/settings-2.png)
-
-### LLM Settings
-
-You can configure the LLM provider, endpoint, credentials, model, temperature, response language, and Smart Echo behavior from the dedicated settings page.
-
-![settings-3.png](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/settings-3.png)
-
-### Prompts
-
-The Prompts settings page lets you create, rename, edit, and delete reusable prompts, then select separate global and current-project defaults. A project prompt takes precedence; when the project has no valid selection, the global default is used. The empty built-in `Default` prompt cannot be deleted and preserves the original behavior when no customization is needed.
-
-The selected prompt applies to LLM commit generation and formatting, but not to Smart Echo parsing of an existing commit message. Generate with Additional Context can still add issue references, Skip CI instructions, or other requirements for a single request.
-
-#### Generation Prompt Structure
-
-A commit generation request is composed approximately as follows:
-
-```text
-System Prompt
-  You are a senior engineer and Git maintainer.
-  Analyze the selected changes, identify the primary intent,
-  fill the commit template fields, and return only the requested JSON.
-
-  Persistent User Preferences
-  <current project prompt, or the global prompt when none is selected>
-
-  Custom preferences cannot override the required JSON shape,
-  commit template, allowed types, git diff, or output constraints.
-
-User Prompt
-  - Internal analysis instructions
-  - JSON output shape and field rules
-  - Additional context for this request, when provided
-  - Allowed commit types
-  - Current Velocity template and its preview
-  - Changed files, diff statistics, and the actual Git diff
-```
-
-The effective priority is:
-
-1. Built-in JSON, template, and allowed-type constraints
-2. The current project's default prompt, falling back to the global default
-3. Additional context entered for the current generation
-4. The Git diff and actual code facts; prompts cannot require invented changes
-
-The LLM returns the structured fields `type`, `scope`, `subject`, `body`, `changes`, `closes`, and `skipCi`. The plugin then renders the final commit message locally with the active Velocity template.
+- Commit template (Apache Velocity), multiple templates with global/project defaults
+- Allowed commit types and their descriptions
+- Type display style, hidden fields, and skip-CI presets
+- Reusable prompt profiles with global and project defaults
+- Four commit action visibility toggles
 
 ## LLM Compatibility
 
-Each model profile selects one of three API formats, so a single base URL can be reused with the
-protocol the gateway actually speaks:
+Each model profile picks one of three API formats, so one base URL works with whatever protocol your gateway speaks:
 
-| API format | Endpoint | Request highlights |
+| API format | Endpoint | Notes |
 | --- | --- | --- |
-| `Chat Completions` | `/chat/completions` | `model`, `messages`, `temperature`, `max_tokens` |
-| `Anthropic Messages` | `/v1/messages` | `x-api-key` and `anthropic-version` headers, `system`, `max_tokens` |
-| `Responses` | `/responses` | `instructions`, `input`, `max_output_tokens`, `reasoning.effort` |
+| `Chat Completions` | `/chat/completions` | OpenAI-compatible endpoints (OpenAI, DeepSeek, Qwen, Moonshot, MiniMax, ...) |
+| `OpenAI Responses` | `/responses` | OpenAI Responses API and compatible gateways |
+| `Anthropic Messages` | `/v1/messages` | Claude and Anthropic-compatible gateways |
 
-For any format the `Base URL` can be either a full endpoint or a server base URL such as
-`https://api.openai.com/v1`; the plugin appends the matching path automatically.
+The `Base URL` can be a full endpoint or a server base such as `https://api.openai.com/v1` — the plugin appends the matching path automatically.
 
-### Thinking Level
+Every profile also has a **thinking level** (`Model default`, `Off`, `Low`, `Medium`, `High`, `Max`). The plugin translates it into the parameter each protocol supports, and retries without it if a provider rejects the field.
 
-Every profile has a thinking level: `Model default`, `Off (fastest)`, `Low`, `Medium`, `High`, or
-`Max`. The plugin translates the chosen level into the parameter the selected API format supports,
-so you do not have to remember per-vendor names:
+![LLM settings](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/settings-llm.png)
 
-- **Chat Completions** uses `enable_thinking` for Qwen/DashScope endpoints, a `thinking` object for
-  Zhipu, Moonshot, Doubao/Volcengine, MiMo, and DeepSeek gateways, a `reasoning.effort` object for
-  OpenRouter and MiniMax, and `reasoning_effort` for OpenAI reasoning models, Gemini, Grok, and
-  other compatible gateways. OpenAI `o*`/`gpt-5` models use `max_completion_tokens`.
-- **Anthropic Messages** sends the classic `thinking` object with a token budget derived from the
-  level and the profile's max response tokens, or `output_config.effort` on gateways that expose
-  graded effort. Temperature is omitted while thinking is active because Anthropic only accepts the
-  default value then.
-- **Responses** sends `reasoning.effort` and uses `max_output_tokens`.
-
-`Model default` sends no thinking parameter at all, which keeps the provider's own default. If an
-endpoint rejects the extra fields, the request is retried once without them and that model is
-remembered so later requests skip them.
-
-### Smart Echo
-
-When Smart Echo is enabled and the commit panel already contains text, the manual commit dialog can ask the LLM to parse the current message back into structured fields like `type`, `scope`, `subject`, `body`, `changes`, `closes`, and `skipCi`. This is useful when you want to refine an existing draft in the structured editor instead of starting over.
+**Smart Echo**: when the commit panel already contains text, the structured editor can ask the LLM to parse it back into fields (`type`, `scope`, `subject`, `body`, `changes`, `closes`, `skipCi`) so you can refine the draft instead of starting over.
 
 ## Development
 
-- Built with Java 11
-- Uses the Gradle IntelliJ Plugin
-- Targets IntelliJ Platform `2020.3+`
-
-Useful commands:
+- Java 11, Gradle IntelliJ Plugin, targets IntelliJ Platform `2020.3+`
 
 ```bash
-./gradlew runIde
 ./gradlew buildPlugin
 ```
 
