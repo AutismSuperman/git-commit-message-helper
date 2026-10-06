@@ -65,15 +65,42 @@ jobs:
           files: build/distributions/*.zip
           generate_release_notes: true
 
-  # Backfill: build historical tags and attach their plugin zips to the existing releases.
-  # Triggered by pushing the exact tag backfill-assets; inert for normal v* tags.
+  # Backfill: build historical tags whose release has no zip attached and upload it.
+  # Triggered by pushing a tag named backfill-assets* (e.g. backfill-assets-2); inert for normal v* tags.
+  discover-backfill-tags:
+    if: startsWith(github.ref, 'refs/tags/backfill-assets')
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.discover.outputs.tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find releases without a plugin zip
+        id: discover
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          missing=()
+          while read -r tag; do
+            assets=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq '.assets | length' 2>/dev/null || echo 0)
+            if [ "${assets:-0}" -eq 0 ]; then
+              missing+=("$tag")
+              echo "missing asset: $tag"
+            fi
+          done < <(git tag -l 'v*' | awk '$0 >= "v1.5.0"')
+          echo "tags=$(printf '%s\n' "${missing[@]}" | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+
   backfill-historical-builds:
-    if: github.ref == 'refs/tags/backfill-assets'
+    needs: discover-backfill-tags
+    if: needs.discover-backfill-tags.outputs.tags != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        tag: [v1.5.0, v1.5.1, v1.5.2, v1.5.3, v1.5.4, v1.6.0, v1.6.1, v1.6.2]
+        tag: ${{ fromJSON(needs.discover-backfill-tags.outputs.tags) }}
     steps:
       - name: Checkout ${{ matrix.tag }}
         uses: actions/checkout@v4
@@ -124,7 +151,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for tag in v1.5.0 v1.5.1 v1.5.2 v1.5.3 v1.5.4 v1.6.0 v1.6.1 v1.6.2; do
+          for tag in v1.5.0 v1.5.1 v1.5.2 v1.5.3 v1.5.4 v1.6.0 v1.6.1 v1.6.2 v1.6.3 v1.6.4; do
             version="${tag#v}"
             body=$(awk -v ver="[$version]" '
               index($0, "## " ver) == 1 { flag = 1; next }
