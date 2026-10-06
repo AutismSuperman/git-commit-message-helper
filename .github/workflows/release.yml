@@ -83,6 +83,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Tag-triggered checkouts only fetch the triggered tag; the discovery needs all of them
+          git fetch origin --tags --force
           missing=()
           while read -r tag; do
             assets=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq '.assets | length' 2>/dev/null || echo 0)
@@ -91,7 +93,11 @@ jobs:
               echo "missing asset: $tag"
             fi
           done < <(git tag -l 'v*' | awk '$0 >= "v1.5.0"')
-          echo "tags=$(printf '%s\n' "${missing[@]}" | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "tags=$(printf '%s\n' "${missing[@]}" | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+          else
+            echo 'tags=[]' >> "$GITHUB_OUTPUT"
+          fi
 
   backfill-historical-builds:
     needs: discover-backfill-tags
@@ -146,6 +152,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Delete stray backfill releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --json tagName --jq '.[].tagName' \
+            | grep '^backfill-' \
+            | while read -r tag; do
+                gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
+                echo "Deleted stray release $tag"
+              done || true
 
       - name: Fill release bodies from CHANGELOG.md
         env:
