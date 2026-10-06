@@ -33,7 +33,7 @@ jobs:
           {
             echo "body<<CHANGELOG_EOF"
             awk -v ver="[$version]" '
-              $0 == "## " ver { flag = 1; next }
+              index($0, "## " ver) == 1 { flag = 1; next }
               flag && /^## \[/ { exit }
               flag { print }
             ' CHANGELOG.md
@@ -51,9 +51,9 @@ jobs:
           generate_release_notes: true
 
   # Backfill: build historical tags and attach their plugin zips to the existing releases.
-  # Triggered by pushing any tag named backfill-* (e.g. backfill-assets); inert for normal v* tags.
+  # Triggered by pushing the exact tag backfill-assets; inert for normal v* tags.
   backfill-historical-builds:
-    if: startsWith(github.ref, 'refs/tags/backfill-')
+    if: github.ref == 'refs/tags/backfill-assets'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -96,9 +96,9 @@ jobs:
           tag_name: ${{ matrix.tag }}
           files: build/distributions/*.zip
 
-  # One-time: fill the v1.6.5 release body from CHANGELOG.md (it was created before the changelog existed).
+  # Refresh the v1.6.5 release body from CHANGELOG.md. Triggered by pushing a tag named backfill-notes-*.
   refresh-latest-release-notes:
-    if: startsWith(github.ref, 'refs/tags/backfill-')
+    if: startsWith(github.ref, 'refs/tags/backfill-notes')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -110,7 +110,7 @@ jobs:
           {
             echo "body<<CHANGELOG_EOF"
             awk '
-              $0 == "## [1.6.5]" { flag = 1; next }
+              index($0, "## [1.6.5]") == 1 { flag = 1; next }
               flag && /^## \[/ { exit }
               flag { print }
             ' CHANGELOG.md
