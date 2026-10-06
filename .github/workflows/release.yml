@@ -4,12 +4,14 @@ on:
   push:
     tags:
       - 'v*'
+      - 'backfill-*'
 
 permissions:
   contents: write
 
 jobs:
   release:
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,32 +26,100 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Extract changelog for release
+        id: changelog
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo "body<<CHANGELOG_EOF"
+            awk -v ver="[$version]" '
+              $0 == "## " ver { flag = 1; next }
+              flag && /^## \[/ { exit }
+              flag { print }
+            ' CHANGELOG.md
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build plugin
         run: ./gradlew buildPlugin --no-daemon --stacktrace
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
+          body: ${{ steps.changelog.outputs.body }}
           files: build/distributions/*.zip
           generate_release_notes: true
 
-  # One-time backfill: tags pushed before CI existed have no entry on the Releases page
-  backfill-legacy-releases:
-    if: github.ref == 'refs/tags/v1.6.5'
+  # Backfill: build historical tags and attach their plugin zips to the existing releases.
+  # Triggered by pushing any tag named backfill-* (e.g. backfill-assets); inert for normal v* tags.
+  backfill-historical-builds:
+    if: startsWith(github.ref, 'refs/tags/backfill-')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: [v1.5.0, v1.5.1, v1.5.2, v1.5.3, v1.5.4, v1.6.0, v1.6.1, v1.6.2]
+    steps:
+      - name: Checkout ${{ matrix.tag }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.tag }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '7.6.4'
+
+      - name: Build plugin
+        run: |
+          cat > ci-init.gradle <<'EOF'
+          allprojects {
+              afterEvaluate { project ->
+                  def intellijExt = project.extensions.findByName('intellij')
+                  if (intellijExt != null) {
+                      intellijExt.downloadSources = false
+                  }
+              }
+          }
+          EOF
+          gradle -I ci-init.gradle buildPlugin --no-daemon --stacktrace
+
+      - name: Attach zip to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ matrix.tag }}
+          files: build/distributions/*.zip
+
+  # One-time: fill the v1.6.5 release body from CHANGELOG.md (it was created before the changelog existed).
+  refresh-latest-release-notes:
+    if: startsWith(github.ref, 'refs/tags/backfill-')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create missing releases for legacy tags
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Extract 1.6.5 changelog
+        id: changelog
         run: |
-          for tag in v1.5.0 v1.5.1 v1.5.2 v1.5.3 v1.5.4 v1.6.0 v1.6.1 v1.6.2; do
-            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-              echo "Release for $tag already exists, skipping"
-              continue
-            fi
-            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$tag" --generate-notes
-            echo "Created release for $tag"
-          done
+          {
+            echo "body<<CHANGELOG_EOF"
+            awk '
+              $0 == "## [1.6.5]" { flag = 1; next }
+              flag && /^## \[/ { exit }
+              flag { print }
+            ' CHANGELOG.md
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update v1.6.5 release notes
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.6.5
+          body: ${{ steps.changelog.outputs.body }}
+          generate_release_notes: true
