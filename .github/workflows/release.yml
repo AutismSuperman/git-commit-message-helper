@@ -25,10 +25,19 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '7.6.4'
 
       - name: Extract changelog for release
         id: changelog
         run: |
+          # Tags created before CHANGELOG.md existed fall back to the copy on master
+          if [ ! -f CHANGELOG.md ]; then
+            git fetch --depth=1 origin master || true
+            if git cat-file -e origin/master:CHANGELOG.md 2>/dev/null; then
+              git show origin/master:CHANGELOG.md > CHANGELOG.md
+            fi
+          fi
           version="${GITHUB_REF_NAME#v}"
           {
             echo "body<<CHANGELOG_EOF"
@@ -41,7 +50,13 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Build plugin
-        run: ./gradlew buildPlugin --no-daemon --stacktrace
+        run: |
+          # Tags from before the wrapper was committed have no ./gradlew
+          if [ -x ./gradlew ]; then
+            ./gradlew buildPlugin --no-daemon --stacktrace
+          else
+            gradle buildPlugin --no-daemon --stacktrace
+          fi
 
       - name: Create release
         uses: softprops/action-gh-release@v2
@@ -96,30 +111,31 @@ jobs:
           tag_name: ${{ matrix.tag }}
           files: build/distributions/*.zip
 
-  # Refresh the v1.6.5 release body from CHANGELOG.md. Triggered by pushing a tag named backfill-notes-*.
-  refresh-latest-release-notes:
+  # Refresh release bodies of the backfilled historical releases from CHANGELOG.md.
+  # Triggered by pushing a tag named backfill-notes-*.
+  refresh-release-notes:
     if: startsWith(github.ref, 'refs/tags/backfill-notes')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract 1.6.5 changelog
-        id: changelog
+      - name: Fill release bodies from CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          {
-            echo "body<<CHANGELOG_EOF"
-            awk '
-              index($0, "## [1.6.5]") == 1 { flag = 1; next }
+          for tag in v1.5.0 v1.5.1 v1.5.2 v1.5.3 v1.5.4 v1.6.0 v1.6.1 v1.6.2; do
+            version="${tag#v}"
+            body=$(awk -v ver="[$version]" '
+              index($0, "## " ver) == 1 { flag = 1; next }
               flag && /^## \[/ { exit }
               flag { print }
-            ' CHANGELOG.md
-            echo "CHANGELOG_EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Update v1.6.5 release notes
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v1.6.5
-          body: ${{ steps.changelog.outputs.body }}
-          generate_release_notes: true
+            ' CHANGELOG.md)
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+              gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --notes "$body"
+              echo "Updated notes for $tag"
+            else
+              gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$tag" --notes "$body"
+              echo "Created release for $tag"
+            fi
+          done
