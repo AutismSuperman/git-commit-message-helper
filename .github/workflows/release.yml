@@ -73,26 +73,23 @@ jobs:
     outputs:
       tags: ${{ steps.discover.outputs.tags }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Find releases without a plugin zip
         id: discover
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Tag-triggered checkouts only fetch the triggered tag; the discovery needs all of them
-          git fetch origin --tags --force
+          # releases that exist but carry no assets
+          no_asset_releases=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --paginate --jq '.[] | select((.assets | length) == 0) | .tag_name')
+          # all tags from v1.5.0 on (older toolchains are not reproducible in CI)
+          all_tags=$(gh api "repos/$GITHUB_REPOSITORY/tags?per_page=100" --paginate --jq '.[].name' | awk '$0 >= "v1.5.0"')
           missing=()
           while read -r tag; do
-            assets=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq '.assets | length' 2>/dev/null || echo 0)
-            if [ "${assets:-0}" -eq 0 ]; then
+            [ -z "$tag" ] && continue
+            if ! grep -qx "$tag" <<< "$no_asset_releases"; then
               missing+=("$tag")
               echo "missing asset: $tag"
             fi
-          done < <(git tag -l 'v*' | awk '$0 >= "v1.5.0"')
+          done <<< "$all_tags"
           if [ ${#missing[@]} -gt 0 ]; then
             echo "tags=$(printf '%s\n' "${missing[@]}" | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
           else
