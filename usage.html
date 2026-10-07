@@ -10,7 +10,7 @@
   <link rel="canonical" href="https://commit.wangfulin.com/usage.html">
   <link rel="icon" href="assets/brand/pluginIcon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/brand/icon.png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261007">
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -36,21 +36,24 @@
   </header>
 
   <main id="main">
-    <section class="guide-hero" aria-labelledby="guide-page-title">
+    <section class="guide-hero guide-hero--single" aria-labelledby="guide-page-title">
       <div class="guide-hero__copy">
         <p class="eyebrow">Usage guide</p>
         <h1 id="guide-page-title">安装、配置与日常使用</h1>
-        <p>这份引导覆盖插件安装、提交面板动作、模板配置、提交类型维护、LLM Provider 配置和 Smart Echo 使用方式。</p>
+        <p>这份引导覆盖插件安装、提交面板动作、模板配置、提交类型维护、LLM Provider 配置和 Smart Echo 使用方式。左侧目录可以在阅读时快速跳转。</p>
       </div>
-      <nav class="guide-toc" aria-label="使用引导目录">
+    </section>
+
+    <div class="guide-layout">
+      <aside class="guide-sidebar" aria-label="使用引导侧边目录">
         <a href="#install">安装</a>
         <a href="#workflow">提交工作流</a>
         <a href="#settings">配置入口</a>
         <a href="#llm-setup">LLM 设置</a>
         <a href="#screenshots">截图说明</a>
-      </nav>
-    </section>
+      </aside>
 
+      <div class="guide-main">
     <section class="guide-section" id="install" aria-labelledby="install-title">
       <div class="guide-section__label">01</div>
       <div class="guide-section__content">
@@ -258,12 +261,14 @@ Header: x-api-key: sk-ant-...</code></pre>
         </section>
       </div>
     </section>
+      </div>
+    </div>
   </main>
 
   <footer class="site-footer">
     <span>Apache License 2.0</span>
     <span><a href="./">返回首页</a></span>
-    <span>© <span data-year></span> FuLinLin</span>
+    <span>© <span data-year></span> WangFuLin</span>
   </footer>
 
   <dialog class="preview-dialog" data-preview-dialog aria-label="截图预览">

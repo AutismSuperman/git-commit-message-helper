@@ -1413,3 +1413,53 @@ section[id] {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Usage guide: sticky sidebar navigation */
+.guide-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 3rem;
+  align-items: start;
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.guide-sidebar {
+  position: sticky;
+  top: 96px;
+  display: grid;
+  gap: 0.45rem;
+  border-left: 2px solid var(--ink);
+  padding-left: 1rem;
+  font-weight: 820;
+}
+
+.guide-sidebar a {
+  text-decoration: none;
+}
+
+.guide-sidebar a:hover,
+.guide-sidebar a:focus-visible {
+  color: var(--blue);
+  outline: none;
+}
+
+.guide-hero--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.guide-brief {
+  max-width: 860px;
+  font-size: 1.05rem;
+  color: rgba(32, 35, 33, 0.78);
+}
+
+@media (max-width: 980px) {
+  .guide-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guide-sidebar {
+    display: none;
+  }
+}
