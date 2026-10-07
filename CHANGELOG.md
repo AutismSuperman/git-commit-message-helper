@@ -10,6 +10,7 @@
 - Show the resolved request path next to the API format selector and add a thinking column to the model list.
 - Migrate existing reasoning compatibility settings to the disabled thinking level and remember when a provider rejects thinking parameters.
 - Fix an EDT access violation when LLM actions read the commit panel selection from a background thread.
+- Require IntelliJ Platform 2024.1 or newer: the commit panel action buttons rely on the Vcs.MessageActionGroup toolbar group introduced in that release.
 
 ## [1.6.4] - 2026-07-05
 

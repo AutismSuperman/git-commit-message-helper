@@ -58,12 +58,12 @@ Settings are persisted via IntelliJ's `PersistentStateComponent` mechanism:
 
 - `src/main/resources/META-INF/plugin.xml` - Plugin configuration, action registrations, service definitions
 - `build.gradle` - Build configuration using gradle-intellij-plugin v1.7.0
-- `gradle.properties` - Plugin version, IDE version (2020.3), and build parameters
+- `gradle.properties` - Plugin version, IDE version (2024.1), and build parameters
 - `src/main/resources/i18n/info*.properties` - Localization strings
 
 ## Development Notes
 
 - Java 11 target compatibility
-- Plugin compatible with IDE builds 203.392+ (2020.3+)
+- Plugin compatible with IDE builds 241+ (2024.1+)
 - UI forms use IntelliJ's GUI Designer (.form files paired with Java classes)
 - No test infrastructure currently exists in this project

@@ -55,7 +55,7 @@ Git Commit Message Helper 是一个 IntelliJ Platform 插件，把结构化提�
 
 ## 开发
 
-- Java 11，Gradle IntelliJ Plugin 构建，目标 IntelliJ Platform `2020.3+`
+- Java 11，Gradle IntelliJ Plugin 构建，目标 IntelliJ Platform `2024.1+`
 
 ```bash
 ./gradlew buildPlugin

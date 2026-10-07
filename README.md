@@ -55,7 +55,7 @@ Every profile also has a **thinking level** (`Model default`, `Off`, `Low`, `Med
 
 ## Development
 
-- Java 11, Gradle IntelliJ Plugin, targets IntelliJ Platform `2020.3+`
+- Java 11, Gradle IntelliJ Plugin, targets IntelliJ Platform `2024.1+`
 
 ```bash
 ./gradlew buildPlugin
