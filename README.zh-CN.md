@@ -47,7 +47,11 @@ Git Commit Message Helper 是一个 IntelliJ Platform 插件，把结构化提�
 
 `Base URL` 既可以填写完整接口地址，也可以填写 `https://api.openai.com/v1` 这样的基础地址，插件会自动补全对应路径。
 
-每个模型配置还有独立的**思考等级**（`模型默认`、`关闭`、`低`、`中`、`高`、`最高`）。插件会把等级翻译成当前协议支持的参数，如果服务商拒绝这些字段会自动去掉重试。
+每个模型配置都可以单独选择**思考等级**和**参数预设**。预设包含自动兼容、模型默认、`reasoning_effort`、`reasoning.effort`、`thinking.type`、`enable_thinking`、Anthropic token budget、自适应思考和自定义 JSON 映射。等级下拉框只显示映射中配置的等级；新建模型默认使用模型自身设置，不发送推理参数。自动兼容保留已有模型配置的行为。服务商明确拒绝推理参数时会移除该参数重试并缓存结果；其他参数错误不会顺带移除推理设置。
+
+使用自定义网关时，可在模型编辑窗口选择对应预设并按该**具体模型和协议**填写映射；映射不会自动检测上游能力。Anthropic budget 预设支持 `$thinking_budget` 占位符，并会校验预算是否适合当前最大响应 token 数。
+
+对始终开启推理的模型，“模型默认”会保留模型本身的行为，不等于关闭思考。也可以使用仅包含 `ENABLED` 的自定义映射，此时不会出现“关闭”或其他未配置档位。MiniMax M3 / M3.1 Flash 的协议差异与配置示例见[思考参数配置说明](doc/llm-thinking.md)。
 
 ![LLM 设置](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/settings-llm.png)
 

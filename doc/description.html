@@ -147,16 +147,18 @@ Closes issue
     <h3>Thinking Level</h3>
     <p>
         Profiles expose a thinking level drop-down: <strong>Model default</strong>, <strong>Off (fastest)</strong>,
-        <strong>Low</strong>, <strong>Medium</strong>, <strong>High</strong>, and <strong>Max</strong>. The plugin maps
-        the level to the parameter the chosen API format supports, so OpenAI reasoning models, Anthropic
-        thinking budgets, Responses reasoning effort, and vendor switches such as Qwen, Zhipu, DeepSeek, Moonshot,
-        and Doubao all work without remembering field names. Model default keeps the provider's own behavior.
+        <strong>Low</strong>, <strong>Medium</strong>, <strong>High</strong>, and <strong>Max</strong>. Per-profile
+        presets cover common parameter patterns such as OpenAI-style reasoning effort, Anthropic thinking budgets,
+        and selected vendor-specific switches. Support varies by the exact model, gateway, and API format, so presets
+        are starting points rather than universal compatibility guarantees. Configure a custom JSON mapping when a
+        gateway uses a different schema. New profiles use Model default and send no thinking parameter.
     </p>
     <p>
         模型配置提供思考等级下拉框：<strong>模型默认</strong>、<strong>关闭(最快)</strong>、<strong>低</strong>、
-        <strong>中</strong>、<strong>高</strong>、<strong>最高</strong>。插件会把等级映射为所选协议支持的参数，
-        无需记忆字段名即可适配 OpenAI 推理模型、Anthropic 思考预算、Responses 推理强度，以及 Qwen、智谱、
-        DeepSeek、Moonshot、豆包等厂商开关。选择“模型默认”则保持服务商自身行为。
+        <strong>中</strong>、<strong>高</strong>、<strong>最高</strong>。每个模型配置可选择常用参数预设，例如
+        OpenAI 风格的推理强度、Anthropic 思考预算和部分厂商专用开关。实际支持情况取决于具体模型、网关和接口协议，
+        预设是配置起点，不代表对所有模型都通用；网关使用其他字段时可配置自定义 JSON 映射。新建配置默认选择
+        “模型默认”，不会发送思考参数。
     </p>
 </div>
 

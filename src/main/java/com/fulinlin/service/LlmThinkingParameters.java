@@ -3,6 +3,7 @@ package com.fulinlin.service;
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.enums.LlmProvider;
 import com.fulinlin.model.enums.ThinkingLevel;
+import com.fulinlin.model.enums.ThinkingParameterPreset;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,8 +34,11 @@ final class LlmThinkingParameters {
      */
     private static final String[] ANTHROPIC_EFFORT_HINTS = {
             "glm-5.2", "glm-5.3", "qwen3.8", "kimi-k3", "deepseek-v4", "deepseek-flash",
-            "claude-opus-4-8", "claude-opus-5", "claude-sonnet-5", "fable-5", "mythos-5",
             "x-preview", "ox-alpha"
+    };
+
+    private static final String[] ANTHROPIC_ADAPTIVE_HINTS = {
+            "claude-opus-4-8", "claude-opus-5", "claude-sonnet-5", "fable-5", "mythos-5"
     };
 
     private static final String[] QWEN_HINTS = {"qwen", "dashscope", "aliyuncs", "alibabacloud"};
@@ -56,12 +60,34 @@ final class LlmThinkingParameters {
     }
 
     static boolean isRequested(@NotNull LlmProfile profile) {
-        return ThinkingLevel.fromNullable(profile.getThinkingLevel()).isSpecified();
+        ThinkingLevel level = ThinkingLevel.fromNullable(profile.getThinkingLevel());
+        if (!level.isSpecified()) {
+            return false;
+        }
+        ThinkingParameterPreset preset = ThinkingParameterPreset.fromNullable(profile.getThinkingParameterPreset());
+        if (preset == ThinkingParameterPreset.AUTO) {
+            return level != ThinkingLevel.ENABLED;
+        }
+        JsonObject mapping = ThinkingParameterMappings.resolve(profile, level);
+        return mapping != null && !mapping.entrySet().isEmpty();
     }
 
     static void apply(@NotNull JsonObject requestBody, @NotNull LlmProfile profile) {
         ThinkingLevel level = ThinkingLevel.fromNullable(profile.getThinkingLevel());
         if (!level.isSpecified()) {
+            return;
+        }
+        ThinkingParameterPreset preset = ThinkingParameterPreset.fromNullable(profile.getThinkingParameterPreset());
+        if (preset != ThinkingParameterPreset.AUTO) {
+            JsonObject parameters = ThinkingParameterMappings.resolve(profile, level);
+            if (parameters != null) {
+                for (java.util.Map.Entry<String, com.google.gson.JsonElement> entry : parameters.entrySet()) {
+                    requestBody.add(entry.getKey(), entry.getValue().deepCopy());
+                }
+            }
+            return;
+        }
+        if (level == ThinkingLevel.ENABLED) {
             return;
         }
         switch (LlmProvider.fromNullable(profile.getProvider())) {
@@ -79,12 +105,21 @@ final class LlmThinkingParameters {
 
     /**
      * Anthropic Messages: the classic {@code thinking} object is always accepted; graded effort
-     * is added only for gateways known to forward {@code output_config.effort}. Official Anthropic
-     * requires a token budget alongside the enabled switch.
+     * is added for gateways known to forward {@code output_config.effort}. Newer Claude families
+     * require adaptive thinking; older models use an enabled object with a token budget.
      */
     private static void applyAnthropicMessages(@NotNull JsonObject requestBody,
                                                @NotNull LlmProfile profile,
                                                @NotNull ThinkingLevel level) {
+        if (usesAnthropicAdaptiveThinking(profile)) {
+            if (!level.isDisabled()) {
+                requestBody.add("thinking", thinkingObject("adaptive"));
+                requestBody.add("output_config", effortObject(level.getEffortValue()));
+            }
+            // Adaptive-thinking models do not expose a supported "off" value; omitting the
+            // object avoids a 400 and lets the provider apply its documented default.
+            return;
+        }
         if (level.isDisabled()) {
             requestBody.add("thinking", thinkingObject("disabled"));
             return;
@@ -126,29 +161,73 @@ final class LlmThinkingParameters {
             return;
         }
         // OpenAI reasoning families, Gemini, Grok, and plain compatible gateways: the standard
-        // effort field. Disabling maps to the lowest effort these models accept.
-        requestBody.addProperty("reasoning_effort", level.isDisabled() ? "low" : level.getEffortValue());
+        // effort field. Older reasoning models do not accept "none", so keep their lowest valid
+        // effort; GPT-5.1+ explicitly support "none".
+        String effort = level.isDisabled()
+                ? (supportsNoneEffort(profile) ? "none" : "low")
+                : (isOpenAiReasoningModel(profile) ? resolveOpenAiEffort(profile, level) : level.getEffortValue());
+        requestBody.addProperty("reasoning_effort", effort);
     }
 
     /**
-     * OpenAI Responses: reasoning effort is the only knob, and disabling means {@code none}.
+     * OpenAI Responses: reasoning effort is the only knob. Only models known to support
+     * {@code none} receive it for the disabled level; older models omit the field instead of
+     * sending a value they reject.
      */
     private static void applyOpenAiResponses(@NotNull JsonObject requestBody,
                                              @NotNull LlmProfile profile,
                                              @NotNull ThinkingLevel level) {
         if (level.isDisabled()) {
-            requestBody.add("reasoning", effortObject("none"));
+            if (supportsNoneEffort(profile)) {
+                requestBody.add("reasoning", effortObject("none"));
+            }
             return;
         }
         String effort = containsProfileText(profile, RESPONSES_HIGH_ONLY_HINTS)
-                ? "high"
-                : level.getEffortValue();
+                ? "high" : resolveOpenAiEffort(profile, level);
         requestBody.add("reasoning", effortObject(effort));
+    }
+
+    @NotNull
+    private static String resolveOpenAiEffort(@NotNull LlmProfile profile, @NotNull ThinkingLevel level) {
+        if (level == ThinkingLevel.MAX) {
+            return gpt5MinorVersion(profile) >= 2 ? "xhigh" : "high";
+        }
+        return level.getEffortValue();
     }
 
     private static boolean usesAnthropicEffort(@NotNull LlmProfile profile) {
         return containsProfileText(profile, ANTHROPIC_EFFORT_HINTS)
                 && !containsProfileText(profile, "api.anthropic.com");
+    }
+
+    private static boolean usesAnthropicAdaptiveThinking(@NotNull LlmProfile profile) {
+        return containsProfileText(profile, ANTHROPIC_ADAPTIVE_HINTS);
+    }
+
+    private static boolean supportsNoneEffort(@NotNull LlmProfile profile) {
+        return gpt5MinorVersion(profile) >= 1;
+    }
+
+    private static int gpt5MinorVersion(@NotNull LlmProfile profile) {
+        String model = normalize(profile.getModel());
+        String prefix = "gpt-5.";
+        if (!model.startsWith(prefix)) {
+            return -1;
+        }
+        int start = prefix.length();
+        int end = start;
+        while (end < model.length() && Character.isDigit(model.charAt(end))) {
+            end++;
+        }
+        if (end == start) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(model.substring(start, end));
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
     }
 
     /**
@@ -161,6 +240,7 @@ final class LlmThinkingParameters {
         int maxResponseTokens = profile.resolveMaxResponseTokens();
         int share;
         switch (level) {
+            case ENABLED:
             case LOW:
                 share = 25;
                 break;

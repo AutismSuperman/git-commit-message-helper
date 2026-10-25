@@ -3,6 +3,7 @@ package com.fulinlin.service;
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.enums.LlmProvider;
 import com.fulinlin.model.enums.ThinkingLevel;
+import com.fulinlin.model.enums.ThinkingParameterPreset;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,6 +17,7 @@ public class LlmRequestDiagnostics {
     private String baseUrl = "";
     private String model = "";
     private String thinkingLevel = "";
+    private ThinkingParameterPreset thinkingPreset = ThinkingParameterPreset.MODEL_DEFAULT;
     private boolean streamRequested;
     private boolean thinkingRequested;
     private boolean thinkingSkippedByCache;
@@ -39,6 +41,7 @@ public class LlmRequestDiagnostics {
         baseUrl = safe(profile.getBaseUrl());
         model = safe(profile.getModel());
         thinkingLevel = ThinkingLevel.fromNullable(profile.getThinkingLevel()).name();
+        thinkingPreset = ThinkingParameterPreset.fromNullable(profile.getThinkingParameterPreset());
         streamRequested = stream;
         this.thinkingRequested = thinkingRequested;
         this.thinkingSkippedByCache |= thinkingSkippedByCache;
@@ -55,17 +58,12 @@ public class LlmRequestDiagnostics {
             tokenLimit = requestBody.get("max_tokens").getAsInt();
         }
 
-        recordIfPresent(requestBody, "enable_thinking");
-        recordIfPresent(requestBody, "reasoning_effort");
-        recordIfPresent(requestBody, "reasoning");
-        recordIfPresent(requestBody, "thinking");
-        recordIfPresent(requestBody, "output_config");
-        thinkingParametersApplied = thinkingParametersApplied
-                || requestBody.has("enable_thinking")
-                || requestBody.has("reasoning_effort")
-                || requestBody.has("reasoning")
-                || requestBody.has("thinking")
-                || requestBody.has("output_config");
+        for (String parameter : requestBody.keySet()) {
+            if (!isStandardRequestField(parameter)) {
+                requestParameters.add(parameter);
+            }
+        }
+        thinkingParametersApplied = thinkingParametersApplied || !requestParameters.isEmpty();
     }
 
     void markThinkingFallbackUsed() {
@@ -103,6 +101,7 @@ public class LlmRequestDiagnostics {
         appendLine(builder, "Token field", emptyFallback(tokenField));
         appendLine(builder, "Token limit", tokenLimit > 0 ? String.valueOf(tokenLimit) : "none");
         appendLine(builder, "Thinking", formatThinking());
+        appendLine(builder, "Thinking preset", thinkingPreset.name().toLowerCase());
         appendLine(builder, "Extra params", requestParameters.isEmpty()
                 ? "none"
                 : requestParameters.stream().collect(Collectors.joining(", ")));
@@ -124,17 +123,27 @@ public class LlmRequestDiagnostics {
         return builder.toString().trim();
     }
 
-    private void recordIfPresent(@NotNull JsonObject requestBody, @NotNull String parameter) {
-        if (requestBody.has(parameter)) {
-            requestParameters.add(parameter);
-        }
+    private static boolean isStandardRequestField(@NotNull String parameter) {
+        return "model".equals(parameter)
+                || "messages".equals(parameter)
+                || "system".equals(parameter)
+                || "input".equals(parameter)
+                || "instructions".equals(parameter)
+                || "stream".equals(parameter)
+                || "temperature".equals(parameter)
+                || "max_tokens".equals(parameter)
+                || "max_completion_tokens".equals(parameter)
+                || "max_output_tokens".equals(parameter);
     }
 
     @NotNull
     private String formatThinking() {
         String level = emptyFallback(thinkingLevel).toLowerCase();
+        if ("default".equals(level) || thinkingPreset == ThinkingParameterPreset.MODEL_DEFAULT) {
+            return "model default (no override)";
+        }
         if (!thinkingRequested) {
-            return "off (default)";
+            return level + ", not sent (unmapped or invalid)";
         }
         if (thinkingSkippedByCache) {
             return level + ", skipped by cache";

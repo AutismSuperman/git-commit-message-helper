@@ -47,7 +47,11 @@ Each model profile picks one of three API formats, so one base URL works with wh
 
 The `Base URL` can be a full endpoint or a server base such as `https://api.openai.com/v1` — the plugin appends the matching path automatically.
 
-Every profile also has a **thinking level** (`Model default`, `Off`, `Low`, `Medium`, `High`, `Max`). The plugin translates it into the parameter each protocol supports, and retries without it if a provider rejects the field.
+Every profile has its own **thinking level** and **parameter preset**. Presets include automatic compatibility, model default, `reasoning_effort`, `reasoning.effort`, `thinking.type`, `enable_thinking`, Anthropic token budgets, adaptive thinking, and custom JSON mappings. Only mapped levels appear in the selector; new profiles default to the model's own behavior and send no reasoning parameter. Automatic compatibility preserves existing profile behavior. If a provider explicitly rejects a reasoning parameter, the plugin retries without that parameter and caches the result; unrelated parameter errors do not remove the reasoning configuration.
+
+For custom gateways, choose a preset and configure the mapping for the exact model and protocol. Mappings do not automatically discover upstream capabilities. The Anthropic budget preset supports the `$thinking_budget` placeholder and validates it against the configured response token limit.
+
+For always-on reasoning models, Model default preserves their native behavior; it does not mean thinking is off. A custom mapping containing only `ENABLED` exposes no Off or graded choices. See [thinking configuration examples](doc/llm-thinking.md) for MiniMax M3 / M3.1 Flash and protocol-specific defaults.
 
 ![LLM settings](https://raw.githubusercontent.com/AutismSuperman/git-commit-message-helper/master/doc/image/settings-llm.png)
 

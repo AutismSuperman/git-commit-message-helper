@@ -2,6 +2,7 @@ package com.fulinlin.model;
 
 import com.fulinlin.model.enums.LlmProvider;
 import com.fulinlin.model.enums.ThinkingLevel;
+import com.fulinlin.model.enums.ThinkingParameterPreset;
 
 import java.util.Objects;
 
@@ -28,6 +29,10 @@ public class LlmProfile {
     private LlmProvider provider;
 
     private ThinkingLevel thinkingLevel;
+
+    private ThinkingParameterPreset thinkingParameterPreset = ThinkingParameterPreset.AUTO;
+
+    private String thinkingParameterMapping;
 
     /**
      * Legacy 1.6.4 flag that only switched reasoning off. Settings files written before thinking
@@ -95,6 +100,22 @@ public class LlmProfile {
         this.thinkingLevel = thinkingLevel;
     }
 
+    public ThinkingParameterPreset getThinkingParameterPreset() {
+        return thinkingParameterPreset;
+    }
+
+    public void setThinkingParameterPreset(ThinkingParameterPreset thinkingParameterPreset) {
+        this.thinkingParameterPreset = thinkingParameterPreset;
+    }
+
+    public String getThinkingParameterMapping() {
+        return thinkingParameterMapping;
+    }
+
+    public void setThinkingParameterMapping(String thinkingParameterMapping) {
+        this.thinkingParameterMapping = thinkingParameterMapping;
+    }
+
     @Deprecated
     public Boolean getReasoningCompatibilityEnabled() {
         return reasoningCompatibilityEnabled;
@@ -141,11 +162,14 @@ public class LlmProfile {
                 && Objects.equals(model, that.model)
                 && provider == that.provider
                 && Objects.equals(thinkingLevel, that.thinkingLevel)
+                && thinkingParameterPreset == that.thinkingParameterPreset
+                && Objects.equals(thinkingParameterMapping, that.thinkingParameterMapping)
                 && Objects.equals(maxResponseTokens, that.maxResponseTokens);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, baseUrl, apiKey, model, provider, thinkingLevel, maxResponseTokens);
+        return Objects.hash(id, name, baseUrl, apiKey, model, provider, thinkingLevel,
+                thinkingParameterPreset, thinkingParameterMapping, maxResponseTokens);
     }
 }

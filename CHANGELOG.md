@@ -5,8 +5,9 @@
 ## [1.6.5] - 2026-10-05
 
 - Add the OpenAI Responses API as a third provider protocol alongside Chat Completions and Anthropic Messages.
+- Add per-model thinking parameter presets and custom JSON mappings, with level choices limited to the configured mappings and safe model-default behavior for new profiles.
 - Replace the reasoning compatibility checkbox with per-profile thinking level drop-downs: model default, off, low, medium, high, and max.
-- Map thinking levels to the parameter each API format supports, covering OpenAI reasoning models, Anthropic thinking budgets, Responses reasoning effort, and vendor switches for Qwen, Zhipu, Moonshot, Doubao, MiMo, DeepSeek, OpenRouter, and MiniMax.
+- Add presets for common reasoning parameter patterns across OpenAI, Anthropic, Responses, and selected vendor APIs; mappings are configurable per model and protocol because gateway support varies.
 - Show the resolved request path next to the API format selector and add a thinking column to the model list.
 - Migrate existing reasoning compatibility settings to the disabled thinking level and remember when a provider rejects thinking parameters.
 - Fix an EDT access violation when LLM actions read the commit panel selection from a background thread.

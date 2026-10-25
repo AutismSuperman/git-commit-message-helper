@@ -3,13 +3,14 @@ package com.fulinlin.ui.central;
 import com.fulinlin.localization.PluginBundle;
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.enums.LlmProvider;
-import com.fulinlin.model.enums.ThinkingLevel;
 import com.fulinlin.service.LlmClient;
+import com.fulinlin.service.ThinkingParameterMappings;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +28,7 @@ public class LlmProfileEditor extends DialogWrapper {
     private final JComboBox<String> modelComboBox;
     private final JButton fetchModelsButton;
     private final JComboBox<LlmProvider> providerComboBox;
-    private final JComboBox<ThinkingLevel> thinkingLevelComboBox;
+    private final ThinkingConfigurationEditor thinkingConfiguration;
     private final JLabel apiFormatHintLabel;
     private final JSpinner maxResponseTokensSpinner;
     private final String profileId;
@@ -46,8 +47,7 @@ public class LlmProfileEditor extends DialogWrapper {
         modelComboBox.setSelectedItem(profile.getModel());
         fetchModelsButton = new JButton(PluginBundle.get("setting.llm.model.fetch"));
         providerComboBox = new JComboBox<>(LlmProvider.values());
-        thinkingLevelComboBox = new JComboBox<>(ThinkingLevel.values());
-        thinkingLevelComboBox.setToolTipText(PluginBundle.get("setting.llm.thinking.level.tooltip"));
+        thinkingConfiguration = new ThinkingConfigurationEditor(profile);
         apiFormatHintLabel = new JLabel();
         apiFormatHintLabel.setForeground(com.intellij.util.ui.UIUtil.getContextHelpForeground());
         maxResponseTokensSpinner = new JSpinner(new SpinnerNumberModel(
@@ -64,16 +64,8 @@ public class LlmProfileEditor extends DialogWrapper {
                 return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
             }
         });
-        thinkingLevelComboBox.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                Object displayValue = value instanceof ThinkingLevel ? ((ThinkingLevel) value).getDisplayName() : value;
-                return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
-            }
-        });
         previousProvider = LlmProvider.fromNullable(profile.getProvider());
         providerComboBox.setSelectedItem(previousProvider);
-        thinkingLevelComboBox.setSelectedItem(ThinkingLevel.fromNullable(profile.getThinkingLevel()));
         buildPanel();
         bindListeners();
         updateApiFormatHint();
@@ -107,8 +99,30 @@ public class LlmProfileEditor extends DialogWrapper {
         row = addField(mainPanel, PluginBundle.get("setting.central.llm.base.url"), baseUrlField, gbc, row);
         row = addField(mainPanel, PluginBundle.get("setting.central.llm.api.key"), apiKeyField, gbc, row);
         row = addField(mainPanel, PluginBundle.get("setting.central.llm.model"), createModelPanel(), gbc, row);
-        row = addField(mainPanel, PluginBundle.get("setting.llm.thinking.level"), thinkingLevelComboBox, gbc, row);
-        row = addField(mainPanel, PluginBundle.get("setting.llm.max.response.tokens"), maxResponseTokensSpinner, gbc, row);
+        row = addField(mainPanel, PluginBundle.get("setting.llm.thinking.preset"),
+                thinkingConfiguration.getPresetComboBox(), gbc, row);
+        row = addField(mainPanel, PluginBundle.get("setting.llm.thinking.level"),
+                thinkingConfiguration.getLevelComboBox(), gbc, row);
+        row = addField(mainPanel, PluginBundle.get("setting.llm.thinking.advanced"),
+                thinkingConfiguration.getMappingPanel(), gbc, row);
+        addField(mainPanel, PluginBundle.get("setting.llm.max.response.tokens"),
+                maxResponseTokensSpinner, gbc, row);
+    }
+
+    @Nullable
+    @Override
+    protected ValidationInfo doValidate() {
+        String error = ThinkingParameterMappings.validate(createProfileFromFields());
+        return error == null
+                ? null
+                : showMappingError(error);
+    }
+
+    @Nullable
+    private ValidationInfo showMappingError(@NotNull String error) {
+        thinkingConfiguration.showAdvancedMapping();
+        return new ValidationInfo(PluginBundle.get("setting.llm.thinking.mapping.invalid", error),
+                thinkingConfiguration.getMappingArea());
     }
 
     @NotNull
@@ -119,7 +133,7 @@ public class LlmProfileEditor extends DialogWrapper {
         return modelPanel;
     }
 
-    private int addField(@NotNull JPanel panel, String labelText, JComponent component, GridBagConstraints gbc, int row) {
+    static int addField(@NotNull JPanel panel, String labelText, JComponent component, GridBagConstraints gbc, int row) {
         gbc.gridwidth = 1;
         gbc.gridx = 0;
         gbc.gridy = row;
@@ -129,8 +143,14 @@ public class LlmProfileEditor extends DialogWrapper {
         gbc.gridx = 1;
         gbc.gridy = row;
         gbc.weightx = 1;
-        component.setPreferredSize(new Dimension(JBUI.scale(420), component.getPreferredSize().height));
-        panel.add(component, gbc);
+        JPanel fieldPanel = new JPanel(new BorderLayout()) {
+            @Override
+            public Dimension getPreferredSize() {
+                return new Dimension(JBUI.scale(420), super.getPreferredSize().height);
+            }
+        };
+        fieldPanel.add(component, BorderLayout.CENTER);
+        panel.add(fieldPanel, gbc);
         return row + 1;
     }
 
@@ -263,7 +283,7 @@ public class LlmProfileEditor extends DialogWrapper {
         profile.setApiKey(new String(apiKeyField.getPassword()).trim());
         profile.setModel(getModelText());
         profile.setProvider((LlmProvider) providerComboBox.getSelectedItem());
-        profile.setThinkingLevel((ThinkingLevel) thinkingLevelComboBox.getSelectedItem());
+        thinkingConfiguration.applyTo(profile);
         profile.setMaxResponseTokens(((Number) maxResponseTokensSpinner.getValue()).intValue());
         return profile;
     }

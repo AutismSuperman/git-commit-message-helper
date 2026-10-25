@@ -60,11 +60,14 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
         if (responseCode < 200 || responseCode >= 300) {
             String errorBody = readAll(inputStream);
             connection.disconnect();
+            boolean temperatureRejected = errorIndicatesUnsupportedTemperature(errorBody);
+            boolean thinkingRejected = thinkingEnabled && shouldRetryWithoutThinkingParameters(profile, errorBody);
             if (shouldRetryWithAdjustedParameters(profile, thinkingEnabled, errorBody, diagnostics)) {
                 connection = createConnection(profile);
                 requestBody = createRequestBodyForRetry(
                         profile, settings, systemPrompt, userPrompt, false,
-                        thinkingRequested, diagnostics
+                        thinkingRequested, thinkingEnabled && !thinkingRejected,
+                        temperatureRejected || !requestBody.has("temperature"), diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
                 responseCode = getResponseCode(connection);
@@ -127,11 +130,14 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
         if (responseCode < 200 || responseCode >= 300) {
             String errorBody = readAll(inputStream);
             connection.disconnect();
+            boolean temperatureRejected = errorIndicatesUnsupportedTemperature(errorBody);
+            boolean thinkingRejected = thinkingEnabled && shouldRetryWithoutThinkingParameters(profile, errorBody);
             if (shouldRetryWithAdjustedParameters(profile, thinkingEnabled, errorBody, diagnostics)) {
                 connection = createConnection(profile);
                 requestBody = createRequestBodyForRetry(
                         profile, settings, systemPrompt, userPrompt, true,
-                        thinkingRequested, diagnostics
+                        thinkingRequested, thinkingEnabled && !thinkingRejected,
+                        temperatureRejected || !requestBody.has("temperature"), diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
                 responseCode = getResponseCode(connection);
@@ -264,19 +270,20 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
     }
 
     /**
-     * Retry request after the provider rejected the original one: thinking parameters
-     * are dropped, and temperature is omitted when the error blamed it.
+     * Retain unimplicated parameters on retry without introducing previously omitted fields.
      */
     @NotNull
-    private static JsonObject createRequestBodyForRetry(@NotNull LlmProfile profile,
-                                                        @NotNull LlmSettings settings,
-                                                        @NotNull String systemPrompt,
-                                                        @NotNull String userPrompt,
-                                                        boolean stream,
-                                                        boolean thinkingRequested,
-                                                        @NotNull LlmRequestDiagnostics diagnostics) {
+    static JsonObject createRequestBodyForRetry(@NotNull LlmProfile profile,
+                                                @NotNull LlmSettings settings,
+                                                @NotNull String systemPrompt,
+                                                @NotNull String userPrompt,
+                                                boolean stream,
+                                                boolean thinkingRequested,
+                                                boolean thinkingEnabled,
+                                                boolean omitTemperature,
+                                                @NotNull LlmRequestDiagnostics diagnostics) {
         JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
-                false, true);
+                thinkingEnabled, omitTemperature);
         diagnostics.recordRequest(profile, stream, thinkingRequested, false, requestBody);
         return requestBody;
     }
@@ -286,7 +293,7 @@ class AnthropicLlmProviderClient extends AbstractHttpLlmProviderClient {
                                                              @NotNull String errorBody,
                                                              @NotNull LlmRequestDiagnostics diagnostics) {
         boolean temperatureRejected = errorIndicatesUnsupportedTemperature(errorBody);
-        boolean thinkingRejected = thinkingEnabled && shouldRetryWithoutThinkingParameters(errorBody);
+        boolean thinkingRejected = thinkingEnabled && shouldRetryWithoutThinkingParameters(profile, errorBody);
         if (thinkingRejected) {
             LlmCapabilityCache.markThinkingParametersUnsupported(profile);
             diagnostics.markThinkingFallbackUsed();

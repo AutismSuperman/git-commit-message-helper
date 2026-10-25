@@ -5,8 +5,10 @@ import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.enums.LlmProvider;
 import com.fulinlin.model.enums.ThinkingLevel;
+import com.fulinlin.model.enums.ThinkingParameterPreset;
 import com.fulinlin.service.LlmClient;
 import com.fulinlin.service.LlmRequestDiagnostics;
+import com.fulinlin.service.ThinkingParameterMappings;
 import com.fulinlin.storage.GitCommitMessageHelperSettings;
 import com.intellij.icons.AllIcons;
 import com.intellij.notification.Notification;
@@ -290,10 +292,23 @@ public class LlmSettingPanel {
     }
 
     private void loadDisplayedProfileSettings(LlmProfile profile) {
-        thinkingLevelComboBox.setSelectedItem(profile == null
-                ? ThinkingLevel.defaultLevel()
-                : ThinkingLevel.fromNullable(profile.getThinkingLevel()));
-        thinkingLevelComboBox.setEnabled(profile != null);
+        boolean previouslyLoading = loading;
+        loading = true;
+        try {
+            List<ThinkingLevel> availableLevels = profile == null
+                    ? ThinkingParameterMappings.availableLevels(ThinkingParameterPreset.MODEL_DEFAULT, null)
+                    : ThinkingParameterMappings.availableLevels(profile);
+            ThinkingLevel selectedLevel = profile == null
+                    ? ThinkingLevel.defaultLevel()
+                    : ThinkingLevel.fromNullable(profile.getThinkingLevel());
+            thinkingLevelComboBox.setModel(new DefaultComboBoxModel<>(availableLevels.toArray(new ThinkingLevel[0])));
+            thinkingLevelComboBox.setSelectedItem(availableLevels.contains(selectedLevel)
+                    ? selectedLevel
+                    : ThinkingLevel.defaultLevel());
+            thinkingLevelComboBox.setEnabled(profile != null);
+        } finally {
+            loading = previouslyLoading;
+        }
     }
 
     private void testActiveProfile() {
@@ -427,6 +442,8 @@ public class LlmSettingPanel {
         profile.setModel(source.getModel());
         profile.setProvider(source.getProvider());
         profile.setThinkingLevel(source.getThinkingLevel());
+        profile.setThinkingParameterPreset(source.getThinkingParameterPreset());
+        profile.setThinkingParameterMapping(source.getThinkingParameterMapping());
         profile.setMaxResponseTokens(source.getMaxResponseTokens());
         return profile;
     }

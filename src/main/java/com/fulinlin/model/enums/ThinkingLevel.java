@@ -21,6 +21,11 @@ public enum ThinkingLevel {
      */
     DISABLED("setting.llm.thinking.level.disabled", "disabled"),
 
+    /**
+     * Enable reasoning for APIs that expose only an on/off switch rather than graded effort.
+     */
+    ENABLED("setting.llm.thinking.level.enabled", null),
+
     LOW("setting.llm.thinking.level.low", "low"),
     MEDIUM("setting.llm.thinking.level.medium", "medium"),
     HIGH("setting.llm.thinking.level.high", "high"),

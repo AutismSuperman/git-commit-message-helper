@@ -12,6 +12,7 @@ import com.fulinlin.model.LlmSettings;
 import com.fulinlin.model.TypeAlias;
 import com.fulinlin.model.enums.LlmProvider;
 import com.fulinlin.model.enums.ThinkingLevel;
+import com.fulinlin.model.enums.ThinkingParameterPreset;
 import com.fulinlin.model.enums.TypeDisplayStyleEnum;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;
@@ -365,6 +366,8 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         profile.setApiKey("");
         profile.setModel("");
         profile.setThinkingLevel(ThinkingLevel.DEFAULT);
+        profile.setThinkingParameterPreset(ThinkingParameterPreset.MODEL_DEFAULT);
+        profile.setThinkingParameterMapping("{}");
         profile.setMaxResponseTokens(LlmProfile.DEFAULT_MAX_RESPONSE_TOKENS);
         return profile;
     }
@@ -416,6 +419,7 @@ public class GitCommitMessageHelperSettings implements PersistentStateComponent<
         profile.setProvider(LlmProvider.fromNullable(profile.getProvider()));
         migrateLegacyReasoningFlag(profile);
         profile.setThinkingLevel(ThinkingLevel.fromNullable(profile.getThinkingLevel()));
+        profile.setThinkingParameterPreset(ThinkingParameterPreset.fromNullable(profile.getThinkingParameterPreset()));
         if (profile.getBaseUrl() == null) {
             profile.setBaseUrl(profile.getProvider().getDefaultBaseUrl());
         }

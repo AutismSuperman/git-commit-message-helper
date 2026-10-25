@@ -66,7 +66,8 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                 connection = createConnection(profile);
                 requestBody = createRequestBodyForRetry(
                         profile, settings, systemPrompt, userPrompt, false,
-                        thinkingRequested, retryPlan.useCompletionTokens, diagnostics
+                        thinkingRequested, retryPlan.thinkingEnabled, retryPlan.omitTemperature,
+                        retryPlan.useCompletionTokens, diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
                 responseCode = getResponseCode(connection);
@@ -129,7 +130,8 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                 connection = createConnection(profile);
                 requestBody = createRequestBodyForRetry(
                         profile, settings, systemPrompt, userPrompt, true,
-                        thinkingRequested, retryPlan.useCompletionTokens, diagnostics
+                        thinkingRequested, retryPlan.thinkingEnabled, retryPlan.omitTemperature,
+                        retryPlan.useCompletionTokens, diagnostics
                 );
                 write(connection, GSON.toJson(requestBody));
                 responseCode = getResponseCode(connection);
@@ -264,8 +266,8 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
     }
 
     /**
-     * Retry request after the provider rejected the original one: thinking parameters are
-     * dropped, and temperature is omitted for OpenAI reasoning models or when the error blamed it.
+     * Retry request after the provider rejected one of its parameters, retaining fields that
+     * were not implicated in the error.
      */
     @NotNull
     private static JsonObject createRequestBodyForRetry(@NotNull LlmProfile profile,
@@ -274,11 +276,13 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                                                         @NotNull String userPrompt,
                                                         boolean stream,
                                                         boolean thinkingRequested,
+                                                        boolean thinkingEnabled,
+                                                        boolean omitTemperature,
                                                         boolean useCompletionTokens,
                                                         @NotNull LlmRequestDiagnostics diagnostics) {
         JsonObject requestBody = createRequestBody(profile, settings, systemPrompt, userPrompt, stream,
-                false,
-                LlmThinkingParameters.isOpenAiReasoningModel(profile),
+                thinkingEnabled,
+                LlmThinkingParameters.isOpenAiReasoningModel(profile) || omitTemperature,
                 useCompletionTokens);
         diagnostics.recordRequest(profile, stream, thinkingRequested, false, requestBody);
         return requestBody;
@@ -296,7 +300,7 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
                                        @NotNull String errorBody,
                                        @NotNull LlmRequestDiagnostics diagnostics) {
         boolean temperatureRejected = errorIndicatesUnsupportedTemperature(errorBody);
-        boolean thinkingRejected = thinkingEnabled && shouldRetryWithoutThinkingParameters(errorBody);
+        boolean thinkingRejected = thinkingEnabled && shouldRetryWithoutThinkingParameters(profile, errorBody);
         boolean completionTokenRejected = LlmThinkingParameters.needsCompletionTokenLimit(profile)
                 && errorIndicatesUnsupportedCompletionTokens(errorBody);
         if (thinkingRejected) {
@@ -315,7 +319,12 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
         }
         boolean useCompletionTokens = LlmThinkingParameters.needsCompletionTokenLimit(profile)
                 && !LlmCapabilityCache.shouldSkipCompletionTokens(profile);
-        return new RetryPlan(true, useCompletionTokens);
+        return new RetryPlan(
+                true,
+                useCompletionTokens,
+                thinkingEnabled && !thinkingRejected,
+                LlmThinkingParameters.isOpenAiReasoningModel(profile) || temperatureRejected
+        );
     }
 
     static boolean errorIndicatesUnsupportedCompletionTokens(@NotNull String responseBody) {
@@ -336,15 +345,20 @@ class OpenAiCompatibleLlmProviderClient extends AbstractHttpLlmProviderClient {
     private static final class RetryPlan {
         private final boolean retry;
         private final boolean useCompletionTokens;
+        private final boolean thinkingEnabled;
+        private final boolean omitTemperature;
 
-        private RetryPlan(boolean retry, boolean useCompletionTokens) {
+        private RetryPlan(boolean retry, boolean useCompletionTokens,
+                          boolean thinkingEnabled, boolean omitTemperature) {
             this.retry = retry;
             this.useCompletionTokens = useCompletionTokens;
+            this.thinkingEnabled = thinkingEnabled;
+            this.omitTemperature = omitTemperature;
         }
 
         @NotNull
         private static RetryPlan none() {
-            return new RetryPlan(false, false);
+            return new RetryPlan(false, false, false, false);
         }
     }
 

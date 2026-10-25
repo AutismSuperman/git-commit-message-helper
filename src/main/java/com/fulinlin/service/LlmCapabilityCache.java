@@ -2,6 +2,7 @@ package com.fulinlin.service;
 
 import com.fulinlin.model.LlmProfile;
 import com.fulinlin.model.enums.LlmProvider;
+import com.google.gson.JsonObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Locale;
@@ -18,11 +19,11 @@ final class LlmCapabilityCache {
     }
 
     static boolean shouldSkipThinkingParameters(@NotNull LlmProfile profile) {
-        return THINKING_PARAMETERS_UNSUPPORTED.contains(key(profile));
+        return THINKING_PARAMETERS_UNSUPPORTED.contains(thinkingKey(profile));
     }
 
     static void markThinkingParametersUnsupported(@NotNull LlmProfile profile) {
-        THINKING_PARAMETERS_UNSUPPORTED.add(key(profile));
+        THINKING_PARAMETERS_UNSUPPORTED.add(thinkingKey(profile));
     }
 
     /**
@@ -49,6 +50,13 @@ final class LlmCapabilityCache {
         THINKING_PARAMETERS_UNSUPPORTED.clear();
         COMPLETION_TOKENS_UNSUPPORTED.clear();
         STREAMING_UNSUPPORTED.clear();
+    }
+
+    @NotNull
+    private static String thinkingKey(@NotNull LlmProfile profile) {
+        JsonObject parameters = new JsonObject();
+        LlmThinkingParameters.apply(parameters, profile);
+        return key(profile) + "|" + parameters;
     }
 
     @NotNull

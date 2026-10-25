@@ -3,6 +3,7 @@ package com.fulinlin.service;
 import com.fulinlin.model.LlmProfile;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import org.jetbrains.annotations.NotNull;
@@ -18,6 +19,8 @@ import java.net.URI;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
 
@@ -150,18 +153,26 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
      * with a small set of phrasings, from {@code unsupported} to Anthropic's
      * {@code Extra inputs are not permitted}.
      */
-    static boolean shouldRetryWithoutThinkingParameters(@NotNull String responseBody) {
+    static boolean shouldRetryWithoutThinkingParameters(@NotNull LlmProfile profile,
+                                                         @NotNull String responseBody) {
         String lower = responseBody.toLowerCase(Locale.ROOT);
-        return lower.contains("unsupported")
-                || lower.contains("unknown parameter")
-                || lower.contains("unknown field")
-                || lower.contains("unrecognized")
-                || lower.contains("invalid parameter")
-                || lower.contains("extra_forbidden")
-                || lower.contains("extra inputs are not permitted")
-                || lower.contains("not permitted")
-                || lower.contains("not support")
-                || lower.contains("not_supported");
+        if (!containsUnsupportedParameterMarker(lower)) {
+            return false;
+        }
+        JsonObject thinkingParameters = new JsonObject();
+        LlmThinkingParameters.apply(thinkingParameters, profile);
+        String parameter = extractErrorParameter(responseBody);
+        if (parameter != null) {
+            for (String name : thinkingParameters.keySet()) {
+                String normalized = name.toLowerCase(Locale.ROOT);
+                if (parameter.equals(normalized) || parameter.startsWith(normalized + ".")
+                        || parameter.startsWith(normalized + "[")) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return containsExplicitThinkingParameterReference(lower, thinkingParameters.keySet());
     }
 
     static boolean errorIndicatesUnsupportedTemperature(@NotNull String responseBody) {
@@ -175,5 +186,53 @@ abstract class AbstractHttpLlmProviderClient implements LlmProviderClient {
                 || lower.contains("not support")
                 || lower.contains("not_supported")
                 || lower.contains("only the default"));
+    }
+
+    private static boolean containsUnsupportedParameterMarker(@NotNull String lower) {
+        return lower.contains("unsupported")
+                || lower.contains("unknown parameter")
+                || lower.contains("unknown field")
+                || lower.contains("unrecognized")
+                || lower.contains("invalid parameter")
+                || lower.contains("extra_forbidden")
+                || lower.contains("extra inputs are not permitted")
+                || lower.contains("not permitted")
+                || lower.contains("not support")
+                || lower.contains("not_supported");
+    }
+
+    @Nullable
+    private static String extractErrorParameter(@NotNull String responseBody) {
+        try {
+            JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();
+            JsonObject error = root.has("error") && root.get("error").isJsonObject()
+                    ? root.getAsJsonObject("error")
+                    : root;
+            for (String key : new String[]{"param", "parameter", "field"}) {
+                JsonElement value = error.get(key);
+                if (value != null && value.isJsonPrimitive()) {
+                    return value.getAsString().trim().toLowerCase(Locale.ROOT);
+                }
+            }
+        } catch (RuntimeException ignored) {
+            // Some gateways return plain text or a non-standard error shape.
+        }
+        return null;
+    }
+
+    private static boolean containsExplicitThinkingParameterReference(@NotNull String lower,
+                                                                       @NotNull Set<String> parameters) {
+        for (String parameter : parameters) {
+            // Match complete parameter paths rather than fields that merely share a prefix.
+            String path = Pattern.quote(parameter.toLowerCase(Locale.ROOT)) + "(?:\\.[a-z0-9_]+|\\[\\d+\\])*";
+            String reference = "(?<![a-z0-9_.])['\"]?" + path + "['\"]?(?![a-z0-9_.\\[])";
+            String explicitReference = "(?:parameter|field|value)\\s*:?\\s*" + reference
+                    + "|" + reference + "\\s*(?:parameter\\b|:)"
+                    + "|['\"]" + path + "['\"]";
+            if (Pattern.compile(explicitReference).matcher(lower).find()) {
+                return true;
+            }
+        }
+        return false;
     }
 }
